@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -38,25 +38,12 @@
 </head>
 <body>
 
-<script>
-    const config = {
-        '魚圓湯': { p: 5, img: '' }, '肉圓湯': { p: 5, img: '' }, '魚餃湯': { p: 5, img: '' }, '三宝湯': { p: 6, img: '' },
-        '鱼圆面': { p: 4, img: '' }, '香菇肉碎面': { p: 5, img: '' }, '餐餐面': { p: 6, img: '' }, '招牌面': { p: 6, img: '' },
-        '肉圆面': { p: 4, img: '' }, '鱼饺面': { p: 4, img: '' }, '小鱼香面': { p: 4, img: '' }, '西刀鱼饼面': { p: 4, img: '' },
-        '鲜虾鱼圆面': { p: 5, img: '' }, '香菇面': { p: 5, img: '' }, '(纯)肉碎面': { p: 4, img: '' },
-        '大的': { p: 1, img: '' }, '小的': { p: 0, img: '' },
-        '湯': { p: 0, img: '' }, '面': { p: 0, img: '' },
-        'noodleType': { '面薄(粗面)':'','面子(幼面)':'','粿条':'','熟面':'','米粉':'','米太目':'','冬粉':'','粿条面':'','米粉面':'','熟面米粉':'' },
-        'sauce': { '辣椒':'','茄汁':'','黑醬油':'','白醬青':'','醋':'','(湯)':'' }
-    };
-</script>
-
 <div class="container">
     <div class="step active" id="step-start">
         <h2>1. 請選擇類別</h2>
         <div class="grid" id="grid-type">
-            <div class="opt" onclick="setCategory('湯')"><img src=""><span>湯</span></div>
-            <div class="opt" onclick="setCategory('面')"><img src=""><span>面</span></div>
+            <div class="opt" onclick="setCategory('湯')"><img src="https://placehold.co/200x150?text=Soup"><span>湯</span></div>
+            <div class="opt" onclick="setCategory('面')"><img src="https://placehold.co/200x150?text=Noodle"><span>面</span></div>
         </div>
     </div>
     <div class="step" id="step-soup-select">
@@ -105,22 +92,75 @@
 </div>
 
 <script>
+    const config = {
+        '魚圓湯': { p: 5, img: 'https://lh3.googleusercontent.com/pw/AP1GczOoXizYOs7TlJVh_ikXpPT_8uSFOyH2mnDMFvu2CIFXpJVYqNssfvAbgkwksOqIi89J0NAktQdtJStc5KB6YPkxqk0ccWLkjKAGWKILKERYMt_PYsI=w2400?source=screenshot.guru' }, 
+        '肉圓湯': { p: 5, img: 'https://lh3.googleusercontent.com/pw/AP1GczO53IM8P6okuoqH4lpXGLStyLy4PSLp2LEAXBolANcUA0dm0WBHCGxJ965cGrMP9F72cF24Uln8JbdwG9pt910rs1pG-dnU-CrwKWKcOhZoPnNbR6Q=w2400?source=screenshot.guru' }, 
+        '魚餃湯': { p: 5, img: 'https://lh3.googleusercontent.com/pw/AP1GczN3UWnlef_F80kDzpyJtDbUke-trWR_2HA4zVAnHG8PlM1N9FoBkIAThTpdOffxXiIKGYn9gNQV9Defs8T8CC7ChbKQGKCLctVtW-G84qTu6qGcuvM=w2400?source=screenshot.guru' }, 
+        '三宝湯': { p: 6, img: 'https://lh3.googleusercontent.com/pw/AP1GczOGkSr6douVYw5ED49ONXDbTqp9tX92Syg3QnRHG43a8zZebTgtjWEUXgLieeqYOw-7CQdLF9Tm_1aVhak1HCxrCdPKf6lwtrrL9GopjkdCwX9FUtM=w2400?source=screenshot.guru' },
+        '鱼圆面': { p: 4, img: 'https://lh3.googleusercontent.com/pw/AP1GczM1EgErnLz57PZ0ckyDapaXUx27rggwr5VvU49Yo1vpygNeiLiTCVK6nGMT7UewX9jWyWN7Q04y5g8QeGtKBFBtYod8YZd1L42sFsRuRCpY2EvidrI=w2400?source=screenshot.guru' }, 
+        '香菇肉碎面': { p: 5, img: '' }, 
+        '餐餐面': { p: 6, img: 'https://lh3.googleusercontent.com/pw/AP1GczPI477AgneL3f4pcuLKg25GQlwB9XCNdxRaABOxwTvciSuYeGzbEu1cez6OIb25ZSS6RMchPIuuTEFHKttxXRnvYboZ5PQh-0HJH1MtI49AWBL1GDA=w2400?source=screenshot.guru' }, 
+        '招牌面': { p: 6, img: 'https://lh3.googleusercontent.com/pw/AP1GczOVfyFF0BVjs49utoC4oxktdqpCblSROVp-z7A0aH5pjECVNDmcaKulF2YA7DBUEDZxzEij53427j1LqfZYPzUSFGdUM2_Zt-aYxIYJY40qAfH5wq8=w2400?source=screenshot.guru' },
+        '肉圆面': { p: 4, img: 'https://lh3.googleusercontent.com/pw/AP1GczO2J-xP5sDqsYL-5nFYQgmYldq26dabn-ezwb-vCUGDZ-S5nq_i7dsnWNmsswG5ippV0aBSwxf3zx6lfCHrhVOehydel1JSOBnr0aXMXmInJ1_9gnM=w2400?source=screenshot.guru' }, 
+        '鱼饺面': { p: 4, img: '' }, 
+        '小鱼香面': { p: 4, img: 'https://lh3.googleusercontent.com/pw/AP1GczMOea7U-V10ztFr3Yim6w3K_-waMrZWgn9f5VdLk6JeObgOJpJu47IZGZ_N2Ok0WW57U0oCvjQ8Cd1llJYnEiMKw5BSLetmhF5BBxFnnGQwFCqmUjE=w2400?source=screenshot.guru' }, 
+        '西刀鱼餅面': { p: 4, img: 'https://lh3.googleusercontent.com/pw/AP1GczP8Id6j5IYXzYS9x0xyNmfZWXGzQHCdfQBNbC34EmSqOTaA8rw5DGfhdsijfjfb_EnoCdl4nbXlowqkys6NnbQok762CxfDYno4mODYOp4oEp4EqAM=w2400?source=screenshot.guru' },
+        '鮮蝦魚圓面': { p: 5, img: 'https://lh3.googleusercontent.com/pw/AP1GczPzLY41C33tAb9NV8EUJrRpiZGqc1WqVhSNhr9K5H41JKgfnEG4CqFIDluEUqs4wRf67VHhOcvgN_9z1J6UrQAQWtj-SvpBk8V7RoiRxNjsTE-NfVE=w2400?source=screenshot.guru' }, 
+        '香菇面': { p: 5, img: 'https://lh3.googleusercontent.com/pw/AP1GczOMJvr-1snMcDEsJsBV_QX2oISkKXtVZQGiajhBRNCUkTEpzev8LTJzjQ4jzeziLq4inDVPgROLRQ9NXxT3tnZGxJAgPNtPg3lgC-Cs582xH1jRiho=w2400?source=screenshot.guru' }, 
+        '(纯)肉碎面': { p: 4, img: '' },
+        '小的': { p: 0, img: '' }, 
+        '大的': { p: 1, img: '' },
+        '湯': { p: 0, img: '' }, 
+        '面': { p: 0, img: '' },
+        'noodleType': { 
+            '面薄': 'https://lh3.googleusercontent.com/pw/AP1GczPTdYtkKQVVtu2xC4GqatBEs58tYr0xrU6-P08JGLPXNa9URyrd85OABGJvhRRywZqI_6ILtjozkyDCPJWyfo34-z3KP5EPG56bOb6S73_130W3J00=w2400?source=screenshot.guru', // <--- 已加入圖片連結
+            '面仔': 'https://lh3.googleusercontent.com/pw/AP1GczNzHJopdj33Emt-5K2nGrlY8AQRwcGxsmIGUyy2dzSKyFYLHxqH-tz7bIRoqlVFfxfetpW7bKNjWvenQuHQ1oPEWLa8r0Zv98IXzUaIhJlRpdNaMJU=w2400?source=screenshot.guru', 
+            '粿条': 'https://lh3.googleusercontent.com/pw/AP1GczPwzNH0_FdwO99aeaxK8kWR64JXsBGwj4s5HB13lSvp-sZwggbp8XT8yfDkbp7Cz_ZB-jynkrLK7FFpIQSTf_t4Umd8Eje8i_nWWxFshmGTKkrzCn4=w2400?source=screenshot.guru', 
+            '熟面': 'https://lh3.googleusercontent.com/pw/AP1GczO5hHYBkxDeOygQ1hWxWYtPlMOGUWWImLcvrXSe9dYeWIPukbqHY5O9qq6IrM9Q88jSG6EE8HmeIM9jOg081VP1KcW7uXlnaMCsWb56wt3dRd9WJJw=w2400?source=screenshot.guru', 
+            '米粉': 'https://lh3.googleusercontent.com/pw/AP1GczMCq_h1GaefE-Kpouj1xUx_GoEhsa6BHL7giIsCTbZqtOKJG_8AJIpYSsqpPEiR5Ao00oYTYixHE7KxdZjWSv2LTg-CQ_xWVBv8OfAB98J7Z1wPYG0=w2400?source=screenshot.guru', 
+            '米太目': 'https://lh3.googleusercontent.com/pw/AP1GczNPdhdHay7KR_IB303jyQY9PkJv14r8_ctsIwsnIGVdX5m0e4mAQjGoW6kMCuWfZEzoGn0PfIS4YbYsam7ncI1eDn9rYAbQ53qUsbpt4BHxE2Gur3k=w600-h315-p-k', 
+            '冬粉': 'https://lh3.googleusercontent.com/pw/AP1GczMjjBg1W6WSV-nXO1fI3_rZXHO1u53fhIyPuY8F5PfDsGsSNuMqbrcoNbcIYTISpCvg-YzHA3xOyUmD1SUOQQvXXoAsXW9wTiEt9IswwswNBTCsoCc=w2400?source=screenshot.guru', 
+            '粿条面': 'https://lh3.googleusercontent.com/pw/AP1GczO5hHYBkxDeOygQ1hWxWYtPlMOGUWWImLcvrXSe9dYeWIPukbqHY5O9qq6IrM9Q88jSG6EE8HmeIM9jOg081VP1KcW7uXlnaMCsWb56wt3dRd9WJJw=w2400?source=screenshot.guru"> <img src="https://lh3.googleusercontent.com/pw/AP1GczPwzNH0_FdwO99aeaxK8kWR64JXsBGwj4s5HB13lSvp-sZwggbp8XT8yfDkbp7Cz_ZB-jynkrLK7FFpIQSTf_t4Umd8Eje8i_nWWxFshmGTKkrzCn4=w2400?source=screenshot.guru ', 
+            '粿条米粉': 'https://lh3.googleusercontent.com/pw/AP1GczPwzNH0_FdwO99aeaxK8kWR64JXsBGwj4s5HB13lSvp-sZwggbp8XT8yfDkbp7Cz_ZB-jynkrLK7FFpIQSTf_t4Umd8Eje8i_nWWxFshmGTKkrzCn4=w2400?source=screenshot.guru"> <img src="https://lh3.googleusercontent.com/pw/AP1GczMCq_h1GaefE-Kpouj1xUx_GoEhsa6BHL7giIsCTbZqtOKJG_8AJIpYSsqpPEiR5Ao00oYTYixHE7KxdZjWSv2LTg-CQ_xWVBv8OfAB98J7Z1wPYG0=w2400?source=screenshot.guru', 
+            '米粉面': 'https://lh3.googleusercontent.com/pw/AP1GczMCq_h1GaefE-Kpouj1xUx_GoEhsa6BHL7giIsCTbZqtOKJG_8AJIpYSsqpPEiR5Ao00oYTYixHE7KxdZjWSv2LTg-CQ_xWVBv8OfAB98J7Z1wPYG0=w2400?source=screenshot.guru"> <img src="https://lh3.googleusercontent.com/pw/AP1GczO5hHYBkxDeOygQ1hWxWYtPlMOGUWWImLcvrXSe9dYeWIPukbqHY5O9qq6IrM9Q88jSG6EE8HmeIM9jOg081VP1KcW7uXlnaMCsWb56wt3dRd9WJJw=w2400?source=screenshot.guru' 
+        },
+        'sauce': { 
+            '辣椒': '', 
+            '茄汁': '', 
+            '黑醬油': '', 
+            '白醬青': '', 
+            '醋': '', 
+            '(湯)': '' 
+        }
+    };
+
     let cart = [];
     let tempItem = { category: '', names: [], size: '', noodle: '', sauces: [], price: 0 };
+
     function init() {
         renderGrid(['魚圓湯','肉圓湯','魚餃湯','三宝湯'], 'grid-soupItems', (val, el) => toggleMulti(val, el, tempItem.names, 2), true);
-        renderGrid(['鱼圆面','香菇肉碎面','餐餐面','招牌面','肉圆面','鱼饺面','小鱼香面','西刀鱼饼面','鲜虾鱼圆面','香菇面','(纯)肉碎面'], 'grid-foodItems', (val) => { tempItem.names = [val]; goNext('step-size'); });
+        renderGrid(['鱼圆面','香菇肉碎面','餐餐面','招牌面','肉圆面','鱼饺面','小鱼香面','西刀鱼餅面','鮮蝦魚圓面','香菇面','(纯)肉碎面'], 'grid-foodItems', (val) => { tempItem.names = [val]; goNext('step-size'); });
         renderGrid(['大的', '小的'], 'grid-size', (val) => { tempItem.size = val; if(tempItem.category === '湯') { addToCart(); } else { goNext('step-noodle-type'); } });
         renderGrid(Object.keys(config.noodleType), 'grid-noodleType', (val) => { tempItem.noodle = val; goNext('step-sauce-select'); });
         renderGrid(Object.keys(config.sauce), 'grid-sauce', (val, el) => toggleMulti(val, el, tempItem.sauces, 3), true);
     }
+    
     function renderGrid(list, containerId, clickFn, isMulti = false) {
         const cont = document.getElementById(containerId);
+        if(!cont) return;
+        cont.innerHTML = ''; 
         list.forEach(name => {
             const div = document.createElement('div');
             div.className = 'opt';
+            
+            let imgSrc = '';
+            if (containerId === 'grid-noodleType') imgSrc = config.noodleType[name];
+            else if (containerId === 'grid-sauce') imgSrc = config.sauce[name];
+            else imgSrc = config[name]?.img;
+
             const priceHtml = (config[name] && config[name].p > 0) ? `<div class="price-label">+$${config[name].p}</div>` : '';
-            div.innerHTML = `<img src="${config[name]?.img || ''}">${priceHtml}<span>${name}</span>`;
+            div.innerHTML = `<img src="${imgSrc || 'https://placehold.co/200x150?text='+name}">${priceHtml}<span>${name}</span>`;
+            
             div.onclick = function() {
                 if(!isMulti) { cont.querySelectorAll('.opt').forEach(o => o.classList.remove('selected')); div.classList.add('selected'); }
                 clickFn(name, div);
@@ -128,18 +168,27 @@
             cont.appendChild(div);
         });
     }
-    function setCategory(val) { tempItem.category = val; goNext(val === '湯' ? 'step-soup-select' : 'step-food-select'); }
+
+    function setCategory(val) { 
+        tempItem.category = val; 
+        goNext(val === '湯' ? 'step-soup-select' : 'step-food-select'); 
+    }
+    
     function toggleMulti(val, el, list, max) {
         if(list.includes(val)) { list.splice(list.indexOf(val), 1); el.classList.remove('selected'); }
         else { if(list.length >= max) return alert("最多選"+max+"個"); list.push(val); el.classList.add('selected'); }
     }
+    
     function handleSizeBack() { goNext(tempItem.category === '湯' ? 'step-soup-select' : 'step-food-select'); }
+    
     function checkSoupNext() { if(tempItem.names.length === 0) return alert("請至少選一個湯"); goNext('step-size'); }
+    
     function goNext(id) {
         document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
         document.getElementById(id).classList.add('active');
         window.scrollTo(0,0);
     }
+    
     function addToCart() {
         let itemPrice = 0;
         tempItem.names.forEach(n => itemPrice += config[n].p);
@@ -149,6 +198,7 @@
         updateCartDisplay();
         goNext('step-finish');
     }
+    
     function updateCartDisplay() {
         let total = 0;
         const cartDiv = document.getElementById('current-cart');
@@ -159,11 +209,13 @@
         document.getElementById('total-sum').innerText = total;
         document.getElementById('p-total-sum').innerText = total;
     }
+    
     function resetForNewItem() {
         tempItem = { category: '', names: [], size: '', noodle: '', sauces: [], price: 0 };
         document.querySelectorAll('.opt').forEach(o => o.classList.remove('selected'));
         goNext('step-start');
     }
+    
     function finalPrint() {
         if(cart.length === 0) return;
         const listDiv = document.getElementById('print-list');
@@ -172,6 +224,7 @@
         window.print();
         cart = []; resetForNewItem();
     }
+    
     init();
 </script>
 </body>
