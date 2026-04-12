@@ -25,7 +25,7 @@
         .opt span { padding: 8px 5px; font-weight: bold; font-size: 0.9rem; }
         .opt.selected { border-color: var(--primary); background: #e8f0fe; }
         .opt.selected::after { content: '✅'; position: absolute; top: 5px; right: 5px; background: white; border-radius: 50%; padding: 2px; font-size: 12px; }
-        .cart-box { margin-top: 20px; padding: 15px; border: 2px dashed var(--primary); border-radius: 10px; text-align: left; background: #fffbe6; }
+        .cart-box { margin-top: 20px; padding: 10px; border: 1px dashed var(--primary); border-radius: 10px; text-align: left; background: #fffbe6; }
         .cart-item { border-bottom: 1px solid #ddd; padding: 10px 0; display: flex; justify-content: space-between; align-items: center; }
         .total-price-bar { font-size: 1.6rem; color: var(--price-tag); font-weight: bold; margin: 20px 0; }
         .nav-btns { position: fixed; bottom: 0; left: 0; right: 0; background: white; padding: 15px; display: flex; gap: 10px; max-width: 500px; margin: auto; box-shadow: 0 -5px 10px rgba(0,0,0,0.05); z-index: 1000; }
@@ -33,18 +33,47 @@
         .btn-blue { background: var(--primary); color: white; }
         .btn-green { background: var(--success); color: white; }
 
-        /* --- 列印專用樣式 (關鍵！) --- */
+        /* --- 重要：針對商米 58mm 打印機優化 --- */
         @media print {
-            body { background: white !important; padding: 0 !important; }
-            .container { box-shadow: none !important; width: 100% !important; max-width: none !important; padding-bottom: 0 !important; margin: 0 !important; border: none !important; }
-            .nav-btns, .back-btn-top, h2:not(.cart-title) { display: none !important; } /* 隱藏按鈕與不需要的標題 */
-            .step { display: none !important; } /* 先隱藏所有步驟 */
-            .step#step-finish { display: block !important; } /* 僅顯示結帳步驟 */
-            .cart-box { border: 1px solid black !important; background: white !important; font-size: 12pt; }
-            .cart-item { border-bottom: 1px solid #000 !important; color: black !important; }
-            .total-price-bar { color: black !important; font-size: 14pt; }
-            /* 讓 iPhone 更傾向於文字排版 */
-            * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+            @page {
+                size: 58mm auto; /* 指定紙張寬度為 58 毫米 */
+                margin: 0;       /* 消除邊距以免超出紙張 */
+            }
+            body { 
+                background: white !important; 
+                width: 58mm !important; /* 限制內容寬度 */
+                margin: 0 auto !important; 
+                padding: 2mm !important; 
+            }
+            .container { 
+                box-shadow: none !important; 
+                width: 100% !important; 
+                padding-bottom: 0 !important; 
+                margin: 0 !important; 
+                border: none !important; 
+            }
+            .nav-btns, .back-btn-top, h2:not(.cart-title), .img-box { display: none !important; } 
+            .step { display: none !important; }
+            .step#step-finish { display: block !important; }
+            .cart-box { 
+                border: none !important; 
+                background: white !important; 
+                font-size: 10pt !important; 
+                padding: 0 !important;
+            }
+            .cart-item { 
+                border-bottom: 1px dashed black !important; 
+                color: black !important; 
+                margin-bottom: 5px;
+            }
+            .total-price-bar { 
+                color: black !important; 
+                font-size: 12pt !important; 
+                text-align: right; 
+                margin-top: 10px;
+            }
+            /* 強制文字黑白渲染，防止商米轉成灰度圖片 */
+            * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; }
         }
     </style>
 </head>
@@ -60,36 +89,30 @@
             </div>
             <div class="opt" onclick="setCategory('面')">
                 <div class="img-box"><img src="https://lh3.googleusercontent.com/pw/AP1GczM1EgErnLz57PZ0ckyDapaXUx27rggwr5VvU49Yo1vpygNeiLiTCVK6nGMT7UewX9jWyWN7Q04y5g8QeGtKBFBtYod8YZd1L42sFsRuRCpY2EvidrI=w2400?source=screenshot.guru"></div>
-                <span>麵食類</span>
             </div>
         </div>
     </div>
-
     <div class="step" id="step-soup-select">
         <button class="back-btn-top" onclick="goNext('step-start')">←</button>
         <h2>2. 選擇湯品 (最多2個)</h2>
         <div class="grid" id="grid-soupItems"></div>
         <div class="nav-btns"><button class="btn-blue" onclick="checkSoupNext()">下一步</button></div>
     </div>
-
     <div class="step" id="step-food-select">
         <button class="back-btn-top" onclick="goNext('step-start')">←</button>
         <h2>2. 選擇主食</h2>
         <div class="grid" id="grid-foodItems"></div>
     </div>
-
     <div class="step" id="step-size">
         <button class="back-btn-top" onclick="handleSizeBack()">←</button>
         <h2>3. 選擇大小</h2>
         <div class="grid" id="grid-size"></div>
     </div>
-
     <div class="step" id="step-noodle-type">
         <button class="back-btn-top" onclick="goNext('step-size')">←</button>
         <h2>4. 選擇麵類</h2>
         <div class="grid" id="grid-noodleType"></div>
     </div>
-
     <div class="step" id="step-sauce-select">
         <button class="back-btn-top" onclick="goNext('step-noodle-type')">←</button>
         <h2>5. 選擇醬料/湯 (1-3個)</h2>
@@ -98,9 +121,9 @@
     </div>
 
     <div class="step" id="step-finish">
-        <h2 class="cart-title">🛒 購物車明細</h2>
+        <h2 class="cart-title">Million Fishball Noodle</h2>
         <div class="cart-box" id="current-cart"></div>
-        <div class="total-price-bar">應收總計: $<span id="total-sum">0</span></div>
+        <div class="total-price-bar">Total: $<span id="total-sum">0</span></div>
         <div class="nav-btns">
             <button class="btn-blue" onclick="resetForNewItem()">➕ 繼續點餐</button>
             <button class="btn-green" onclick="handlePrintAndFinish()">🖨️ 列印收據</button>
@@ -109,6 +132,7 @@
 </div>
 
 <script>
+    // ... config 數據與 init 邏輯保持不變 ...
     const config = {
         '魚圓湯': { p: 5, img: 'https://lh3.googleusercontent.com/pw/AP1GczOoXizYOs7TlJVh_ikXpPT_8uSFOyH2mnDMFvu2CIFXpJVYqNssfvAbgkwksOqIi89J0NAktQdtJStc5KB6YPkxqk0ccWLkjKAGWKILKERYMt_PYsI=w2400?source=screenshot.guru' }, 
         '肉圓湯': { p: 5, img: 'https://lh3.googleusercontent.com/pw/AP1GczO53IM8P6okuoqH4lpXGLStyLy4PSLp2LEAXBolANcUA0dm0WBHCGxJ965cGrMP9F72cF24Uln8JbdwG9pt910rs1pG-dnU-CrwKWKcOhZoPnNbR6Q=w2400?source=screenshot.guru' }, 
@@ -213,7 +237,7 @@
         let total = 0;
         document.getElementById('current-cart').innerHTML = cart.map((item, i) => {
             total += item.price;
-            return `<div class="cart-item"><div><b>#${i+1} ${item.names.join('+')}</b> [${item.size}]<br><small>${item.noodle || ''} ${item.sauces.length ? ' / ' + item.sauces.join(',') : ''}</small></div><div style="color:var(--price-tag);">$${item.price}</div></div>`;
+            return `<div class="cart-item"><div><b>#${i+1} ${item.names.join('+')}</b><br><small>${item.size} / ${item.noodle || ''}<br>${item.sauces.join(',')}</small></div><div style="font-weight:bold;">$${item.price}</div></div>`;
         }).join('');
         document.getElementById('total-sum').innerText = total;
     }
@@ -224,13 +248,15 @@
         goNext('step-start');
     }
 
+    // 針對商米機器的列印處理函數
     function handlePrintAndFinish() {
-        window.print();
+        window.print(); // 這會觸發商米系統的列印代理
+        
         setTimeout(() => {
             cart = [];
             resetForNewItem();
             updateCartDisplay();
-        }, 500);
+        }, 1000); // 延長到1秒，讓商米系統有時間反應
     }
 
     init();
