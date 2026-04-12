@@ -1,224 +1,67 @@
 <!DOCTYPE html>
-<html lang="zh-Hant">
+<html>
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Million 麵店點餐系統</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
-        :root { --primary: #1a73e8; --secondary: #f0f2f5; --success: #34a853; --price-tag: #d93025; }
-        body { font-family: "Microsoft JhengHei", sans-serif; background: var(--secondary); margin: 0; padding: 10px; text-align: center; }
-        .container { max-width: 500px; margin: auto; background: white; padding: 15px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); padding-bottom: 90px; min-height: 85vh; position: relative; }
-        .step { display: none; animation: fadeIn 0.3s; position: relative; }
-        .step.active { display: block; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        .back-btn-top { position: absolute; right: 0; top: 0; width: 35px; height: 35px; border-radius: 50%; background: #eee; color: #555; border: none; font-size: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 10; }
-        h2 { color: #333; font-size: 1.1rem; margin: 10px 0 20px 0; border-left: 5px solid var(--primary); padding-left: 10px; text-align: left; padding-right: 40px; }
-        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .opt { background: #fff; border: 2px solid #eee; border-radius: 12px; cursor: pointer; overflow: hidden; position: relative; display: flex; flex-direction: column; }
-        
-        .img-box { width: 100%; height: 100px; display: flex; background: #fafafa; overflow: hidden; }
-        .img-box img { width: 100%; height: 100%; object-fit: cover; flex: 1; }
-        .img-box.double img { width: 50%; border-right: 1px solid white; }
-        .img-box.double img:last-child { border-right: none; }
-
-        .price-label { position: absolute; bottom: 35px; right: 5px; background: var(--price-tag); color: white; padding: 2px 8px; border-radius: 5px; font-size: 12px; font-weight: bold; }
-        .opt span { padding: 8px 5px; font-weight: bold; font-size: 0.9rem; }
-        .opt.selected { border-color: var(--primary); background: #e8f0fe; }
-        .opt.selected::after { content: '✅'; position: absolute; top: 5px; right: 5px; background: white; border-radius: 50%; padding: 2px; font-size: 12px; }
-        .cart-box { margin-top: 20px; padding: 15px; border: 2px dashed var(--primary); border-radius: 10px; text-align: left; background: #fffbe6; }
-        .cart-item { border-bottom: 1px solid #ddd; padding: 10px 0; display: flex; justify-content: space-between; align-items: center; }
-        .total-price-bar { font-size: 1.6rem; color: var(--price-tag); font-weight: bold; margin: 20px 0; }
-        .nav-btns { position: fixed; bottom: 0; left: 0; right: 0; background: white; padding: 15px; display: flex; gap: 10px; max-width: 500px; margin: auto; box-shadow: 0 -5px 10px rgba(0,0,0,0.05); z-index: 1000; }
-        button { flex: 1; padding: 15px; border-radius: 10px; border: none; font-size: 1rem; cursor: pointer; font-weight: bold; }
-        .btn-blue { background: var(--primary); color: white; }
-        .btn-green { background: var(--success); color: white; }
+        body { font-family: sans-serif; text-align: center; padding: 10px; }
+        .btn { padding: 15px; margin: 5px; width: 40%; font-size: 18px; border: 1px solid #ccc; cursor: pointer; }
+        .selected { background: #e8f0fe; border: 2px solid blue; }
+        #receipt { text-align: left; padding: 10px; border: 1px dashed #000; margin-top: 20px; }
+        .total { color: red; font-size: 24px; font-weight: bold; }
+        .hide { display: none; }
+        @media print {
+            .no-print { display: none !important; }
+            #finish { display: block !important; width: 54mm; }
+            body { margin: 0; padding: 0; }
+        }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <div class="step active" id="step-start">
-        <h2>1. 請選擇類別</h2>
-        <div class="grid">
-            <div class="opt" onclick="setCategory('湯')">
-                <div class="img-box"><img src="https://lh3.googleusercontent.com/pw/AP1GczOoXizYOs7TlJVh_ikXpPT_8uSFOyH2mnDMFvu2CIFXpJVYqNssfvAbgkwksOqIi89J0NAktQdtJStc5KB6YPkxqk0ccWLkjKAGWKILKERYMt_PYsI=w2400"></div>
-                <span>湯品類</span>
-            </div>
-            <div class="opt" onclick="setCategory('面')">
-                <div class="img-box"><img src="https://lh3.googleusercontent.com/pw/AP1GczM1EgErnLz57PZ0ckyDapaXUx27rggwr5VvU49Yo1vpygNeiLiTCVK6nGMT7UewX9jWyWN7Q04y5g8QeGtKBFBtYod8YZd1L42sFsRuRCpY2EvidrI=w2400"></div>
-                <span>麵食類</span>
-            </div>
-        </div>
-    </div>
+<div id="step1">
+    <h2>1. 選擇餐點</h2>
+    <button class="btn" onclick="add('魚圓湯', 5)">魚圓湯 $5</button>
+    <button class="btn" onclick="add('肉圓湯', 5)">肉圓湯 $5</button>
+    <button class="btn" onclick="go(2)">下一步</button>
+</div>
 
-    <div class="step" id="step-soup-select">
-        <button class="back-btn-top" onclick="goNext('step-start')">←</button>
-        <h2>2. 選擇湯品 (最多2個)</h2>
-        <div class="grid" id="grid-soupItems"></div>
-        <div class="nav-btns"><button class="btn-blue" onclick="checkSoupNext()">下一步</button></div>
-    </div>
+<div id="step2" class="hide">
+    <h2>2. 選擇大小</h2>
+    <button class="btn" onclick="finish('小', 0)">小的 (+$0)</button>
+    <button class="btn" onclick="finish('大', 1)">大的 (+$1)</button>
+</div>
 
-    <div class="step" id="step-food-select">
-        <button class="back-btn-top" onclick="goNext('step-start')">←</button>
-        <h2>2. 選擇主食</h2>
-        <div class="grid" id="grid-foodItems"></div>
-    </div>
-
-    <div class="step" id="step-size">
-        <button class="back-btn-top" onclick="handleSizeBack()">←</button>
-        <h2>3. 選擇大小</h2>
-        <div class="grid" id="grid-size"></div>
-    </div>
-
-    <div class="step" id="step-noodle-type">
-        <button class="back-btn-top" onclick="goNext('step-size')">←</button>
-        <h2>4. 選擇麵類</h2>
-        <div class="grid" id="grid-noodleType"></div>
-    </div>
-
-    <div class="step" id="step-sauce-select">
-        <button class="back-btn-top" onclick="goNext('step-noodle-type')">←</button>
-        <h2>5. 選擇醬料/湯 (1-3個)</h2>
-        <div class="grid" id="grid-sauce"></div>
-        <div class="nav-btns"><button class="btn-blue" onclick="addToCart()">✅ 加入購物車</button></div>
-    </div>
-
-    <div class="step" id="step-finish">
-        <h2 class="cart-title">🛒 購物車明細</h2>
-        <div class="cart-box" id="current-cart"></div>
-        <div class="total-price-bar">應收總計: $<span id="total-sum">0</span></div>
-        <div class="nav-btns">
-            <button class="btn-blue" onclick="resetForNewItem()">➕ 繼續點餐</button>
-            <button class="btn-green" onclick="handlePrintAndFinish()">🖨️ 列印收據</button>
-        </div>
+<div id="finish" class="hide">
+    <h3>Million Fishball Noodle</h3>
+    <div id="content"></div>
+    <div class="total">Total: $<span id="all">0</span></div>
+    <div class="no-print" style="margin-top:20px;">
+        <button class="btn" style="background:orange;color:white" onclick="window.print()">再次列印</button>
+        <button class="btn" style="background:blue;color:white" onclick="location.reload()">下一位</button>
     </div>
 </div>
 
 <script>
-const config = {
-    '魚圓湯': { p: 5 }, '肉圓湯': { p: 5 }, '魚餃湯': { p: 5 }, '三寶湯': { p: 6 },
-    '魚圓面': { p: 4 }, '香菇肉碎面': { p: 5 }, '招牌面': { p: 6 }, '餐餐面': { p: 6 }, '肉圓面': { p: 4 }, '蝦魚面': { p: 5 }, '西刀魚面': { p: 4 }, '香菇面': { p: 5 }, '魚餃面': { p: 4 }, '(純)肉碎面': { p: 4 }, '小魚香面': { p: 4 },
-    '小的': { p: 0 }, '大的': { p: 1 },
-    noodleType: { '面薄':1,'幼面':1,'粿條':1,'熟面':1,'米粉':1,'米太目':1,'冬粉':1,'粿條面':1,'粿條米粉':1,'米粉面':1 },
-    sauce: { '辣椒':1,'茄汁':1,'黑醬油':1,'白醬青':1,'黑醋':1,'(湯)':1 }
-};
-
-let cart = [];
-let tempItem = { category: '', names: [], size: '', noodle: '', sauces: [], price: 0 };
-
-function init() {
-    renderGrid(['魚圓湯','肉圓湯','魚餃湯','三寶湯'], 'grid-soupItems', (val, el)=>toggleMulti(val,el,tempItem.names,2),true);
-    const food = ['魚圓面','香菇肉碎面','招牌面','餐餐面','肉圓面','蝦魚面','西刀魚面','香菇面','魚餃面','(純)肉碎面','小魚香面'];
-    renderGrid(food, 'grid-foodItems', (val)=>{ tempItem.names=[val]; goNext('step-size'); });
-    renderGrid(['小的','大的'], 'grid-size', (val)=>{ tempItem.size=val; tempItem.category==='湯' ? addToCart() : goNext('step-noodle-type'); });
-    renderGrid(Object.keys(config.noodleType), 'grid-noodleType', (val)=>{ tempItem.noodle=val; goNext('step-sauce-select'); });
-    renderGrid(Object.keys(config.sauce), 'grid-sauce', (val,el)=>toggleMulti(val,el,tempItem.sauces,3),true);
-}
-
-function renderGrid(list, id, click, multi=false) {
-    const c = document.getElementById(id); c.innerHTML='';
-    list.forEach(n=>{
-        let d = document.createElement('div'); d.className='opt';
-        d.innerHTML=`<span>${n}</span>`;
-        d.onclick = ()=>{ if(!multi) c.querySelectorAll('.opt').forEach(o=>o.classList.remove('selected')); d.classList.add('selected'); click(n,d); };
-        c.appendChild(d);
-    });
-}
-
-function setCategory(v) { tempItem.category=v; goNext(v==='湯'?'step-soup-select':'step-food-select'); }
-function toggleMulti(v,el,arr,max) { arr.includes(v) ? (arr.splice(arr.indexOf(v),1), el.classList.remove('selected')) : (arr.length<max&&(arr.push(v),el.classList.add('selected'))); }
-function goNext(id) { document.querySelectorAll('.step').forEach(s=>s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
-function checkSoupNext() { tempItem.names.length===0 ? alert('請選湯品') : goNext('step-size'); }
-function handleSizeBack() { goNext(tempItem.category==='湯'?'step-soup-select':'step-food-select'); }
-
-function addToCart() {
-    if(tempItem.category==='面' && tempItem.sauces.length===0) return alert('請選醬料/湯');
-    let price = tempItem.names.reduce((t,n)=>t+(config[n]?.p||0),0) + (config[tempItem.size]?.p||0);
-    tempItem.price = price;
-    cart.push({...tempItem});
-    updateCartDisplay();
-    goNext('step-finish');
-}
-
-function updateCartDisplay() {
-    let total=0;
-    document.getElementById('current-cart').innerHTML = cart.map((it,i)=>{
-        total+=it.price;
-        return `<div class="cart-item"><div>#${i+1} ${it.names.join('+')} [${it.size}]<br>${it.noodle||''} ${it.sauces.join(',')}</div><div>$${it.price}</div></div>`;
-    }).join('');
-    document.getElementById('total-sum').innerText = total;
-}
-
-function resetForNewItem() {
-    tempItem = { category:'', names:[], size:'', noodle:'', sauces:[], price:0 };
-    document.querySelectorAll('.opt').forEach(o=>o.classList.remove('selected'));
-    goNext('step-start');
-}
-
-// ======================
-// 🔥 商米V2 专用打印接口（最终修复版）
-// ======================
-function doSunmiPrint() {
-    if(cart.length === 0) {
-        alert("購物車是空的！");
-        return;
+    let order = { items: [], total: 0 };
+    function go(n) { 
+        document.getElementById('step1').className = n==1?'':'hide';
+        document.getElementById('step2').className = n==2?'':'hide';
+        document.getElementById('finish').className = n==3?'':'hide';
     }
-
-    let total = document.getElementById("total-sum").innerText;
-    let content = "";
-    content += "================================\n";
-    content += "          MILLION 麵店          \n";
-    content += "================================\n";
-
-    cart.forEach((it, i) => {
-        content += `#${i+1} ${it.names.join(" + ")} [${it.size}]\n`;
-        if(it.noodle) content += `  麵型: ${it.noodle}\n`;
-        if(it.sauces.length > 0) content += `  配料: ${it.sauces.join(", ")}\n`;
-        content += `  單價: $${it.price}\n`;
-        content += "--------------------------------\n";
-    });
-
-    content += "\n";
-    content += `合計: $${total}\n`;
-    content += "\n\n\n\n"; // 走纸，让小票完整出来
-
-    // 商米V2 打印核心代码
-    try {
-        // 1. 初始化打印机
-        if (window.SunmiPrinter) {
-            // 商米标准SDK
-            window.SunmiPrinter.initPrinter();
-            window.SunmiPrinter.printText(content);
-            window.SunmiPrinter.lineFeed(4); // 走纸
-            alert("✅ 打印指令已发送！");
-        } else if (window.sunmi && window.sunmi.print) {
-            // 商米旧版接口
-            window.sunmi.print.printText(content);
-            alert("✅ 打印指令已发送！");
-        } else {
-            // 如果都没有，直接用原生打印，让用户手动确认
-            let printWindow = window.open('', '_blank');
-            printWindow.document.write(`<pre style="font-size:12px;white-space:pre-wrap;">${content}</pre>`);
-            printWindow.document.close();
-            printWindow.print();
-            alert("⚠️ 请点击打印窗口的打印按钮！");
-        }
-    } catch (e) {
-        alert("❌ 打印失败：" + e.message + "\n请在商米内置浏览器中打开！");
-        console.error(e);
+    function add(name, p) {
+        order.items.push(name);
+        order.total += p;
+        event.target.classList.add('selected');
     }
-}
-
-function handlePrintAndFinish() {
-    doSunmiPrint();
-    setTimeout(() => {
-        cart = [];
-        resetForNewItem();
-        updateCartDisplay();
-    }, 1000);
-}
-
-init();
+    function finish(sz, p) {
+        order.total += p;
+        document.getElementById('content').innerHTML = `<p>${order.items.join(' + ')} (${sz})</p>`;
+        document.getElementById('all').innerText = order.total;
+        go(3);
+        // 自動列印：延遲一秒讓畫面渲染完成
+        setTimeout(() => { window.print(); }, 1000);
+    }
 </script>
 </body>
 </html>
