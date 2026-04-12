@@ -156,42 +156,66 @@ function resetForNewItem() {
 }
 
 // ======================
-// 🔥 商米 真正可打印核心程式
+// 🔥 商米V2 专用打印接口（最终修复版）
 // ======================
 function doSunmiPrint() {
-    if(cart.length===0) { alert("購物車空的"); return; }
+    if(cart.length === 0) {
+        alert("購物車是空的！");
+        return;
+    }
 
-    let total = document.getElementById('total-sum').innerText;
+    let total = document.getElementById("total-sum").innerText;
     let content = "";
     content += "================================\n";
     content += "          MILLION 麵店          \n";
     content += "================================\n";
 
-    cart.forEach((it,i)=>{
-        content += `#${i+1} ${it.names.join('+')} [${it.size}]\n`;
-        if(it.noodle) content += `  ${it.noodle}\n`;
-        if(it.sauces.length>0) content += `  ${it.sauces.join(',')}\n`;
-        content += `  金額：$${it.price}\n`;
+    cart.forEach((it, i) => {
+        content += `#${i+1} ${it.names.join(" + ")} [${it.size}]\n`;
+        if(it.noodle) content += `  麵型: ${it.noodle}\n`;
+        if(it.sauces.length > 0) content += `  配料: ${it.sauces.join(", ")}\n`;
+        content += `  單價: $${it.price}\n`;
         content += "--------------------------------\n";
     });
 
     content += "\n";
-    content += "合計：$"+total+"\n";
-    content += "\n\n\n";
+    content += `合計: $${total}\n`;
+    content += "\n\n\n\n"; // 走纸，让小票完整出来
 
-    // 商米內建打印命令（100% 有效）
+    // 商米V2 打印核心代码
     try {
-        window.sunmi.print.printText(content);
-        alert("✅ 打印成功！");
-    } catch(e) {
-        console.log("打印指令：", content);
-        alert("✅ 已發送打印指令\n\n"+content);
+        // 1. 初始化打印机
+        if (window.SunmiPrinter) {
+            // 商米标准SDK
+            window.SunmiPrinter.initPrinter();
+            window.SunmiPrinter.printText(content);
+            window.SunmiPrinter.lineFeed(4); // 走纸
+            alert("✅ 打印指令已发送！");
+        } else if (window.sunmi && window.sunmi.print) {
+            // 商米旧版接口
+            window.sunmi.print.printText(content);
+            alert("✅ 打印指令已发送！");
+        } else {
+            // 如果都没有，直接用原生打印，让用户手动确认
+            let printWindow = window.open('', '_blank');
+            printWindow.document.write(`<pre style="font-size:12px;white-space:pre-wrap;">${content}</pre>`);
+            printWindow.document.close();
+            printWindow.print();
+            alert("⚠️ 请点击打印窗口的打印按钮！");
+        }
+    } catch (e) {
+        alert("❌ 打印失败：" + e.message + "\n请在商米内置浏览器中打开！");
+        console.error(e);
     }
 }
 
 function handlePrintAndFinish() {
     doSunmiPrint();
-    setTimeout(()=>{ cart=[]; resetForNewItem(); updateCartDisplay(); }, 500);
+    setTimeout(() => {
+        cart = [];
+        resetForNewItem();
+        updateCartDisplay();
+    }, 1000);
 }
 
 init();
