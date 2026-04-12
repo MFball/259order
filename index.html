@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Million 麵店點餐系統</title>
+    <title>Million Fishball Noodle</title>
     <style>
         :root { --primary: #1a73e8; --secondary: #f0f2f5; --success: #34a853; --price-tag: #d93025; }
-        body { font-family: "Microsoft JhengHei", sans-serif; background: var(--secondary); margin: 0; padding: 10px; text-align: center; }
+        body { font-family: "Microsoft JhengHei", sans-serif; background: var(--secondary); margin: 0; padding: 10px; text-align: center; -webkit-font-smoothing: antialiased; }
         .container { max-width: 500px; margin: auto; background: white; padding: 15px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); padding-bottom: 90px; min-height: 85vh; position: relative; }
         .step { display: none; animation: fadeIn 0.3s; position: relative; }
         .step.active { display: block; }
@@ -15,16 +15,13 @@
         h2 { color: #333; font-size: 1.1rem; margin: 10px 0 20px 0; border-left: 5px solid var(--primary); padding-left: 10px; text-align: left; padding-right: 40px; }
         .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         .opt { background: #fff; border: 2px solid #eee; border-radius: 12px; cursor: pointer; overflow: hidden; position: relative; display: flex; flex-direction: column; }
-        
         .img-box { width: 100%; height: 100px; display: flex; background: #fafafa; overflow: hidden; }
         .img-box img { width: 100%; height: 100%; object-fit: cover; flex: 1; }
         .img-box.double img { width: 50%; border-right: 1px solid white; }
         .img-box.double img:last-child { border-right: none; }
-
         .price-label { position: absolute; bottom: 35px; right: 5px; background: var(--price-tag); color: white; padding: 2px 8px; border-radius: 5px; font-size: 12px; font-weight: bold; }
         .opt span { padding: 8px 5px; font-weight: bold; font-size: 0.9rem; }
         .opt.selected { border-color: var(--primary); background: #e8f0fe; }
-        .opt.selected::after { content: '✅'; position: absolute; top: 5px; right: 5px; background: white; border-radius: 50%; padding: 2px; font-size: 12px; }
         .cart-box { margin-top: 20px; padding: 10px; border: 1px dashed var(--primary); border-radius: 10px; text-align: left; background: #fffbe6; }
         .cart-item { border-bottom: 1px solid #ddd; padding: 10px 0; display: flex; justify-content: space-between; align-items: center; }
         .total-price-bar { font-size: 1.6rem; color: var(--price-tag); font-weight: bold; margin: 20px 0; }
@@ -33,47 +30,32 @@
         .btn-blue { background: var(--primary); color: white; }
         .btn-green { background: var(--success); color: white; }
 
-        /* --- 重要：針對商米 58mm 打印機優化 --- */
+        /* --- 核心修正：強制瀏覽器識別 58mm 捲筒紙 --- */
         @media print {
             @page {
-                size: 58mm auto; /* 指定紙張寬度為 58 毫米 */
-                margin: 0;       /* 消除邊距以免超出紙張 */
+                size: 58mm auto; /* 核心：定義紙張為寬 58mm，長度自動 */
+                margin: 0;
             }
-            body { 
-                background: white !important; 
-                width: 58mm !important; /* 限制內容寬度 */
-                margin: 0 auto !important; 
-                padding: 2mm !important; 
-            }
-            .container { 
-                box-shadow: none !important; 
-                width: 100% !important; 
-                padding-bottom: 0 !important; 
-                margin: 0 !important; 
-                border: none !important; 
-            }
-            .nav-btns, .back-btn-top, h2:not(.cart-title), .img-box { display: none !important; } 
-            .step { display: none !important; }
-            .step#step-finish { display: block !important; }
-            .cart-box { 
-                border: none !important; 
-                background: white !important; 
-                font-size: 10pt !important; 
+            html, body {
+                width: 58mm !important;
+                background: white !important;
+                margin: 0 !important;
                 padding: 0 !important;
             }
-            .cart-item { 
-                border-bottom: 1px dashed black !important; 
-                color: black !important; 
-                margin-bottom: 5px;
+            .container {
+                width: 58mm !important;
+                padding: 2mm !important;
+                box-shadow: none !important;
+                border: none !important;
+                margin: 0 !important;
             }
-            .total-price-bar { 
-                color: black !important; 
-                font-size: 12pt !important; 
-                text-align: right; 
-                margin-top: 10px;
-            }
-            /* 強制文字黑白渲染，防止商米轉成灰度圖片 */
-            * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; }
+            .nav-btns, .back-btn-top, h2:not(.cart-title), .img-box, .price-label { display: none !important; }
+            .step { display: none !important; }
+            .step#step-finish { display: block !important; width: 58mm !important; }
+            .cart-box { border: none !important; background: white !important; padding: 0 !important; font-size: 9pt !important; width: 100% !important; }
+            .cart-item { border-bottom: 1px dashed #000 !important; padding: 5px 0 !important; }
+            .total-price-bar { color: black !important; font-size: 11pt !important; text-align: right; margin: 5px 0 !important; }
+            * { -webkit-print-color-adjust: exact !important; color: black !important; }
         }
     </style>
 </head>
@@ -89,9 +71,11 @@
             </div>
             <div class="opt" onclick="setCategory('面')">
                 <div class="img-box"><img src="https://lh3.googleusercontent.com/pw/AP1GczM1EgErnLz57PZ0ckyDapaXUx27rggwr5VvU49Yo1vpygNeiLiTCVK6nGMT7UewX9jWyWN7Q04y5g8QeGtKBFBtYod8YZd1L42sFsRuRCpY2EvidrI=w2400?source=screenshot.guru"></div>
+                <span>麵食類</span>
             </div>
         </div>
     </div>
+
     <div class="step" id="step-soup-select">
         <button class="back-btn-top" onclick="goNext('step-start')">←</button>
         <h2>2. 選擇湯品 (最多2個)</h2>
@@ -115,7 +99,7 @@
     </div>
     <div class="step" id="step-sauce-select">
         <button class="back-btn-top" onclick="goNext('step-noodle-type')">←</button>
-        <h2>5. 選擇醬料/湯 (1-3個)</h2>
+        <h2>5. 選擇醬料/湯</h2>
         <div class="grid" id="grid-sauce"></div>
         <div class="nav-btns"><button class="btn-blue" onclick="addToCart()">✅ 加入購物車</button></div>
     </div>
@@ -126,13 +110,12 @@
         <div class="total-price-bar">Total: $<span id="total-sum">0</span></div>
         <div class="nav-btns">
             <button class="btn-blue" onclick="resetForNewItem()">➕ 繼續點餐</button>
-            <button class="btn-green" onclick="handlePrintAndFinish()">🖨️ 列印收據</button>
+            <button class="btn-green" id="print-btn" onclick="handlePrintAndFinish()">🖨️ 列印收據</button>
         </div>
     </div>
 </div>
 
 <script>
-    // ... config 數據與 init 邏輯保持不變 ...
     const config = {
         '魚圓湯': { p: 5, img: 'https://lh3.googleusercontent.com/pw/AP1GczOoXizYOs7TlJVh_ikXpPT_8uSFOyH2mnDMFvu2CIFXpJVYqNssfvAbgkwksOqIi89J0NAktQdtJStc5KB6YPkxqk0ccWLkjKAGWKILKERYMt_PYsI=w2400?source=screenshot.guru' }, 
         '肉圓湯': { p: 5, img: 'https://lh3.googleusercontent.com/pw/AP1GczO53IM8P6okuoqH4lpXGLStyLy4PSLp2LEAXBolANcUA0dm0WBHCGxJ965cGrMP9F72cF24Uln8JbdwG9pt910rs1pG-dnU-CrwKWKcOhZoPnNbR6Q=w2400?source=screenshot.guru' }, 
@@ -248,15 +231,17 @@
         goNext('step-start');
     }
 
-    // 針對商米機器的列印處理函數
     function handlePrintAndFinish() {
-        window.print(); // 這會觸發商米系統的列印代理
-        
+        // 先嘗試列印
+        window.print();
+
+        // 商米設備列印後自動清空的邏輯
         setTimeout(() => {
+            // 如果列印對話框關閉（或是過了一秒），就重置整張單
             cart = [];
             resetForNewItem();
             updateCartDisplay();
-        }, 1000); // 延長到1秒，讓商米系統有時間反應
+        }, 1500);
     }
 
     init();
