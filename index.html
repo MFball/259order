@@ -18,31 +18,32 @@
         .opt span { padding: 8px 5px; font-weight: bold; font-size: 0.9rem; }
         .opt.selected { border-color: var(--primary); background: #e8f0fe; }
         
-        /* 購物車顯示 */
+        /* 購物車與價格顯示 */
         .cart-box { margin-top: 20px; padding: 10px; border: 1px dashed var(--primary); border-radius: 10px; text-align: left; background: #fffbe6; }
-        .cart-item { border-bottom: 1px solid #ddd; padding: 10px 0; display: flex; justify-content: space-between; }
-        .total-price-bar { font-size: 1.6rem; color: var(--price-tag); font-weight: bold; margin: 20px 0; }
+        .cart-item { border-bottom: 1px solid #ddd; padding: 10px 0; display: flex; justify-content: space-between; align-items: center; }
+        .item-price { font-weight: bold; color: var(--price-tag); margin-left: 10px; }
+        .total-price-bar { font-size: 1.8rem; color: var(--price-tag); font-weight: bold; margin: 20px 0; }
         
-        /* 按鈕樣式 */
+        /* 功能按鈕 */
         .nav-btns { position: fixed; bottom: 0; left: 0; right: 0; background: white; padding: 15px; display: flex; flex-wrap: wrap; gap: 10px; max-width: 500px; margin: auto; box-shadow: 0 -5px 10px rgba(0,0,0,0.05); z-index: 1000; }
         button { flex: 1; min-width: 120px; padding: 15px; border-radius: 10px; border: none; font-size: 1rem; cursor: pointer; font-weight: bold; }
         .btn-blue { background: var(--primary); color: white; }
         .btn-green { background: var(--success); color: white; }
-        .btn-orange { background: #ff9800; color: white; } /* 再次列印按鈕顏色 */
+        .btn-orange { background: #ff9800; color: white; }
 
-        /* --- 針對商米 58mm 的最終列印優化 --- */
+        /* --- 針對商米 58mm 打印優化 --- */
         @media print {
             @page { size: 58mm auto; margin: 0; }
             body { width: 58mm !important; margin: 0 !important; padding: 0 !important; background: white !important; }
-            .container { width: 54mm !important; box-shadow: none !important; border: none !important; padding: 0 !important; margin: 0 !important; }
-            /* 列印時隱藏所有按鈕和非必要元素 */
+            .container { width: 58mm !important; box-shadow: none !important; border: none !important; padding: 0 !important; margin: 0 !important; }
             .nav-btns, .img-box, h2:not(.cart-title), .back-btn-top { display: none !important; }
             .step { display: none !important; }
-            .step#step-finish { display: block !important; width: 54mm !important; }
+            .step#step-finish { display: block !important; width: 58mm !important; }
             .cart-box { border: none !important; font-size: 10pt !important; padding: 0 !important; width: 100% !important; background: white !important; }
             .cart-item { border-bottom: 1px dashed black !important; padding: 5px 0 !important; color: black !important; }
-            .total-price-bar { color: black !important; font-size: 12pt !important; text-align: right; }
-            .cart-title { border: none !important; text-align: center !important; font-size: 14pt !important; margin-bottom: 10px !important; display: block !important; }
+            .item-price { color: black !important; }
+            .total-price-bar { color: black !important; font-size: 13pt !important; text-align: right; }
+            .cart-title { border: none !important; text-align: center !important; font-size: 14pt !important; margin: 5px 0 !important; display: block !important; }
         }
     </style>
 </head>
@@ -75,14 +76,13 @@
         <div class="total-price-bar">Total: $<span id="total-sum">0</span></div>
         <div class="nav-btns">
             <button class="btn-orange" onclick="rePrint()">🖨️ 再次列印</button>
-            <button class="btn-green" onclick="handleFinishAndClear()">✅ 完成並清空</button>
-            <button class="btn-blue" onclick="resetForNewItem()">➕ 繼續加購</button>
+            <button class="btn-green" onclick="handleFinishAndClear()">✅ 完成單據</button>
+            <button class="btn-blue" onclick="resetForNewItem()">➕ 繼續加點</button>
         </div>
     </div>
 </div>
 
 <script>
-    // 配置數據保持不變
     const config = {
         '魚圓湯': { p: 5, img: 'https://lh3.googleusercontent.com/pw/AP1GczOoXizYOs7TlJVh_ikXpPT_8uSFOyH2mnDMFvu2CIFXpJVYqNssfvAbgkwksOqIi89J0NAktQdtJStc5KB6YPkxqk0ccWLkjKAGWKILKERYMt_PYsI=w2400?source=screenshot.guru' }, '肉圓湯': { p: 5, img: 'https://lh3.googleusercontent.com/pw/AP1GczO53IM8P6okuoqH4lpXGLStyLy4PSLp2LEAXBolANcUA0dm0WBHCGxJ965cGrMP9F72cF24Uln8JbdwG9pt910rs1pG-dnU-CrwKWKcOhZoPnNbR6Q=w2400?source=screenshot.guru' }, 
         '魚餃湯': { p: 5, img: 'https://lh3.googleusercontent.com/pw/AP1GczN3UWnlef_F80kDzpyJtDbUke-trWR_2HA4zVAnHG8PlM1N9FoBkIAThTpdOffxXiIKGYn9gNQV9Defs8T8CC7ChbKQGKCLctVtW-G84qTu6qGcuvM=w2400?source=screenshot.guru' }, '三寶湯': { p: 6, img: 'https://lh3.googleusercontent.com/pw/AP1GczOGkSr6douVYw5ED49ONXDbTqp9tX92Syg3QnRHG43a8zZebTgtjWEUXgLieeqYOw-7CQdLF9Tm_1aVhak1HCxrCdPKf6lwtrrL9GopjkdCwX9FUtM=w2400?source=screenshot.guru' },
@@ -143,20 +143,36 @@
     function checkSoupNext() { if(tempItem.names.length === 0) return alert("請至少選一個湯品"); goNext('step-size'); }
     
     function addToCart() {
-        let price = 0; tempItem.names.forEach(n => price += (config[n]?.p || 0)); price += (config[tempItem.size]?.p || 0);
-        tempItem.price = price; cart.push(JSON.parse(JSON.stringify(tempItem)));
+        let price = 0; 
+        tempItem.names.forEach(n => price += (config[n]?.p || 0)); 
+        price += (config[tempItem.size]?.p || 0);
+        tempItem.price = price; 
+        cart.push(JSON.parse(JSON.stringify(tempItem)));
         updateCartDisplay();
         goNext('step-finish');
-        // 自動嘗試調用列印
-        setTimeout(() => { window.print(); }, 500);
+        
+        // 修正：自動列印延遲觸發，增加穩定性
+        setTimeout(() => { 
+            console.log("觸發自動列印");
+            window.print(); 
+        }, 1000);
     }
 
     function updateCartDisplay() {
         let total = 0;
-        document.getElementById('current-cart').innerHTML = cart.map((item, i) => {
+        const cartHtml = cart.map((item, i) => {
             total += item.price;
-            return `<div class="cart-item"><div><b>#${i+1} ${item.names.join('+')}</b><br><small>${item.size}${item.noodle ? ' / '+item.noodle : ''}<br>${item.sauces.join(',')}</small></div><div>$${item.price}</div></div>`;
+            // 修正：明確加入 item-price 顯示銀碼
+            return `
+                <div class="cart-item">
+                    <div>
+                        <b>#${i+1} ${item.names.join('+')}</b><br>
+                        <small>${item.size}${item.noodle ? ' / '+item.noodle : ''}<br>${item.sauces.join(',')}</small>
+                    </div>
+                    <div class="item-price">$${item.price}</div>
+                </div>`;
         }).join('');
+        document.getElementById('current-cart').innerHTML = cartHtml;
         document.getElementById('total-sum').innerText = total;
     }
 
@@ -166,12 +182,18 @@
         goNext('step-start');
     }
 
-    function rePrint() { window.print(); }
+    // 修正：確保 rePrint 函數正確調用系統列印
+    function rePrint() { 
+        console.log("手動觸發列印");
+        window.print(); 
+    }
 
     function handleFinishAndClear() {
-        cart = [];
-        updateCartDisplay();
-        resetForNewItem();
+        if(confirm("確定完成並清空目前單據嗎？")) {
+            cart = [];
+            updateCartDisplay();
+            resetForNewItem();
+        }
     }
 
     init();
