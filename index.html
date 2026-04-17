@@ -3,34 +3,34 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Million 麵店 - 最終修復版</title>
+    <title>Million 麵店 - 極限修復版</title>
     <style>
         :root { --primary: #1a73e8; --secondary: #f0f2f5; --success: #34a853; --price-tag: #d93025; }
         body { font-family: sans-serif; background: var(--secondary); margin: 0; padding: 10px; text-align: center; }
         .container { max-width: 500px; margin: auto; background: white; padding: 15px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); padding-bottom: 90px; }
         .step { display: none; }
         .step.active { display: block; }
-        h2 { border-left: 5px solid var(--primary); padding-left: 10px; text-align: left; font-size: 1.1rem; }
+        h2 { border-left: 5px solid var(--primary); padding-left: 10px; text-align: left; font-size: 1.1rem; margin: 10px 0; }
         .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         .opt { background: #fff; border: 2px solid #eee; border-radius: 12px; cursor: pointer; display: flex; flex-direction: column; overflow: hidden; }
         .img-box { width: 100%; height: 90px; background: #fafafa; }
         .img-box img { width: 100%; height: 100%; object-fit: cover; }
         .opt span { padding: 8px; font-weight: bold; font-size: 0.85rem; }
         .opt.selected { border-color: var(--primary); background: #e8f0fe; }
-        .cart-box { margin-top: 15px; padding: 15px; border: 2px dashed var(--primary); background: #fffbe6; text-align: left; border-radius: 10px; }
+        .cart-box { margin-top: 15px; padding: 15px; border: 2px dashed var(--primary); background: #fffbe6; text-align: left; border-radius: 10px; font-size: 0.9rem; }
         .total-price-bar { font-size: 1.6rem; color: var(--price-tag); font-weight: bold; margin: 15px 0; }
         .nav-btns { position: fixed; bottom: 0; left: 0; right: 0; background: white; padding: 15px; display: flex; gap: 10px; max-width: 500px; margin: auto; box-shadow: 0 -5px 10px rgba(0,0,0,0.05); }
         button { flex: 1; padding: 15px; border-radius: 10px; border: none; font-size: 1rem; cursor: pointer; font-weight: bold; }
         .btn-blue { background: var(--primary); color: white; }
         .btn-green { background: var(--success); color: white; }
-        #status { font-size: 12px; color: #d93025; font-weight: bold; padding: 8px; background: #fff; border: 1px solid #ddd; margin-bottom: 10px; border-radius: 5px; }
+        #status { font-size: 12px; color: #1a73e8; font-weight: bold; padding: 10px; border: 1px solid #1a73e8; border-radius: 8px; margin-bottom: 10px; background: #f0f7ff; }
         canvas { display: none; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <div id="status">● 準備就緒 (建議先重開 Printer 藍牙)</div>
+    <div id="status">● 準備連線 (請確保 Printer 已開啟)</div>
     
     <div class="step active" id="step-start">
         <h2>1. 請選擇類別</h2>
@@ -52,7 +52,7 @@
         <div class="total-price-bar">總計: $<span id="total-sum">0</span></div>
         <div class="nav-btns">
             <button class="btn-blue" onclick="resetForNewItem()">➕ 再點一份</button>
-            <button class="btn-green" id="printBtn" onclick="handleUltraStablePrint()">🖨️ 穩定列印</button>
+            <button class="btn-green" id="printBtn" onclick="handleMegaStablePrint()">🖨️ 列印收據</button>
         </div>
     </div>
 </div>
@@ -99,50 +99,65 @@
     function checkSoupNext() { if(tempItem.names.length>0) goNext('step-size'); }
     function handleSizeBack() { goNext(tempItem.category==='湯'?'step-soup-select':'step-food-select'); }
     function addToCart() { let p = 0; tempItem.names.forEach(n => p += (config[n]?.p || 0)); p += (config[tempItem.size]?.p || 0); tempItem.price = p; cart.push(JSON.parse(JSON.stringify(tempItem))); updateCartDisplay(); goNext('step-finish'); }
-    function updateCartDisplay() { let t = 0; document.getElementById('current-cart').innerHTML = cart.map((item, i) => { t += item.price; return `<div><b>#${i+1} ${item.names.join('+')}</b> [${item.size}]<br><small>${item.noodle||''} ${item.sauces.join(',')}</small> - $${item.price}</div><hr>`; }).join(''); document.getElementById('total-sum').innerText = t; }
+    function updateCartDisplay() { let t = 0; document.getElementById('current-cart').innerHTML = cart.map((item, i) => { t += item.price; return `<div><b>#${i+1} ${item.names.join('+')}</b> [${item.size}]<br><small>${item.noodle||''} ${item.sauces.join(',')}</small> - $${item.price}</div><hr style="border:0.5px dashed #ccc">`; }).join(''); document.getElementById('total-sum').innerText = t; }
     function resetForNewItem() { tempItem={category:'', names:[], size:'', noodle:'', sauces:[], price:0}; document.querySelectorAll('.opt').forEach(o=>o.classList.remove('selected')); goNext('step-start'); }
 
-    // --- 核心修復：極致穩定列印 ---
-    async function handleUltraStablePrint() {
+    // --- 極限修復列印邏輯 ---
+    async function handleMegaStablePrint() {
         const status = document.getElementById('status');
         const btn = document.getElementById('printBtn');
         const canvas = document.getElementById('printCanvas');
         const ctx = canvas.getContext('2d');
         
+        let device = null;
+
         try {
             btn.disabled = true;
-            status.innerText = "⏳ 1/3 生成影像...";
+            status.innerText = "⏳ 正在生成收據影像...";
             canvas.height = 180 + (cart.length * 100);
             ctx.fillStyle = "white"; ctx.fillRect(0, 0, 384, canvas.height);
             ctx.fillStyle = "black"; ctx.textAlign = "center";
-            ctx.font = "bold 34px Arial"; ctx.fillText("Million Noodles", 192, 50);
-            ctx.textAlign = "left"; ctx.font = "26px Arial";
+            ctx.font = "bold 34px sans-serif"; ctx.fillText("Million Noodles", 192, 50);
+            ctx.textAlign = "left"; ctx.font = "26px sans-serif";
             let y = 100;
             cart.forEach((item, i) => {
                 ctx.fillText(`#${i+1} ${item.names.join('+')} (${item.size})`, 10, y); y += 40;
-                ctx.font = "22px Arial"; ctx.fillText(`  ${item.noodle||''} ${item.sauces.join(',')}`, 10, y); y += 50;
-                ctx.font = "26px Arial";
+                ctx.font = "22px sans-serif"; ctx.fillText(`  ${item.noodle||''} ${item.sauces.join(',')}`, 10, y); y += 50;
+                ctx.font = "26px sans-serif";
             });
             ctx.fillText("----------------------------", 10, y); y += 40;
-            ctx.font = "bold 32px Arial"; ctx.fillText("TOTAL: $" + document.getElementById('total-sum').innerText, 10, y);
+            ctx.font = "bold 32px sans-serif"; ctx.fillText("TOTAL: $" + document.getElementById('total-sum').innerText, 10, y);
 
-            status.innerText = "⏳ 2/3 搜尋 Printer001...";
-            // 強制清除之前所有連線狀態
-            const device = await navigator.bluetooth.requestDevice({
-                filters: [{ namePrefix: 'P' }, { namePrefix: 'M' }, { namePrefix: 'B' }], 
-                optionalServices: ['0000ffe0-0000-1000-8000-00805f9b34fb']
+            status.innerText = "🔍 搜尋 Printer001... (請在視窗選擇裝置)";
+            
+            // 使用最寬鬆的掃描過濾，防止認唔到機
+            device = await navigator.bluetooth.requestDevice({
+                acceptAllDevices: true,
+                optionalServices: ['0000ffe0-0000-1000-8000-00805f9b34fb'] 
             });
 
+            status.innerText = "🔗 連接中...";
             const server = await device.gatt.connect();
-            const service = await server.getPrimaryService('0000ffe0-0000-1000-8000-00805f9b34fb');
-            const characteristic = await service.getCharacteristic('0000ffe1-0000-1000-8000-00805f9b34fb');
+            
+            status.innerText = "📂 正在尋找列印通訊門口...";
+            // 自動掃描所有 Service，唔再死認 UUID
+            const services = await server.getPrimaryServices();
+            let characteristic = null;
+            
+            for (const service of services) {
+                const chars = await service.getCharacteristics();
+                characteristic = chars.find(c => c.properties.write || c.properties.writeWithoutResponse);
+                if (characteristic) break;
+            }
 
-            status.innerText = "⏳ 3/3 穩定傳送中 (請勿離開)...";
+            if (!characteristic) throw new Error("找不到可寫入的插口");
+
+            status.innerText = "🚀 穩定列印中 (請保持網頁開啟)...";
             const imgData = ctx.getImageData(0, 0, 384, canvas.height);
             const pixels = imgData.data;
             const widthBytes = 384 / 8;
 
-            await characteristic.writeValue(new Uint8Array([0x1B, 0x40])); // Reset
+            await characteristic.writeValue(new Uint8Array([0x1B, 0x40]));
 
             for (let y = 0; y < canvas.height; y++) {
                 let row = new Uint8Array(8 + widthBytes);
@@ -156,23 +171,22 @@
                     row[8 + x] = b;
                 }
                 
-                // 核心修復：強制每包 20 Bytes 緩慢傳送
-                for (let j = 0; j < row.length; j += 20) {
-                    await characteristic.writeValue(new Uint8Array(row.slice(j, j + 20)));
-                    // 每傳一小包停 15ms，確保 iPhone 唔會斷線
-                    await new Promise(r => setTimeout(r, 15));
+                // 採用最保險的 20 Byte 包，每包停 10ms
+                for (let i = 0; i < row.length; i += 20) {
+                    await characteristic.writeValue(new Uint8Array(row.slice(i, i + 20)));
+                    await new Promise(r => setTimeout(r, 10));
                 }
             }
 
-            await characteristic.writeValue(new Uint8Array([0x1B, 0x64, 0x05])); // 走紙
-            status.innerText = "✅ 列印完成！";
+            await characteristic.writeValue(new Uint8Array([0x1B, 0x64, 0x05]));
+            status.innerText = "✅ 列印成功！";
             cart = []; updateCartDisplay(); btn.disabled = false; resetForNewItem();
             await device.gatt.disconnect();
 
         } catch (e) {
-            alert("❌ 發生錯誤：" + e.message);
-            status.innerText = "❌ 列印失敗，請重試";
+            status.innerText = "❌ 失敗: " + e.message;
             btn.disabled = false;
+            if (device && device.gatt.connected) device.gatt.disconnect();
         }
     }
     init();
