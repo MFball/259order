@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Million 麵店 (內置中文轉碼版)</title>
+    <title>Million 麵店點餐系統</title>
+    <script src="https://unpkg.com/gbk.js/dist/gbk.js"></script>
     <style>
         :root { --primary: #1a73e8; --secondary: #f0f2f5; --success: #34a853; --price-tag: #d93025; }
         body { font-family: "Microsoft JhengHei", sans-serif; background: var(--secondary); margin: 0; padding: 10px; text-align: center; }
@@ -12,7 +13,7 @@
         .step.active { display: block; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         .back-btn-top { position: absolute; right: 0; top: 0; width: 35px; height: 35px; border-radius: 50%; background: #eee; color: #555; border: none; font-size: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 10; }
-        h2 { color: #333; font-size: 1.1rem; margin: 10px 0 20px 0; border-left: 5px solid var(--primary); padding-left: 10px; text-align: left; padding-right: 40px; }
+        h2 { color: #333; font-size: 1.1rem; margin: 10px 0 20px 0; border-left: 5px solid var(--primary); padding-left: 10px; text-align: left; }
         .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         .opt { background: #fff; border: 2px solid #eee; border-radius: 12px; cursor: pointer; overflow: hidden; position: relative; display: flex; flex-direction: column; }
         .img-box { width: 100%; height: 110px; background: #f9f9f9; overflow: hidden; }
@@ -37,11 +38,11 @@
         <h2>1. 請選擇類別</h2>
         <div class="grid">
             <div class="opt" onclick="setCategory('湯')">
-                <div class="img-box"><img src="https://picsum.photos/seed/soup/200/150"></div>
+                <div class="img-box"><img src="https://via.placeholder.com/200x150?text=SOUP"></div>
                 <span>湯品類</span>
             </div>
             <div class="opt" onclick="setCategory('面')">
-                <div class="img-box"><img src="https://picsum.photos/seed/noodle/200/150"></div>
+                <div class="img-box"><img src="https://via.placeholder.com/200x150?text=NOODLE"></div>
                 <span>麵食類</span>
             </div>
         </div>
@@ -64,11 +65,18 @@
     </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/text-encoding-utf-8@1.0.2/lib/encoding.min.js"></script>
 <script>
+    // 💡 師傅：在這裡換上你的圖片網址
     const config = {
-        '魚圓湯': { p: 5 }, '肉圓湯': { p: 5 }, '魚餃湯': { p: 5 }, '三寶湯': { p: 6 },
-        '魚圓面': { p: 4 }, '香菇肉碎面': { p: 5 }, '招牌面': { p: 6 }, '餐餐面': { p: 6 }, '肉圓面': { p: 4 },
+        '魚圓湯': { p: 5, img: 'https://via.placeholder.com/200x150?text=Fishball+Soup' }, 
+        '肉圓湯': { p: 5, img: '' }, 
+        '魚餃湯': { p: 5, img: '' }, 
+        '三寶湯': { p: 6, img: '' },
+        '魚圓面': { p: 4, img: '' }, 
+        '香菇肉碎面': { p: 5, img: '' },
+        '招牌面': { p: 6, img: '' }, 
+        '餐餐面': { p: 6, img: '' },
+        '肉圓面': { p: 4, img: '' }, 
         '小的': { p: 0 }, '大的': { p: 1 },
         'noodleType': { '面薄': '', '幼面': '', '粿條': '', '熟面': '', '米粉': '' },
         'sauce': { '辣椒': '', '茄汁': '', '黑醬油': '', '白醬青': '', '黑醋': '', '(湯)': '' }
@@ -93,7 +101,8 @@
         list.forEach(name => {
             const div = document.createElement('div');
             div.className = 'opt';
-            div.innerHTML = `<div class="img-box"><img src="https://picsum.photos/seed/${encodeURIComponent(name)}/200/150"></div><span>${name}</span>${(config[name] && config[name].p > 0) ? '<div class="price-label">+$'+config[name].p+'</div>' : ''}`;
+            const imgUrl = config[name]?.img || `https://via.placeholder.com/200x150?text=${encodeURIComponent(name)}`;
+            div.innerHTML = `<div class="img-box"><img src="${imgUrl}"></div><span>${name}</span>${(config[name] && config[name].p > 0) ? '<div class="price-label">+$'+config[name].p+'</div>' : ''}`;
             div.onclick = function() {
                 if(!isMulti) { cont.querySelectorAll('.opt').forEach(o => o.classList.remove('selected')); div.classList.add('selected'); }
                 clickFn(name, div);
@@ -136,7 +145,7 @@
         goNext('step-start');
     }
 
-    // --- 藍牙打印邏輯 (內置 Big5/GBK 轉碼處理) ---
+    // --- 🛠️ 核心打印邏輯修正 ---
     async function handlePrintAndFinish() {
         if (!printCharacteristic) {
             try {
@@ -151,39 +160,41 @@
                     let target = chars.find(c => c.properties.write || c.properties.writeWithoutResponse);
                     if (target) { printCharacteristic = target; break; }
                 }
-                if (!printCharacteristic) throw new Error("找不到打印特徵");
-                alert("連接成功！請再次點擊「藍牙出單」。");
+                if (!printCharacteristic) throw new Error("管道連接失敗");
+                alert("連接成功！請再按一次。");
                 return;
             } catch (err) { alert("連接失敗：" + err.message); return; }
         }
 
         try {
-            const initPrinter = "\x1B\x40"; 
-            const selectChinese = "\x1C\x26";
-            let content = "\x1B\x61\x01Million Noodles\n\n\x1B\x61\x00";
+            // 💡 關鍵指令：初始化 + 選擇字庫
+            const ESC = "\x1B";
+            const FS = "\x1C";
+            const init = ESC + "@";       // 重置
+            const setChinese = FS + "&";  // 進入漢字模式
+            const setCP950 = ESC + "t" + "\x00"; // 強制 Code Page 0 (通常包含中文字庫)
+            
+            let content = ESC + "a" + "\x01" + "Million Noodles\n\n" + ESC + "a" + "\x00";
+            
             cart.forEach((item, i) => {
-                content += `單號 #${i+1}\n${item.names.join('+')} (${item.size})\n`;
+                content += `ORDER #${i+1}\n${item.names.join('+')} (${item.size})\n`;
                 if(item.noodle) content += ` -> ${item.noodle}\n`;
                 if(item.sauces.length) content += ` -> ${item.sauces.join(',')}\n`;
                 content += "--------------------------------\n";
             });
-            content += `總計: $${document.getElementById('total-sum').innerText}\n\n\n\n\n`;
+            content += `TOTAL: $${document.getElementById('total-sum').innerText}\n\n\n\n\n`;
 
-            // 使用內置的 TextEncoder 轉成本地編碼 (GBK/CP936)
-            // 如果瀏覽器不支持，會回退到 UTF-8，但 Bluefy 應該支持
-            let data;
-            try {
-                const encoder = new TextEncoder('gb18030'); // 芯燁通用編碼
-                data = encoder.encode(initPrinter + selectChinese + content);
-            } catch(e) {
-                // 如果失敗，使用更通用的方式
-                data = new Uint8Array((initPrinter + selectChinese + content).split('').map(c => c.charCodeAt(0)));
-            }
+            // 使用 GBK 轉碼
+            const fullData = init + setChinese + setCP950 + content;
+            const gbkBytes = gbk.encode(fullData);
+            await printCharacteristic.writeValue(new Uint8Array(gbkBytes));
             
-            await printCharacteristic.writeValue(data);
-            alert("廚房單已印出！");
+            alert("列印成功！");
             cart = []; updateCartDisplay(); resetForNewItem();
-        } catch (err) { alert("出單失敗：" + err.message); printCharacteristic = null; }
+        } catch (err) {
+            alert("打印失敗：" + err.message);
+            printCharacteristic = null;
+        }
     }
     init();
 </script>
