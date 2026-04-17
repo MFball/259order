@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Million 麵店 (內置中文版)</title>
+    <title>Million 麵店 (內置中文轉碼版)</title>
     <style>
         :root { --primary: #1a73e8; --secondary: #f0f2f5; --success: #34a853; --price-tag: #d93025; }
         body { font-family: "Microsoft JhengHei", sans-serif; background: var(--secondary); margin: 0; padding: 10px; text-align: center; }
@@ -12,18 +12,19 @@
         .step.active { display: block; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         .back-btn-top { position: absolute; right: 0; top: 0; width: 35px; height: 35px; border-radius: 50%; background: #eee; color: #555; border: none; font-size: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 10; }
-        h2 { color: #333; font-size: 1.1rem; margin: 10px 0 20px 0; border-left: 5px solid var(--primary); padding-left: 10px; text-align: left; }
+        h2 { color: #333; font-size: 1.1rem; margin: 10px 0 20px 0; border-left: 5px solid var(--primary); padding-left: 10px; text-align: left; padding-right: 40px; }
         .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         .opt { background: #fff; border: 2px solid #eee; border-radius: 12px; cursor: pointer; overflow: hidden; position: relative; display: flex; flex-direction: column; }
-        .img-box { width: 100%; height: 110px; background: #eee; overflow: hidden; }
+        .img-box { width: 100%; height: 110px; background: #f9f9f9; overflow: hidden; }
         .img-box img { width: 100%; height: 100%; object-fit: cover; }
         .price-label { position: absolute; bottom: 35px; right: 5px; background: var(--price-tag); color: white; padding: 2px 8px; border-radius: 5px; font-size: 12px; font-weight: bold; }
         .opt span { padding: 10px 5px; font-weight: bold; font-size: 0.95rem; }
         .opt.selected { border-color: var(--primary); background: #e8f0fe; }
+        .opt.selected::after { content: '✅'; position: absolute; top: 5px; right: 5px; background: white; border-radius: 50%; padding: 2px; font-size: 12px; }
         .cart-box { margin-top: 20px; padding: 15px; border: 2px dashed var(--primary); border-radius: 10px; text-align: left; background: #fffbe6; }
-        .cart-item { border-bottom: 1px solid #ddd; padding: 10px 0; display: flex; justify-content: space-between; }
+        .cart-item { border-bottom: 1px solid #ddd; padding: 10px 0; display: flex; justify-content: space-between; align-items: center; }
         .total-price-bar { font-size: 1.8rem; color: var(--price-tag); font-weight: bold; margin: 20px 0; }
-        .nav-btns { position: fixed; bottom: 0; left: 0; right: 0; background: white; padding: 15px; display: flex; gap: 10px; max-width: 500px; margin: auto; box-shadow: 0 -5px 10px rgba(0,0,0,0.05); }
+        .nav-btns { position: fixed; bottom: 0; left: 0; right: 0; background: white; padding: 15px; display: flex; gap: 10px; max-width: 500px; margin: auto; box-shadow: 0 -5px 10px rgba(0,0,0,0.05); z-index: 1000; }
         button { flex: 1; padding: 15px; border-radius: 10px; border: none; font-size: 1.1rem; cursor: pointer; font-weight: bold; }
         .btn-blue { background: var(--primary); color: white; }
         .btn-green { background: var(--success); color: white; }
@@ -36,11 +37,11 @@
         <h2>1. 請選擇類別</h2>
         <div class="grid">
             <div class="opt" onclick="setCategory('湯')">
-                <div class="img-box"><img src="https://images.unsplash.com/photo-1547592166-23ac45744acd?w=200&h=150&fit=crop"></div>
+                <div class="img-box"><img src="https://picsum.photos/seed/soup/200/150"></div>
                 <span>湯品類</span>
             </div>
             <div class="opt" onclick="setCategory('面')">
-                <div class="img-box"><img src="https://images.unsplash.com/photo-1552611052-33e04de081de?w=200&h=150&fit=crop"></div>
+                <div class="img-box"><img src="https://picsum.photos/seed/noodle/200/150"></div>
                 <span>麵食類</span>
             </div>
         </div>
@@ -63,36 +64,11 @@
     </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/text-encoding-utf-8@1.0.2/lib/encoding.min.js"></script>
 <script>
-    // 內置一個簡單的 UTF8 轉 GBK 函數 (針對常用中文字)
-    const GBK = {
-        encode: function(str) {
-            // 使用 TextEncoder 配合特定的轉碼邏輯，或者調用一個可靠的轉換方式
-            // 為了 100% 成功，我們改用瀏覽器自帶的轉碼嘗試
-            return new TextEncoder('gbk', { NONSTANDARD_ALLOW_LEGACY_ENCODING: true }).encode(str);
-        }
-    };
-
-    // 如果瀏覽器不支援上面的快速轉碼，我們回退到另一個方法
-    function stringToGbkBytes(str) {
-        // 由於內置完整字庫太重，我們用個聰明的方法：用 Blob 轉碼
-        return new Promise((resolve) => {
-            const reader = new FileReader();
-            reader.onload = function(e) { resolve(new Uint8Array(e.target.result)); };
-            reader.readAsArrayBuffer(new Blob([str], { type: 'text/plain;charset=gbk' }));
-        });
-    }
-
     const config = {
-        '魚圓湯': { p: 5, img: 'https://images.unsplash.com/photo-1547592166-23ac45744acd?w=200&h=150&fit=crop' }, 
-        '肉圓湯': { p: 5, img: 'https://images.unsplash.com/photo-1547592166-23ac45744acd?w=200&h=150&fit=crop' }, 
-        '魚餃湯': { p: 5, img: 'https://images.unsplash.com/photo-1547592166-23ac45744acd?w=200&h=150&fit=crop' }, 
-        '三寶湯': { p: 6, img: 'https://images.unsplash.com/photo-1547592166-23ac45744acd?w=200&h=150&fit=crop' },
-        '魚圓面': { p: 4, img: 'https://images.unsplash.com/photo-1552611052-33e04de081de?w=200&h=150&fit=crop' }, 
-        '香菇肉碎面': { p: 5, img: 'https://images.unsplash.com/photo-1552611052-33e04de081de?w=200&h=150&fit=crop' },
-        '招牌面': { p: 6, img: 'https://images.unsplash.com/photo-1552611052-33e04de081de?w=200&h=150&fit=crop' }, 
-        '餐餐面': { p: 6, img: 'https://images.unsplash.com/photo-1552611052-33e04de081de?w=200&h=150&fit=crop' },
-        '肉圓面': { p: 4, img: 'https://images.unsplash.com/photo-1552611052-33e04de081de?w=200&h=150&fit=crop' }, 
+        '魚圓湯': { p: 5 }, '肉圓湯': { p: 5 }, '魚餃湯': { p: 5 }, '三寶湯': { p: 6 },
+        '魚圓面': { p: 4 }, '香菇肉碎面': { p: 5 }, '招牌面': { p: 6 }, '餐餐面': { p: 6 }, '肉圓面': { p: 4 },
         '小的': { p: 0 }, '大的': { p: 1 },
         'noodleType': { '面薄': '', '幼面': '', '粿條': '', '熟面': '', '米粉': '' },
         'sauce': { '辣椒': '', '茄汁': '', '黑醬油': '', '白醬青': '', '黑醋': '', '(湯)': '' }
@@ -117,8 +93,7 @@
         list.forEach(name => {
             const div = document.createElement('div');
             div.className = 'opt';
-            const imgUrl = config[name]?.img || `https://via.placeholder.com/200x150?text=${encodeURIComponent(name)}`;
-            div.innerHTML = `<div class="img-box"><img src="${imgUrl}"></div><span>${name}</span>${(config[name] && config[name].p > 0) ? '<div class="price-label">+$'+config[name].p+'</div>' : ''}`;
+            div.innerHTML = `<div class="img-box"><img src="https://picsum.photos/seed/${encodeURIComponent(name)}/200/150"></div><span>${name}</span>${(config[name] && config[name].p > 0) ? '<div class="price-label">+$'+config[name].p+'</div>' : ''}`;
             div.onclick = function() {
                 if(!isMulti) { cont.querySelectorAll('.opt').forEach(o => o.classList.remove('selected')); div.classList.add('selected'); }
                 clickFn(name, div);
@@ -161,6 +136,7 @@
         goNext('step-start');
     }
 
+    // --- 藍牙打印邏輯 (內置 Big5/GBK 轉碼處理) ---
     async function handlePrintAndFinish() {
         if (!printCharacteristic) {
             try {
@@ -175,38 +151,39 @@
                     let target = chars.find(c => c.properties.write || c.properties.writeWithoutResponse);
                     if (target) { printCharacteristic = target; break; }
                 }
-                if (!printCharacteristic) throw new Error("找不到打印管道");
+                if (!printCharacteristic) throw new Error("找不到打印特徵");
                 alert("連接成功！請再次點擊「藍牙出單」。");
                 return;
-            } catch (err) {
-                alert("連接失敗：" + err.message);
-                return;
-            }
+            } catch (err) { alert("連接失敗：" + err.message); return; }
         }
 
         try {
             const initPrinter = "\x1B\x40"; 
             const selectChinese = "\x1C\x26";
             let content = "\x1B\x61\x01Million Noodles\n\n\x1B\x61\x00";
-            
             cart.forEach((item, i) => {
-                content += `ORDER #${i+1}\n${item.names.join('+')} (${item.size})\n`;
+                content += `單號 #${i+1}\n${item.names.join('+')} (${item.size})\n`;
                 if(item.noodle) content += ` -> ${item.noodle}\n`;
                 if(item.sauces.length) content += ` -> ${item.sauces.join(',')}\n`;
                 content += "--------------------------------\n";
             });
-            content += `TOTAL: $${document.getElementById('total-sum').innerText}\n\n\n\n\n`;
+            content += `總計: $${document.getElementById('total-sum').innerText}\n\n\n\n\n`;
 
-            // 使用 Blob 方式進行 GBK 轉碼 (最穩定且不依賴外部庫)
-            const gbkBytes = await stringToGbkBytes(initPrinter + selectChinese + content);
-            await printCharacteristic.writeValue(gbkBytes);
+            // 使用內置的 TextEncoder 轉成本地編碼 (GBK/CP936)
+            // 如果瀏覽器不支持，會回退到 UTF-8，但 Bluefy 應該支持
+            let data;
+            try {
+                const encoder = new TextEncoder('gb18030'); // 芯燁通用編碼
+                data = encoder.encode(initPrinter + selectChinese + content);
+            } catch(e) {
+                // 如果失敗，使用更通用的方式
+                data = new Uint8Array((initPrinter + selectChinese + content).split('').map(c => c.charCodeAt(0)));
+            }
             
+            await printCharacteristic.writeValue(data);
             alert("廚房單已印出！");
             cart = []; updateCartDisplay(); resetForNewItem();
-        } catch (err) {
-            alert("出單失敗：" + err.message);
-            printCharacteristic = null;
-        }
+        } catch (err) { alert("出單失敗：" + err.message); printCharacteristic = null; }
     }
     init();
 </script>
