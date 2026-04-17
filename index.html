@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Million 麵店 - 極限修復版</title>
+    <title>Million 麵店 - 高速切紙版</title>
     <style>
         :root { --primary: #1a73e8; --secondary: #f0f2f5; --success: #34a853; --price-tag: #d93025; }
         body { font-family: sans-serif; background: var(--secondary); margin: 0; padding: 10px; text-align: center; }
@@ -30,7 +30,7 @@
 <body>
 
 <div class="container">
-    <div id="status">● 準備連線 (請確保 Printer 已開啟)</div>
+    <div id="status">● 連線穩定 (就緒)</div>
     
     <div class="step active" id="step-start">
         <h2>1. 請選擇類別</h2>
@@ -52,7 +52,7 @@
         <div class="total-price-bar">總計: $<span id="total-sum">0</span></div>
         <div class="nav-btns">
             <button class="btn-blue" onclick="resetForNewItem()">➕ 再點一份</button>
-            <button class="btn-green" id="printBtn" onclick="handleMegaStablePrint()">🖨️ 列印收據</button>
+            <button class="btn-green" id="printBtn" onclick="handleFastPrint()">🖨️ 列印並切紙</button>
         </div>
     </div>
 </div>
@@ -60,6 +60,7 @@
 <canvas id="printCanvas" width="384"></canvas>
 
 <script>
+    // 配置數據保持不變
     const config = {
         '魚圓湯': { p: 5, img: '0' }, '肉圓湯': { p: 5, img: '2' }, '魚餃湯': { p: 5, img: '3' }, '三寶湯': { p: 6, img: '4' },
         '魚圓面': { p: 4, img: '1' }, '香菇肉碎面': { p: 5, img: '5' }, '招牌面': { p: 6, img: '6' }, '餐餐面': { p: 6, img: '7' },
@@ -102,8 +103,8 @@
     function updateCartDisplay() { let t = 0; document.getElementById('current-cart').innerHTML = cart.map((item, i) => { t += item.price; return `<div><b>#${i+1} ${item.names.join('+')}</b> [${item.size}]<br><small>${item.noodle||''} ${item.sauces.join(',')}</small> - $${item.price}</div><hr style="border:0.5px dashed #ccc">`; }).join(''); document.getElementById('total-sum').innerText = t; }
     function resetForNewItem() { tempItem={category:'', names:[], size:'', noodle:'', sauces:[], price:0}; document.querySelectorAll('.opt').forEach(o=>o.classList.remove('selected')); goNext('step-start'); }
 
-    // --- 極限修復列印邏輯 ---
-    async function handleMegaStablePrint() {
+    // --- 高速列印 + 自動切紙邏輯 ---
+    async function handleFastPrint() {
         const status = document.getElementById('status');
         const btn = document.getElementById('printBtn');
         const canvas = document.getElementById('printCanvas');
@@ -113,8 +114,10 @@
 
         try {
             btn.disabled = true;
-            status.innerText = "⏳ 正在生成收據影像...";
-            canvas.height = 180 + (cart.length * 100);
+            status.innerText = "⏳ 正在生成影像...";
+            
+            // 繪圖部分
+            canvas.height = 250 + (cart.length * 100); // 增加底部留白空間
             ctx.fillStyle = "white"; ctx.fillRect(0, 0, 384, canvas.height);
             ctx.fillStyle = "black"; ctx.textAlign = "center";
             ctx.font = "bold 34px sans-serif"; ctx.fillText("Million Noodles", 192, 50);
@@ -128,37 +131,25 @@
             ctx.fillText("----------------------------", 10, y); y += 40;
             ctx.font = "bold 32px sans-serif"; ctx.fillText("TOTAL: $" + document.getElementById('total-sum').innerText, 10, y);
 
-            status.innerText = "🔍 搜尋 Printer001... (請在視窗選擇裝置)";
-            
-            // 使用最寬鬆的掃描過濾，防止認唔到機
+            status.innerText = "🔍 搜尋並連線...";
             device = await navigator.bluetooth.requestDevice({
                 acceptAllDevices: true,
                 optionalServices: ['0000ffe0-0000-1000-8000-00805f9b34fb'] 
             });
 
-            status.innerText = "🔗 連接中...";
             const server = await device.gatt.connect();
-            
-            status.innerText = "📂 正在尋找列印通訊門口...";
-            // 自動掃描所有 Service，唔再死認 UUID
-            const services = await server.getPrimaryServices();
-            let characteristic = null;
-            
-            for (const service of services) {
-                const chars = await service.getCharacteristics();
-                characteristic = chars.find(c => c.properties.write || c.properties.writeWithoutResponse);
-                if (characteristic) break;
-            }
+            const service = await server.getPrimaryService('0000ffe0-0000-1000-8000-00805f9b34fb');
+            const characteristic = await service.getCharacteristic('0000ffe1-0000-1000-8000-00805f9b34fb');
 
-            if (!characteristic) throw new Error("找不到可寫入的插口");
-
-            status.innerText = "🚀 穩定列印中 (請保持網頁開啟)...";
+            status.innerText = "🚀 高速列印中...";
             const imgData = ctx.getImageData(0, 0, 384, canvas.height);
             const pixels = imgData.data;
             const widthBytes = 384 / 8;
 
+            // 1. 初始化
             await characteristic.writeValue(new Uint8Array([0x1B, 0x40]));
 
+            // 2. 逐行生成數據並傳送
             for (let y = 0; y < canvas.height; y++) {
                 let row = new Uint8Array(8 + widthBytes);
                 row.set([0x1D, 0x76, 0x30, 0, widthBytes, 0, 1, 0]);
@@ -171,15 +162,23 @@
                     row[8 + x] = b;
                 }
                 
-                // 採用最保險的 20 Byte 包，每包停 10ms
-                for (let i = 0; i < row.length; i += 20) {
-                    await characteristic.writeValue(new Uint8Array(row.slice(i, i + 20)));
-                    await new Promise(r => setTimeout(r, 10));
+                // --- 加速關鍵：每一包傳送 100 字節，延遲減低 ---
+                for (let i = 0; i < row.length; i += 100) {
+                    await characteristic.writeValue(new Uint8Array(row.slice(i, i + 100)));
                 }
+                
+                // 每 10 行停一次，防止緩衝溢出，但時間縮短
+                if (y % 10 === 0) await new Promise(r => setTimeout(r, 10));
             }
 
+            // 3. 走紙 + 切紙指令 (GS V 66 0)
+            status.innerText = "✂️ 正在切紙...";
+            // 先走幾行空白，確保文字過咗刀位
             await characteristic.writeValue(new Uint8Array([0x1B, 0x64, 0x05]));
-            status.innerText = "✅ 列印成功！";
+            // 切紙指令
+            await characteristic.writeValue(new Uint8Array([0x1D, 0x56, 0x42, 0x00]));
+
+            status.innerText = "✅ 完成！";
             cart = []; updateCartDisplay(); btn.disabled = false; resetForNewItem();
             await device.gatt.disconnect();
 
