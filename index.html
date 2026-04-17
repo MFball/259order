@@ -181,8 +181,8 @@
                 await targetChar.writeValue(row);
                 
                 // --- 這裡已修改：每 25 行休息 40 毫秒 ---
-                if (y % 50 === 0) { 
-                    await new Promise(r => setTimeout(r, 30)); 
+                if (y % 100 === 0) { 
+                    await new Promise(r => setTimeout(r, 20)); 
                 }
             }
 
