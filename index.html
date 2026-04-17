@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Million 麵店 - 高清穩定版</title>
+    <title>Million 麵店 - 衝刺穩定版</title>
     <style>
         :root { --primary: #1a73e8; --secondary: #f0f2f5; --success: #34a853; --price-tag: #d93025; }
         body { font-family: sans-serif; background: var(--secondary); margin: 0; padding: 10px; text-align: center; }
@@ -60,13 +60,13 @@
         <div class="total-price-bar">總計: $<span id="total-sum">0</span></div>
         
         <div id="preview-area">
-            <p>【列印預覽】(中文必須清晰方能列印)</p>
+            <p>【列印預覽】</p>
             <img id="printPreviewImg" src="" alt="列印預覽">
         </div>
 
         <div class="nav-btns">
             <button class="btn-blue" onclick="resetForNewItem()">➕ 繼續點餐</button>
-            <button class="btn-green" id="printBtn" onclick="handleImagePrint()">🖨️ 穩定列印</button>
+            <button class="btn-green" id="printBtn" onclick="handleImagePrint()">🖨️ 衝刺列印</button>
         </div>
     </div>
 </div>
@@ -133,13 +133,10 @@
         const previewImg = document.getElementById('printPreviewImg');
         const previewArea = document.getElementById('preview-area');
 
-        canvas.height = 300 + (cart.length * 120);
+        canvas.height = 300 + (cart.length * 110);
         ctx.fillStyle = "white"; ctx.fillRect(0, 0, 384, canvas.height);
+        ctx.textBaseline = "top"; ctx.fillStyle = "black";
         
-        ctx.textBaseline = "top";
-        ctx.fillStyle = "black";
-        
-        // 標題：用回標準粗體，避免溶字
         ctx.textAlign = "center";
         ctx.font = "bold 34px sans-serif";
         ctx.fillText("Million Noodles", 192, 40);
@@ -147,14 +144,12 @@
         ctx.textAlign = "left";
         let y = 110;
         cart.forEach((item, i) => {
-            // 中文主菜：加闊字距
             ctx.font = "bold 28px sans-serif";
             ctx.fillText(`#${i+1} ${item.names.join('+')}`, 10, y);
             y += 40;
-            // 規格：縮小一格避免筆劃重疊
             ctx.font = "22px sans-serif";
             ctx.fillText(` [${item.size}] ${item.noodle||''} ${item.sauces.join(',')}`, 10, y);
-            y += 65;
+            y += 60;
         });
 
         ctx.font = "24px sans-serif";
@@ -182,19 +177,22 @@
             const services = await server.getPrimaryServices();
             
             let targetChar = null;
+            let canFast = false;
             for (const s of services) {
                 const chars = await s.getCharacteristics();
-                targetChar = chars.find(c => c.properties.write || c.properties.writeWithoutResponse);
+                targetChar = chars.find(c => c.properties.writeWithoutResponse);
+                if (targetChar) { canFast = true; break; }
+                targetChar = chars.find(c => c.properties.write);
                 if (targetChar) break;
             }
 
             if (!targetChar) throw new Error("找不到通道");
 
-            status.innerText = "📤 穩定傳輸中...";
+            status.innerText = "📤 衝刺列印中...";
             const imgData = ctx.getImageData(0, 0, 384, canvas.height);
             const pixels = imgData.data;
 
-            await targetChar.writeValue(new Uint8Array([0x1B, 0x40])); // 初始化
+            await targetChar.writeValue(new Uint8Array([0x1B, 0x40])); 
             const widthBytes = 384 / 8;
 
             for (let y = 0; y < canvas.height; y++) {
@@ -204,21 +202,23 @@
                     let b = 0;
                     for (let bit = 0; bit < 8; bit++) {
                         let idx = ((y * 384) + (x * 8 + bit)) * 4;
-                        // 提高黑白門檻至 120，令筆劃更幼細利落，唔會「溶埋一齊」
                         let gray = pixels[idx] * 0.3 + pixels[idx+1] * 0.59 + pixels[idx+2] * 0.11;
-                        if (gray < 120) b |= (1 << (7 - bit));
+                        if (gray < 140) b |= (1 << (7 - bit));
                     }
                     row[8 + x] = b;
                 }
                 
-                await targetChar.writeValue(row);
+                if (canFast) {
+                    await targetChar.writeValueWithoutResponse(row);
+                } else {
+                    await targetChar.writeValue(row);
+                }
                 
-                // --- 穩定性核心：降低頻率 ---
-                // 每 20 行休息 25ms，確保 Buffer 唔會爆
-                if (y % 20 === 0) { await new Promise(r => setTimeout(r, 25)); }
+                // --- 速度倍增優化 ---
+                // 每 30 行休息 10ms (由 20行/25ms 提升)
+                if (y % 30 === 0) { await new Promise(r => setTimeout(r, 10)); }
             }
 
-            // 走紙切紙
             await targetChar.writeValue(new Uint8Array([0x1B, 0x64, 0x08]));
             await targetChar.writeValue(new Uint8Array([0x1D, 0x56, 0x00]));
 
