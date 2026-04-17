@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Million 麵店點餐系統 (中文修正版)</title>
+    <title>Million 麵店點餐系統 (穩定出單版)</title>
     <script src="https://unpkg.com/gbk.js/dist/gbk.js"></script>
     <style>
         :root { --primary: #1a73e8; --secondary: #f0f2f5; --success: #34a853; --price-tag: #d93025; }
@@ -16,14 +16,14 @@
         h2 { color: #333; font-size: 1.1rem; margin: 10px 0 20px 0; border-left: 5px solid var(--primary); padding-left: 10px; text-align: left; padding-right: 40px; }
         .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         .opt { background: #fff; border: 2px solid #eee; border-radius: 12px; cursor: pointer; overflow: hidden; position: relative; display: flex; flex-direction: column; }
-        .img-box { width: 100%; height: 110px; display: flex; background: #fafafa; overflow: hidden; }
+        .img-box { width: 100%; height: 110px; background: #eee; overflow: hidden; }
         .img-box img { width: 100%; height: 100%; object-fit: cover; }
         .price-label { position: absolute; bottom: 35px; right: 5px; background: var(--price-tag); color: white; padding: 2px 8px; border-radius: 5px; font-size: 12px; font-weight: bold; }
         .opt span { padding: 10px 5px; font-weight: bold; font-size: 0.95rem; }
         .opt.selected { border-color: var(--primary); background: #e8f0fe; }
         .opt.selected::after { content: '✅'; position: absolute; top: 5px; right: 5px; background: white; border-radius: 50%; padding: 2px; font-size: 12px; }
         .cart-box { margin-top: 20px; padding: 15px; border: 2px dashed var(--primary); border-radius: 10px; text-align: left; background: #fffbe6; }
-        .cart-item { border-bottom: 1px solid #ddd; padding: 10px 0; display: flex; justify-content: space-between; align-items: center; font-size: 1.1rem; }
+        .cart-item { border-bottom: 1px solid #ddd; padding: 10px 0; display: flex; justify-content: space-between; align-items: center; }
         .total-price-bar { font-size: 1.8rem; color: var(--price-tag); font-weight: bold; margin: 20px 0; }
         .nav-btns { position: fixed; bottom: 0; left: 0; right: 0; background: white; padding: 15px; display: flex; gap: 10px; max-width: 500px; margin: auto; box-shadow: 0 -5px 10px rgba(0,0,0,0.05); z-index: 1000; }
         button { flex: 1; padding: 15px; border-radius: 10px; border: none; font-size: 1.1rem; cursor: pointer; font-weight: bold; }
@@ -38,47 +38,21 @@
         <h2>1. 請選擇類別</h2>
         <div class="grid">
             <div class="opt" onclick="setCategory('湯')">
-                <div class="img-box"><img src="https://placehold.jp/24/1a73e8/ffffff/200x150.png?text=熱湯類"></div>
+                <div class="img-box"><img src="https://images.unsplash.com/photo-1547592166-23ac45744acd?w=200&h=150&fit=crop"></div>
                 <span>湯品類</span>
             </div>
             <div class="opt" onclick="setCategory('面')">
-                <div class="img-box"><img src="https://placehold.jp/24/1a73e8/ffffff/200x150.png?text=麵食類"></div>
+                <div class="img-box"><img src="https://images.unsplash.com/photo-1552611052-33e04de081de?w=200&h=150&fit=crop"></div>
                 <span>麵食類</span>
             </div>
         </div>
     </div>
 
-    <div class="step" id="step-soup-select">
-        <button class="back-btn-top" onclick="goNext('step-start')">←</button>
-        <h2>2. 選擇湯品 (最多2個)</h2>
-        <div class="grid" id="grid-soupItems"></div>
-        <div class="nav-btns"><button class="btn-blue" onclick="checkSoupNext()">下一步</button></div>
-    </div>
-
-    <div class="step" id="step-food-select">
-        <button class="back-btn-top" onclick="goNext('step-start')">←</button>
-        <h2>2. 選擇主食</h2>
-        <div class="grid" id="grid-foodItems"></div>
-    </div>
-
-    <div class="step" id="step-size">
-        <button class="back-btn-top" onclick="handleSizeBack()">←</button>
-        <h2>3. 選擇大小</h2>
-        <div class="grid" id="grid-size"></div>
-    </div>
-
-    <div class="step" id="step-noodle-type">
-        <button class="back-btn-top" onclick="goNext('step-size')">←</button>
-        <h2>4. 選擇麵類</h2>
-        <div class="grid" id="grid-noodleType"></div>
-    </div>
-
-    <div class="step" id="step-sauce-select">
-        <button class="back-btn-top" onclick="goNext('step-noodle-type')">←</button>
-        <h2>5. 選擇醬料 (1-3個)</h2>
-        <div class="grid" id="grid-sauce"></div>
-        <div class="nav-btns"><button class="btn-blue" onclick="addToCart()">✅ 加入購物車</button></div>
-    </div>
+    <div class="step" id="step-soup-select"><button class="back-btn-top" onclick="goNext('step-start')">←</button><h2>2. 選擇湯品</h2><div class="grid" id="grid-soupItems"></div><div class="nav-btns"><button class="btn-blue" onclick="checkSoupNext()">下一步</button></div></div>
+    <div class="step" id="step-food-select"><button class="back-btn-top" onclick="goNext('step-start')">←</button><h2>2. 選擇主食</h2><div class="grid" id="grid-foodItems"></div></div>
+    <div class="step" id="step-size"><button class="back-btn-top" onclick="handleSizeBack()">←</button><h2>3. 選擇大小</h2><div class="grid" id="grid-size"></div></div>
+    <div class="step" id="step-noodle-type"><button class="back-btn-top" onclick="goNext('step-size')">←</button><h2>4. 選擇麵類</h2><div class="grid" id="grid-noodleType"></div></div>
+    <div class="step" id="step-sauce-select"><button class="back-btn-top" onclick="goNext('step-noodle-type')">←</button><h2>5. 選擇醬料</h2><div class="grid" id="grid-sauce"></div><div class="nav-btns"><button class="btn-blue" onclick="addToCart()">✅ 加入購物車</button></div></div>
 
     <div class="step" id="step-finish">
         <h2 class="cart-title">🛒 購物車明細</h2>
@@ -92,19 +66,17 @@
 </div>
 
 <script>
-    // 圖片網址改為穩定佔位圖，師傅你之後可以換成真實相片 URL
     const config = {
-        '魚圓湯': { p: 5, img: 'https://placehold.jp/20/1a73e8/ffffff/200x150.png?text=魚圓湯' }, 
-        '肉圓湯': { p: 5, img: 'https://placehold.jp/20/1a73e8/ffffff/200x150.png?text=肉圓湯' }, 
-        '魚餃湯': { p: 5, img: 'https://placehold.jp/20/1a73e8/ffffff/200x150.png?text=魚餃湯' }, 
-        '三寶湯': { p: 6, img: 'https://placehold.jp/20/1a73e8/ffffff/200x150.png?text=三寶湯' },
-        '魚圓面': { p: 4, img: 'https://placehold.jp/20/1a73e8/ffffff/200x150.png?text=魚圓面' }, 
-        '香菇肉碎面': { p: 5, img: 'https://placehold.jp/20/1a73e8/ffffff/200x150.png?text=肉碎面' },
-        '招牌面': { p: 6, img: 'https://placehold.jp/20/1a73e8/ffffff/200x150.png?text=招牌面' }, 
-        '餐餐面': { p: 6, img: 'https://placehold.jp/20/1a73e8/ffffff/200x150.png?text=餐餐面' },
-        '肉圓面': { p: 4, img: 'https://placehold.jp/20/1a73e8/ffffff/200x150.png?text=肉圓面' }, 
-        '小的': { p: 0, img: 'https://placehold.jp/16/34a853/ffffff/200x150.png?text=細碗' }, 
-        '大的': { p: 1, img: 'https://placehold.jp/16/d93025/ffffff/200x150.png?text=大碗' },
+        '魚圓湯': { p: 5, img: 'https://images.unsplash.com/photo-1547592166-23ac45744acd?w=200&h=150&fit=crop' }, 
+        '肉圓湯': { p: 5, img: 'https://images.unsplash.com/photo-1547592166-23ac45744acd?w=200&h=150&fit=crop' }, 
+        '魚餃湯': { p: 5, img: 'https://images.unsplash.com/photo-1547592166-23ac45744acd?w=200&h=150&fit=crop' }, 
+        '三寶湯': { p: 6, img: 'https://images.unsplash.com/photo-1547592166-23ac45744acd?w=200&h=150&fit=crop' },
+        '魚圓面': { p: 4, img: 'https://images.unsplash.com/photo-1552611052-33e04de081de?w=200&h=150&fit=crop' }, 
+        '香菇肉碎面': { p: 5, img: 'https://images.unsplash.com/photo-1552611052-33e04de081de?w=200&h=150&fit=crop' },
+        '招牌面': { p: 6, img: 'https://images.unsplash.com/photo-1552611052-33e04de081de?w=200&h=150&fit=crop' }, 
+        '餐餐面': { p: 6, img: 'https://images.unsplash.com/photo-1552611052-33e04de081de?w=200&h=150&fit=crop' },
+        '肉圓面': { p: 4, img: 'https://images.unsplash.com/photo-1552611052-33e04de081de?w=200&h=150&fit=crop' }, 
+        '小的': { p: 0 }, '大的': { p: 1 },
         'noodleType': { '面薄': '', '幼面': '', '粿條': '', '熟面': '', '米粉': '' },
         'sauce': { '辣椒': '', '茄汁': '', '黑醬油': '', '白醬青': '', '黑醋': '', '(湯)': '' }
     };
@@ -116,11 +88,7 @@
     function init() {
         renderGrid(['魚圓湯','肉圓湯','魚餃湯','三寶湯'], 'grid-soupItems', (val, el) => toggleMulti(val, el, tempItem.names, 2), true);
         renderGrid(['魚圓面', '香菇肉碎面', '招牌面', '餐餐面', '肉圓面'], 'grid-foodItems', (val) => { tempItem.names = [val]; goNext('step-size'); });
-        renderGrid(['小的', '大的'], 'grid-size', (val) => { 
-            tempItem.size = val; 
-            if(tempItem.category === '湯') addToCart(); 
-            else goNext('step-noodle-type'); 
-        });
+        renderGrid(['小的', '大的'], 'grid-size', (val) => { tempItem.size = val; if(tempItem.category === '湯') addToCart(); else goNext('step-noodle-type'); });
         renderGrid(Object.keys(config.noodleType), 'grid-noodleType', (val) => { tempItem.noodle = val; goNext('step-sauce-select'); });
         renderGrid(Object.keys(config.sauce), 'grid-sauce', (val, el) => toggleMulti(val, el, tempItem.sauces, 3), true);
     }
@@ -132,7 +100,7 @@
         list.forEach(name => {
             const div = document.createElement('div');
             div.className = 'opt';
-            const imgUrl = config[name]?.img || `https://placehold.jp/20/cccccc/ffffff/200x150.png?text=${encodeURIComponent(name)}`;
+            const imgUrl = config[name]?.img || `https://via.placeholder.com/200x150?text=${encodeURIComponent(name)}`;
             div.innerHTML = `<div class="img-box"><img src="${imgUrl}"></div><span>${name}</span>${(config[name] && config[name].p > 0) ? '<div class="price-label">+$'+config[name].p+'</div>' : ''}`;
             div.onclick = function() {
                 if(!isMulti) { cont.querySelectorAll('.opt').forEach(o => o.classList.remove('selected')); div.classList.add('selected'); }
@@ -147,11 +115,7 @@
         if(list.includes(val)) { list.splice(list.indexOf(val), 1); el.classList.remove('selected'); } 
         else { if(list.length >= max) return alert("最多選"+max+"個"); list.push(val); el.classList.add('selected'); }
     }
-    function goNext(id) {
-        document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
-        document.getElementById(id).classList.add('active');
-        window.scrollTo(0,0);
-    }
+    function goNext(id) { document.querySelectorAll('.step').forEach(s => s.classList.remove('active')); document.getElementById(id).classList.add('active'); window.scrollTo(0,0); }
     function checkSoupNext() { if(tempItem.names.length === 0) return alert("請至少選一個湯品"); goNext('step-size'); }
     function handleSizeBack() { goNext(tempItem.category === '湯' ? 'step-soup-select' : 'step-food-select'); }
 
@@ -180,19 +144,32 @@
         goNext('step-start');
     }
 
-    // --- 藍牙打印修正：中文字符集修正 ---
+    // --- 強化版藍牙邏輯 ---
     async function handlePrintAndFinish() {
         if (!printCharacteristic) {
             try {
                 const device = await navigator.bluetooth.requestDevice({
                     acceptAllDevices: true,
-                    optionalServices: ['0000ffe0-0000-1000-8000-00805f9b34fb', '49535343-fe7d-4ae5-8fa9-9fafd205e455']
+                    optionalServices: [
+                        '0000ffe0-0000-1000-8000-00805f9b34fb', 
+                        '000018f0-0000-1000-8000-00805f9b34fb',
+                        '49535343-fe7d-4ae5-8fa9-9fafd205e455'
+                    ]
                 });
                 const server = await device.gatt.connect();
                 const services = await server.getPrimaryServices();
-                const service = services.find(s => s.uuid.includes('ffe0') || s.uuid.includes('18f0'));
-                const characteristics = await service.getCharacteristics();
-                printCharacteristic = characteristics.find(c => c.properties.write || c.properties.writeWithoutResponse);
+                
+                // 遍歷所有服務找到打印特徵
+                for (let s of services) {
+                    const chars = await s.getCharacteristics();
+                    let target = chars.find(c => c.properties.write || c.properties.writeWithoutResponse);
+                    if (target) {
+                        printCharacteristic = target;
+                        break;
+                    }
+                }
+
+                if (!printCharacteristic) throw new Error("找不到打印特徵管道");
                 alert("連接成功！請再次點擊「藍牙出單」。");
                 return;
             } catch (err) {
@@ -202,41 +179,28 @@
         }
 
         try {
-            // ESC/POS 指令
-            let initPrinter = "\x1B\x40"; // 初始化
-            let selectChinese = "\x1C\x26"; // 進入中文模式 (核心修正)
-            let centerAlign = "\x1B\x61\x01";
-            let leftAlign = "\x1B\x61\x00";
-
-            let content = centerAlign + "Million Noodles\n\n" + leftAlign;
+            const initPrinter = "\x1B\x40"; 
+            const selectChinese = "\x1C\x26";
+            let content = "\x1B\x61\x01Million Noodles\n\n\x1B\x61\x00";
             
             cart.forEach((item, i) => {
-                content += `單號 #${i+1}\n`;
-                content += `${item.names.join('+')} (${item.size})\n`;
+                content += `單號 #${i+1}\n${item.names.join('+')} (${item.size})\n`;
                 if(item.noodle) content += ` -> ${item.noodle}\n`;
                 if(item.sauces.length) content += ` -> ${item.sauces.join(',')}\n`;
                 content += "--------------------------------\n";
             });
+            content += `總計: $${document.getElementById('total-sum').innerText}\n\n\n\n\n`;
 
-            content += `總計應收: $${document.getElementById('total-sum').innerText}\n`;
-            content += "\n\n\n\n\n"; 
-
-            // 關鍵：將內容轉碼為 GBK 格式
             const gbkBytes = gbk.encode(initPrinter + selectChinese + content);
-            const data = new Uint8Array(gbkBytes);
-            
-            await printCharacteristic.writeValue(data);
+            await printCharacteristic.writeValue(new Uint8Array(gbkBytes));
             
             alert("廚房單已印出！");
-            cart = [];
-            updateCartDisplay();
-            resetForNewItem();
+            cart = []; updateCartDisplay(); resetForNewItem();
         } catch (err) {
             alert("出單失敗：" + err.message);
             printCharacteristic = null;
         }
     }
-
     init();
 </script>
 </body>
