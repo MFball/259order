@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Million 麵店點餐系統 (藍牙打印版)</title>
+    <title>Million 麵店點餐系統 (最強兼容版)</title>
     <style>
         :root { --primary: #1a73e8; --secondary: #f0f2f5; --success: #34a853; --price-tag: #d93025; }
         body { font-family: "Microsoft JhengHei", sans-serif; background: var(--secondary); margin: 0; padding: 10px; text-align: center; }
@@ -17,8 +17,6 @@
         .opt { background: #fff; border: 2px solid #eee; border-radius: 12px; cursor: pointer; overflow: hidden; position: relative; display: flex; flex-direction: column; }
         .img-box { width: 100%; height: 100px; display: flex; background: #fafafa; overflow: hidden; }
         .img-box img { width: 100%; height: 100%; object-fit: cover; flex: 1; }
-        .img-box.double img { width: 50%; border-right: 1px solid white; }
-        .img-box.double img:last-child { border-right: none; }
         .price-label { position: absolute; bottom: 35px; right: 5px; background: var(--price-tag); color: white; padding: 2px 8px; border-radius: 5px; font-size: 12px; font-weight: bold; }
         .opt span { padding: 8px 5px; font-weight: bold; font-size: 0.9rem; }
         .opt.selected { border-color: var(--primary); background: #e8f0fe; }
@@ -87,11 +85,12 @@
         <div class="total-price-bar">應收總計: $<span id="total-sum">0</span></div>
         <div class="nav-btns">
             <button class="btn-blue" onclick="resetForNewItem()">➕ 繼續點餐</button>
-            <button class="btn-green" id="btn-print" onclick="handlePrintAndFinish()">🖨️ 藍牙列印出單</button>
+            <button class="btn-green" onclick="handlePrintAndFinish()">🖨️ 藍牙列印出單</button>
         </div>
     </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/text-encoding@0.7.0/lib/encoding.min.js"></script>
 <script>
     const config = {
         '魚圓湯': { p: 5 }, '肉圓湯': { p: 5 }, '魚餃湯': { p: 5 }, '三寶湯': { p: 6 },
@@ -105,7 +104,7 @@
 
     let cart = [];
     let tempItem = { category: '', names: [], size: '', noodle: '', sauces: [], price: 0 };
-    let printCharacteristic; // 存儲藍牙特徵值
+    let printCharacteristic;
 
     function init() {
         renderGrid(['魚圓湯','肉圓湯','魚餃湯','三寶湯'], 'grid-soupItems', (val, el) => toggleMulti(val, el, tempItem.names, 2), true);
@@ -174,53 +173,98 @@
         goNext('step-start');
     }
 
-    // --- 藍牙打印核心邏輯 ---
+    // ✅ 修改後：使用 GB18030 編碼避免亂碼
     async function handlePrintAndFinish() {
         if (!printCharacteristic) {
             try {
                 const device = await navigator.bluetooth.requestDevice({
-                    filters: [{ namePrefix: 'XP' }, { namePrefix: 'Printer' }],
-                    optionalServices: ['0000ffe0-0000-1000-8000-00805f9b34fb']
+                    acceptAllDevices: true,
+                    optionalServices: [
+                        '0000ffe0-0000-1000-8000-00805f9b34fb', 
+                        '000018f0-0000-1000-8000-00805f9b34fb',
+                        '49535343-fe7d-4ae5-8fa9-9fafd205e455'
+                    ]
                 });
+                
                 const server = await device.gatt.connect();
-                const service = await server.getPrimaryService('0000ffe0-0000-1000-8000-00805f9b34fb');
-                printCharacteristic = await service.getCharacteristic('0000ffe1-0000-1000-8000-00805f9b34fb');
-                alert("藍牙打印機連接成功！請再次點擊列印。");
+                const services = await server.getPrimaryServices();
+                if (services.length === 0) throw new Error("找不到打印服務");
+                
+                const characteristics = await services[0].getCharacteristics();
+                printCharacteristic = characteristics.find(c => c.properties.write || c.properties.writeWithoutResponse);
+                
+                if (!printCharacteristic) throw new Error("找不到寫入特徵值");
+
+                alert("連接成功！請再次點擊「藍牙列印」出單。");
                 return;
             } catch (err) {
-                alert("連接失敗：" + err);
+                alert("連接失敗：" + err.message);
                 return;
             }
         }
 
         try {
-            let receipt = "\x1B\x40"; // 初始化打印機
-            receipt += "\x1B\x61\x01"; // 居中
-            receipt += "Million Noodles\n";
-            receipt += "--------------------------------\n";
-            receipt += "\x1B\x61\x00"; // 左對齊
+            // ✅ 使用 GB18030 編碼器
+            const encoder = new TextEncoder('gb18030', { NONSTANDARD_allowLegacyEncoding: true });
             
+            // ESC/POS 指令
+            let commands = [];
+            
+            // 初始化打印機
+            commands.push(new Uint8Array([0x1B, 0x40])); // ESC @
+            
+            // 設置字符集為 GB18030
+            commands.push(new Uint8Array([0x1C, 0x43, 0xFF])); // FS C 255
+            
+            // 居中對齊
+            commands.push(new Uint8Array([0x1B, 0x61, 0x01])); // ESC a 1
+            
+            // 標題
+            commands.push(encoder.encode("Million Noodles\n\n"));
+            
+            // 左對齊
+            commands.push(new Uint8Array([0x1B, 0x61, 0x00])); // ESC a 0
+            
+            // 訂單內容
             cart.forEach((item, i) => {
-                receipt += `#${i+1} ${item.names.join('+')} (${item.size})\n`;
-                if(item.noodle) receipt += `  -> ${item.noodle}\n`;
-                if(item.sauces.length) receipt += `  -> ${item.sauces.join(',')}\n`;
-                receipt += "--------------------------------\n";
+                commands.push(encoder.encode(`訂單 #${i+1}\n`));
+                commands.push(encoder.encode(`${item.names.join('+')} (${item.size})\n`));
+                if(item.noodle) commands.push(encoder.encode(` - ${item.noodle}\n`));
+                if(item.sauces.length) commands.push(encoder.encode(` - ${item.sauces.join(',')}\n`));
+                commands.push(encoder.encode(`價格: $${item.price}\n`));
+                commands.push(encoder.encode("--------------------------------\n"));
             });
 
-            receipt += `TOTAL: $${document.getElementById('total-sum').innerText}\n`;
-            receipt += "\n\n\n\n\x1D\x56\x01"; // 走紙並切紙指令
-
-            const encoder = new TextEncoder();
-            const data = encoder.encode(receipt);
-            await printCharacteristic.writeValue(data);
+            commands.push(encoder.encode(`總計: $${document.getElementById('total-sum').innerText}\n`));
+            commands.push(encoder.encode("\n\n\n\n"));
             
-            // 完成後清空
+            // 切紙
+            commands.push(new Uint8Array([0x1D, 0x56, 0x00])); // GS V 0
+            
+            // 合併所有指令
+            let totalLength = commands.reduce((sum, cmd) => sum + cmd.length, 0);
+            let finalBuffer = new Uint8Array(totalLength);
+            let offset = 0;
+            commands.forEach(cmd => {
+                finalBuffer.set(cmd, offset);
+                offset += cmd.length;
+            });
+            
+            // 分段發送（每次最多20字節）
+            const chunkSize = 20;
+            for (let i = 0; i < finalBuffer.length; i += chunkSize) {
+                const chunk = finalBuffer.slice(i, Math.min(i + chunkSize, finalBuffer.length));
+                await printCharacteristic.writeValue(chunk);
+                await new Promise(resolve => setTimeout(resolve, 50)); // 延遲50ms
+            }
+            
+            alert("已送往廚房！");
             cart = [];
             updateCartDisplay();
             resetForNewItem();
-            alert("訂單已送到廚房！");
         } catch (err) {
-            alert("列印失敗：" + err);
+            alert("打印出錯：" + err.message);
+            printCharacteristic = null;
         }
     }
 
