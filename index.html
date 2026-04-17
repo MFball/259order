@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Million 麵店 - 高速切紙版</title>
+    <title>Million 麵店 - 50B高速版</title>
     <style>
         :root { --primary: #1a73e8; --secondary: #f0f2f5; --success: #34a853; --price-tag: #d93025; }
         body { font-family: sans-serif; background: var(--secondary); margin: 0; padding: 10px; text-align: center; }
@@ -30,7 +30,7 @@
 <body>
 
 <div class="container">
-    <div id="status">● 連線穩定 (就緒)</div>
+    <div id="status">● 準備就緒 (50B 傳輸模式)</div>
     
     <div class="step active" id="step-start">
         <h2>1. 請選擇類別</h2>
@@ -52,7 +52,7 @@
         <div class="total-price-bar">總計: $<span id="total-sum">0</span></div>
         <div class="nav-btns">
             <button class="btn-blue" onclick="resetForNewItem()">➕ 再點一份</button>
-            <button class="btn-green" id="printBtn" onclick="handleFastPrint()">🖨️ 列印並切紙</button>
+            <button class="btn-green" id="printBtn" onclick="handlePrint50B()">🖨️ 列印並切紙</button>
         </div>
     </div>
 </div>
@@ -60,7 +60,6 @@
 <canvas id="printCanvas" width="384"></canvas>
 
 <script>
-    // 配置數據保持不變
     const config = {
         '魚圓湯': { p: 5, img: '0' }, '肉圓湯': { p: 5, img: '2' }, '魚餃湯': { p: 5, img: '3' }, '三寶湯': { p: 6, img: '4' },
         '魚圓面': { p: 4, img: '1' }, '香菇肉碎面': { p: 5, img: '5' }, '招牌面': { p: 6, img: '6' }, '餐餐面': { p: 6, img: '7' },
@@ -103,21 +102,18 @@
     function updateCartDisplay() { let t = 0; document.getElementById('current-cart').innerHTML = cart.map((item, i) => { t += item.price; return `<div><b>#${i+1} ${item.names.join('+')}</b> [${item.size}]<br><small>${item.noodle||''} ${item.sauces.join(',')}</small> - $${item.price}</div><hr style="border:0.5px dashed #ccc">`; }).join(''); document.getElementById('total-sum').innerText = t; }
     function resetForNewItem() { tempItem={category:'', names:[], size:'', noodle:'', sauces:[], price:0}; document.querySelectorAll('.opt').forEach(o=>o.classList.remove('selected')); goNext('step-start'); }
 
-    // --- 高速列印 + 自動切紙邏輯 ---
-    async function handleFastPrint() {
+    // --- 50B 傳輸模式 ---
+    async function handlePrint50B() {
         const status = document.getElementById('status');
         const btn = document.getElementById('printBtn');
         const canvas = document.getElementById('printCanvas');
         const ctx = canvas.getContext('2d');
-        
         let device = null;
 
         try {
             btn.disabled = true;
-            status.innerText = "⏳ 正在生成影像...";
-            
-            // 繪圖部分
-            canvas.height = 250 + (cart.length * 100); // 增加底部留白空間
+            status.innerText = "⏳ 生成影像...";
+            canvas.height = 280 + (cart.length * 100); 
             ctx.fillStyle = "white"; ctx.fillRect(0, 0, 384, canvas.height);
             ctx.fillStyle = "black"; ctx.textAlign = "center";
             ctx.font = "bold 34px sans-serif"; ctx.fillText("Million Noodles", 192, 50);
@@ -131,7 +127,7 @@
             ctx.fillText("----------------------------", 10, y); y += 40;
             ctx.font = "bold 32px sans-serif"; ctx.fillText("TOTAL: $" + document.getElementById('total-sum').innerText, 10, y);
 
-            status.innerText = "🔍 搜尋並連線...";
+            status.innerText = "🔍 連線 Printer001...";
             device = await navigator.bluetooth.requestDevice({
                 acceptAllDevices: true,
                 optionalServices: ['0000ffe0-0000-1000-8000-00805f9b34fb'] 
@@ -141,15 +137,13 @@
             const service = await server.getPrimaryService('0000ffe0-0000-1000-8000-00805f9b34fb');
             const characteristic = await service.getCharacteristic('0000ffe1-0000-1000-8000-00805f9b34fb');
 
-            status.innerText = "🚀 高速列印中...";
+            status.innerText = "🚀 列印中 (50B 穩定模式)...";
             const imgData = ctx.getImageData(0, 0, 384, canvas.height);
             const pixels = imgData.data;
             const widthBytes = 384 / 8;
 
-            // 1. 初始化
             await characteristic.writeValue(new Uint8Array([0x1B, 0x40]));
 
-            // 2. 逐行生成數據並傳送
             for (let y = 0; y < canvas.height; y++) {
                 let row = new Uint8Array(8 + widthBytes);
                 row.set([0x1D, 0x76, 0x30, 0, widthBytes, 0, 1, 0]);
@@ -162,21 +156,19 @@
                     row[8 + x] = b;
                 }
                 
-                // --- 加速關鍵：每一包傳送 100 字節，延遲減低 ---
+                // --- 改用 50 字節一包 ---
                 for (let i = 0; i < row.length; i += 50) {
                     await characteristic.writeValue(new Uint8Array(row.slice(i, i + 50)));
                 }
                 
-                // 每 10 行停一次，防止緩衝溢出，但時間縮短
-                if (y % 10 === 0) await new Promise(r => setTimeout(r, 10));
+                if (y % 8 === 0) await new Promise(r => setTimeout(r, 12));
             }
 
-            // 3. 走紙 + 切紙指令 (GS V 66 0)
             status.innerText = "✂️ 正在切紙...";
-            // 先走幾行空白，確保文字過咗刀位
-            await characteristic.writeValue(new Uint8Array([0x1B, 0x64, 0x05]));
-            // 切紙指令
-            await characteristic.writeValue(new Uint8Array([0x1D, 0x56, 0x42, 0x00]));
+            // 走紙指令 (走 6 行)
+            await characteristic.writeValue(new Uint8Array([0x1B, 0x64, 0x06]));
+            // 切紙指令 (GS V 0)
+            await characteristic.writeValue(new Uint8Array([0x1D, 0x56, 0x00]));
 
             status.innerText = "✅ 完成！";
             cart = []; updateCartDisplay(); btn.disabled = false; resetForNewItem();
