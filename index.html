@@ -1,3 +1,95 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Million 麵店點餐系統 (最強兼容版)</title>
+    <style>
+        :root { --primary: #1a73e8; --secondary: #f0f2f5; --success: #34a853; --price-tag: #d93025; }
+        body { font-family: "Microsoft JhengHei", sans-serif; background: var(--secondary); margin: 0; padding: 10px; text-align: center; }
+        .container { max-width: 500px; margin: auto; background: white; padding: 15px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); padding-bottom: 90px; min-height: 85vh; position: relative; }
+        .step { display: none; animation: fadeIn 0.3s; position: relative; }
+        .step.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .back-btn-top { position: absolute; right: 0; top: 0; width: 35px; height: 35px; border-radius: 50%; background: #eee; color: #555; border: none; font-size: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 10; }
+        h2 { color: #333; font-size: 1.1rem; margin: 10px 0 20px 0; border-left: 5px solid var(--primary); padding-left: 10px; text-align: left; padding-right: 40px; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .opt { background: #fff; border: 2px solid #eee; border-radius: 12px; cursor: pointer; overflow: hidden; position: relative; display: flex; flex-direction: column; }
+        .img-box { width: 100%; height: 100px; display: flex; background: #fafafa; overflow: hidden; }
+        .img-box img { width: 100%; height: 100%; object-fit: cover; flex: 1; }
+        .price-label { position: absolute; bottom: 35px; right: 5px; background: var(--price-tag); color: white; padding: 2px 8px; border-radius: 5px; font-size: 12px; font-weight: bold; }
+        .opt span { padding: 8px 5px; font-weight: bold; font-size: 0.9rem; }
+        .opt.selected { border-color: var(--primary); background: #e8f0fe; }
+        .opt.selected::after { content: '✅'; position: absolute; top: 5px; right: 5px; background: white; border-radius: 50%; padding: 2px; font-size: 12px; }
+        .cart-box { margin-top: 20px; padding: 15px; border: 2px dashed var(--primary); border-radius: 10px; text-align: left; background: #fffbe6; }
+        .cart-item { border-bottom: 1px solid #ddd; padding: 10px 0; display: flex; justify-content: space-between; align-items: center; }
+        .total-price-bar { font-size: 1.6rem; color: var(--price-tag); font-weight: bold; margin: 20px 0; }
+        .nav-btns { position: fixed; bottom: 0; left: 0; right: 0; background: white; padding: 15px; display: flex; gap: 10px; max-width: 500px; margin: auto; box-shadow: 0 -5px 10px rgba(0,0,0,0.05); z-index: 1000; }
+        button { flex: 1; padding: 15px; border-radius: 10px; border: none; font-size: 1rem; cursor: pointer; font-weight: bold; }
+        .btn-blue { background: var(--primary); color: white; }
+        .btn-green { background: var(--success); color: white; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="step active" id="step-start">
+        <h2>1. 請選擇類別</h2>
+        <div class="grid">
+            <div class="opt" onclick="setCategory('湯')">
+                <div class="img-box"><img src="https://via.placeholder.com/150?text=Soup"></div>
+                <span>湯品類</span>
+            </div>
+            <div class="opt" onclick="setCategory('面')">
+                <div class="img-box"><img src="https://via.placeholder.com/150?text=Noodle"></div>
+                <span>麵食類</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="step" id="step-soup-select">
+        <button class="back-btn-top" onclick="goNext('step-start')">←</button>
+        <h2>2. 選擇湯品 (最多2個)</h2>
+        <div class="grid" id="grid-soupItems"></div>
+        <div class="nav-btns"><button class="btn-blue" onclick="checkSoupNext()">下一步</button></div>
+    </div>
+
+    <div class="step" id="step-food-select">
+        <button class="back-btn-top" onclick="goNext('step-start')">←</button>
+        <h2>2. 選擇主食</h2>
+        <div class="grid" id="grid-foodItems"></div>
+    </div>
+
+    <div class="step" id="step-size">
+        <button class="back-btn-top" onclick="handleSizeBack()">←</button>
+        <h2>3. 選擇大小</h2>
+        <div class="grid" id="grid-size"></div>
+    </div>
+
+    <div class="step" id="step-noodle-type">
+        <button class="back-btn-top" onclick="goNext('step-size')">←</button>
+        <h2>4. 選擇麵類</h2>
+        <div class="grid" id="grid-noodleType"></div>
+    </div>
+
+    <div class="step" id="step-sauce-select">
+        <button class="back-btn-top" onclick="goNext('step-noodle-type')">←</button>
+        <h2>5. 選擇醬料 (1-3個)</h2>
+        <div class="grid" id="grid-sauce"></div>
+        <div class="nav-btns"><button class="btn-blue" onclick="addToCart()">✅ 加入購物車</button></div>
+    </div>
+
+    <div class="step" id="step-finish">
+        <h2 class="cart-title">🛒 購物車明細</h2>
+        <div class="cart-box" id="current-cart"></div>
+        <div class="total-price-bar">應收總計: $<span id="total-sum">0</span></div>
+        <div class="nav-btns">
+            <button class="btn-blue" onclick="resetForNewItem()">➕ 繼續點餐</button>
+            <button class="btn-green" onclick="handlePrintAndFinish()">🖨️ 藍牙列印出單</button>
+        </div>
+    </div>
+</div>
+
 <script>
     const config = {
         '魚圓湯': { p: 5, en: 'Fishball Soup' }, '肉圓湯': { p: 5, en: 'Meatball Soup' }, 
@@ -154,3 +246,5 @@
 
     init();
 </script>
+</body>
+</html>
