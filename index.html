@@ -1,13 +1,13 @@
 <!DOCTYPE html>
-<html lang="zh-Hant">
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Million 麵店點餐系統</title>
+    <title>Million 面馆点餐系统</title>
     <script src="https://unpkg.com/gbk.js/dist/gbk.js"></script>
     <style>
         :root { --primary: #1a73e8; --secondary: #f0f2f5; --success: #34a853; --price-tag: #d93025; }
-        body { font-family: "Microsoft JhengHei", sans-serif; background: var(--secondary); margin: 0; padding: 10px; text-align: center; }
+        body { font-family: "PingFang SC", "Heiti SC", sans-serif; background: var(--secondary); margin: 0; padding: 10px; text-align: center; }
         .container { max-width: 500px; margin: auto; background: white; padding: 15px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); padding-bottom: 90px; min-height: 85vh; position: relative; }
         .step { display: none; animation: fadeIn 0.3s; position: relative; }
         .step.active { display: block; }
@@ -35,51 +35,44 @@
 
 <div class="container">
     <div class="step active" id="step-start">
-        <h2>1. 請選擇類別</h2>
+        <h2>1. 请选择类别</h2>
         <div class="grid">
-            <div class="opt" onclick="setCategory('湯')">
+            <div class="opt" onclick="setCategory('汤')">
                 <div class="img-box"><img src="https://via.placeholder.com/200x150?text=SOUP"></div>
-                <span>湯品類</span>
+                <span>汤品类</span>
             </div>
             <div class="opt" onclick="setCategory('面')">
                 <div class="img-box"><img src="https://via.placeholder.com/200x150?text=NOODLE"></div>
-                <span>麵食類</span>
+                <span>面食类</span>
             </div>
         </div>
     </div>
 
-    <div class="step" id="step-soup-select"><button class="back-btn-top" onclick="goNext('step-start')">←</button><h2>2. 選擇湯品</h2><div class="grid" id="grid-soupItems"></div><div class="nav-btns"><button class="btn-blue" onclick="checkSoupNext()">下一步</button></div></div>
-    <div class="step" id="step-food-select"><button class="back-btn-top" onclick="goNext('step-start')">←</button><h2>2. 選擇主食</h2><div class="grid" id="grid-foodItems"></div></div>
-    <div class="step" id="step-size"><button class="back-btn-top" onclick="handleSizeBack()">←</button><h2>3. 選擇大小</h2><div class="grid" id="grid-size"></div></div>
-    <div class="step" id="step-noodle-type"><button class="back-btn-top" onclick="goNext('step-size')">←</button><h2>4. 選擇麵類</h2><div class="grid" id="grid-noodleType"></div></div>
-    <div class="step" id="step-sauce-select"><button class="back-btn-top" onclick="goNext('step-noodle-type')">←</button><h2>5. 選擇醬料</h2><div class="grid" id="grid-sauce"></div><div class="nav-btns"><button class="btn-blue" onclick="addToCart()">✅ 加入購物車</button></div></div>
+    <div class="step" id="step-soup-select"><button class="back-btn-top" onclick="goNext('step-start')">←</button><h2>2. 选择汤品 (最多2个)</h2><div class="grid" id="grid-soupItems"></div><div class="nav-btns"><button class="btn-blue" onclick="checkSoupNext()">下一步</button></div></div>
+    <div class="step" id="step-food-select"><button class="back-btn-top" onclick="goNext('step-start')">←</button><h2>2. 选择主食</h2><div class="grid" id="grid-foodItems"></div></div>
+    <div class="step" id="step-size"><button class="back-btn-top" onclick="handleSizeBack()">←</button><h2>3. 选择大小</h2><div class="grid" id="grid-size"></div></div>
+    <div class="step" id="step-noodle-type"><button class="back-btn-top" onclick="goNext('step-size')">←</button><h2>4. 选择面类</h2><div class="grid" id="grid-noodleType"></div></div>
+    <div class="step" id="step-sauce-select"><button class="back-btn-top" onclick="goNext('step-noodle-type')">←</button><h2>5. 选择酱料 (1-3个)</h2><div class="grid" id="grid-sauce"></div><div class="nav-btns"><button class="btn-blue" onclick="addToCart()">✅ 加入购物车</button></div></div>
 
     <div class="step" id="step-finish">
-        <h2 class="cart-title">🛒 購物車明細</h2>
+        <h2 class="cart-title">🛒 购物车明细</h2>
         <div class="cart-box" id="current-cart"></div>
-        <div class="total-price-bar">應收總計: $<span id="total-sum">0</span></div>
+        <div class="total-price-bar">应收总计: $<span id="total-sum">0</span></div>
         <div class="nav-btns">
-            <button class="btn-blue" onclick="resetForNewItem()">➕ 繼續點餐</button>
-            <button class="btn-green" onclick="handlePrintAndFinish()">🖨️ 藍牙出單 (廚房)</button>
+            <button class="btn-blue" onclick="resetForNewItem()">➕ 继续点餐</button>
+            <button class="btn-green" onclick="handlePrintAndFinish()">🖨️ 蓝牙出单 (厨房)</button>
         </div>
     </div>
 </div>
 
 <script>
-    // 💡 師傅：在這裡換上你的圖片網址
+    // 菜单全部改为简体
     const config = {
-        '魚圓湯': { p: 5, img: 'https://via.placeholder.com/200x150?text=Fishball+Soup' }, 
-        '肉圓湯': { p: 5, img: '' }, 
-        '魚餃湯': { p: 5, img: '' }, 
-        '三寶湯': { p: 6, img: '' },
-        '魚圓面': { p: 4, img: '' }, 
-        '香菇肉碎面': { p: 5, img: '' },
-        '招牌面': { p: 6, img: '' }, 
-        '餐餐面': { p: 6, img: '' },
-        '肉圓面': { p: 4, img: '' }, 
-        '小的': { p: 0 }, '大的': { p: 1 },
-        'noodleType': { '面薄': '', '幼面': '', '粿條': '', '熟面': '', '米粉': '' },
-        'sauce': { '辣椒': '', '茄汁': '', '黑醬油': '', '白醬青': '', '黑醋': '', '(湯)': '' }
+        '鱼圆汤': { p: 5 }, '肉圆汤': { p: 5 }, '鱼饺汤': { p: 5 }, '三宝汤': { p: 6 },
+        '鱼圆面': { p: 4 }, '香菇肉碎面': { p: 5 }, '招牌面': { p: 6 }, '餐餐面': { p: 6 },
+        '肉圆面': { p: 4 }, '小的': { p: 0 }, '大的': { p: 1 },
+        'noodleType': { '面薄': '', '幼面': '', '粿条': '', '熟面': '', '米粉': '' },
+        'sauce': { '辣椒': '', '茄汁': '', '黑酱油': '', '白酱青': '', '黑醋': '', '(汤)': '' }
     };
 
     let cart = [];
@@ -87,9 +80,9 @@
     let printCharacteristic;
 
     function init() {
-        renderGrid(['魚圓湯','肉圓湯','魚餃湯','三寶湯'], 'grid-soupItems', (val, el) => toggleMulti(val, el, tempItem.names, 2), true);
-        renderGrid(['魚圓面', '香菇肉碎面', '招牌面', '餐餐面', '肉圓面'], 'grid-foodItems', (val) => { tempItem.names = [val]; goNext('step-size'); });
-        renderGrid(['小的', '大的'], 'grid-size', (val) => { tempItem.size = val; if(tempItem.category === '湯') addToCart(); else goNext('step-noodle-type'); });
+        renderGrid(['鱼圆汤','肉圓湯','魚餃湯','三寶湯'].map(s => s.replace(/圓|湯|餃|三寶/g, m => ({'圓':'圆','湯':'汤','餃':'饺','三寶':'三宝'}[m]))), 'grid-soupItems', (val, el) => toggleMulti(val, el, tempItem.names, 2), true);
+        renderGrid(['鱼圆面', '香菇肉碎面', '招牌面', '餐餐面', '肉圆面'], 'grid-foodItems', (val) => { tempItem.names = [val]; goNext('step-size'); });
+        renderGrid(['小的', '大的'], 'grid-size', (val) => { tempItem.size = val; if(tempItem.category === '汤') addToCart(); else goNext('step-noodle-type'); });
         renderGrid(Object.keys(config.noodleType), 'grid-noodleType', (val) => { tempItem.noodle = val; goNext('step-sauce-select'); });
         renderGrid(Object.keys(config.sauce), 'grid-sauce', (val, el) => toggleMulti(val, el, tempItem.sauces, 3), true);
     }
@@ -101,8 +94,7 @@
         list.forEach(name => {
             const div = document.createElement('div');
             div.className = 'opt';
-            const imgUrl = config[name]?.img || `https://via.placeholder.com/200x150?text=${encodeURIComponent(name)}`;
-            div.innerHTML = `<div class="img-box"><img src="${imgUrl}"></div><span>${name}</span>${(config[name] && config[name].p > 0) ? '<div class="price-label">+$'+config[name].p+'</div>' : ''}`;
+            div.innerHTML = `<div class="img-box"><img src="https://via.placeholder.com/200x150?text=${encodeURIComponent(name)}"></div><span>${name}</span>${(config[name] && config[name].p > 0) ? '<div class="price-label">+$'+config[name].p+'</div>' : ''}`;
             div.onclick = function() {
                 if(!isMulti) { cont.querySelectorAll('.opt').forEach(o => o.classList.remove('selected')); div.classList.add('selected'); }
                 clickFn(name, div);
@@ -111,14 +103,14 @@
         });
     }
 
-    function setCategory(val) { tempItem.category = val; goNext(val === '湯' ? 'step-soup-select' : 'step-food-select'); }
+    function setCategory(val) { tempItem.category = val; goNext(val === '汤' ? 'step-soup-select' : 'step-food-select'); }
     function toggleMulti(val, el, list, max) {
         if(list.includes(val)) { list.splice(list.indexOf(val), 1); el.classList.remove('selected'); } 
-        else { if(list.length >= max) return alert("最多選"+max+"個"); list.push(val); el.classList.add('selected'); }
+        else { if(list.length >= max) return alert("最多选"+max+"个"); list.push(val); el.classList.add('selected'); }
     }
     function goNext(id) { document.querySelectorAll('.step').forEach(s => s.classList.remove('active')); document.getElementById(id).classList.add('active'); window.scrollTo(0,0); }
-    function checkSoupNext() { if(tempItem.names.length === 0) return alert("請至少選一個湯品"); goNext('step-size'); }
-    function handleSizeBack() { goNext(tempItem.category === '湯' ? 'step-soup-select' : 'step-food-select'); }
+    function checkSoupNext() { if(tempItem.names.length === 0) return alert("请至少选一个汤品"); goNext('step-size'); }
+    function handleSizeBack() { goNext(tempItem.category === '汤' ? 'step-soup-select' : 'step-food-select'); }
 
     function addToCart() {
         let price = 0;
@@ -145,7 +137,7 @@
         goNext('step-start');
     }
 
-    // --- 🛠️ 核心打印邏輯修正 ---
+    // --- 蓝牙打印逻辑 ---
     async function handlePrintAndFinish() {
         if (!printCharacteristic) {
             try {
@@ -160,39 +152,35 @@
                     let target = chars.find(c => c.properties.write || c.properties.writeWithoutResponse);
                     if (target) { printCharacteristic = target; break; }
                 }
-                if (!printCharacteristic) throw new Error("管道連接失敗");
-                alert("連接成功！請再按一次。");
+                if (!printCharacteristic) throw new Error("管道连接失败");
+                alert("连接成功！请再按一次。");
                 return;
-            } catch (err) { alert("連接失敗：" + err.message); return; }
+            } catch (err) { alert("连接失败：" + err.message); return; }
         }
 
         try {
-            // 💡 關鍵指令：初始化 + 選擇字庫
             const ESC = "\x1B";
             const FS = "\x1C";
-            const init = ESC + "@";       // 重置
-            const setChinese = FS + "&";  // 進入漢字模式
-            const setCP950 = ESC + "t" + "\x00"; // 強制 Code Page 0 (通常包含中文字庫)
+            const init = ESC + "@";       
+            const setChinese = FS + "&";  
             
             let content = ESC + "a" + "\x01" + "Million Noodles\n\n" + ESC + "a" + "\x00";
             
             cart.forEach((item, i) => {
-                content += `ORDER #${i+1}\n${item.names.join('+')} (${item.size})\n`;
+                content += `订单 #${i+1}\n${item.names.join('+')} (${item.size})\n`;
                 if(item.noodle) content += ` -> ${item.noodle}\n`;
                 if(item.sauces.length) content += ` -> ${item.sauces.join(',')}\n`;
                 content += "--------------------------------\n";
             });
-            content += `TOTAL: $${document.getElementById('total-sum').innerText}\n\n\n\n\n`;
+            content += `总计: $${document.getElementById('total-sum').innerText}\n\n\n\n\n`;
 
-            // 使用 GBK 轉碼
-            const fullData = init + setChinese + setCP950 + content;
-            const gbkBytes = gbk.encode(fullData);
+            const gbkBytes = gbk.encode(init + setChinese + content);
             await printCharacteristic.writeValue(new Uint8Array(gbkBytes));
             
             alert("列印成功！");
             cart = []; updateCartDisplay(); resetForNewItem();
         } catch (err) {
-            alert("打印失敗：" + err.message);
+            alert("打印失败：" + err.message);
             printCharacteristic = null;
         }
     }
