@@ -216,7 +216,7 @@
                 
                 // --- 速度倍增優化 ---
                 // 每 30 行休息 10ms (由 20行/25ms 提升)
-                if (y % 20 === 0) { await new Promise(r => setTimeout(r, 20)); }
+                if (y % 20 === 0) { await new Promise(r => setTimeout(r, 100)); }
             }
 
             await targetChar.writeValue(new Uint8Array([0x1B, 0x64, 0x08]));
