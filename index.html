@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Million 麵店 - 強效切紙版</title>
+    <title>Million 麵店 - 極速切紙版</title>
     <style>
         :root { --primary: #1a73e8; --secondary: #f0f2f5; --success: #34a853; --price-tag: #d93025; }
         body { font-family: sans-serif; background: var(--secondary); margin: 0; padding: 10px; text-align: center; }
@@ -122,7 +122,6 @@
     }
     function resetForNewItem() { tempItem = { category: '', names: [], size: '', noodle: '', sauces: [], price: 0 }; document.querySelectorAll('.opt').forEach(o => o.classList.remove('selected')); goNext('step-start'); }
 
-    // --- 強效列印 + 修正切紙指令 ---
     async function handleImagePrint() {
         const status = document.getElementById('status');
         const btn = document.getElementById('printBtn');
@@ -131,8 +130,7 @@
         
         try {
             btn.disabled = true;
-            status.innerText = "⏳ 正在生成影像...";
-            // 加高少少底部，方便切紙
+            status.innerText = "🚀 加速列印中...";
             canvas.height = 250 + (cart.length * 90);
             ctx.fillStyle = "white"; ctx.fillRect(0, 0, 384, canvas.height);
             ctx.fillStyle = "black"; ctx.textAlign = "center";
@@ -161,7 +159,7 @@
 
             if (!targetChar) throw new Error("找不到列印通道");
 
-            status.innerText = "📤 列印中...";
+            status.innerText = "📤 傳送數據...";
             const imgData = ctx.getImageData(0, 0, 384, canvas.height);
             const pixels = imgData.data;
 
@@ -179,15 +177,17 @@
                     }
                     row[8 + x] = b;
                 }
-                // 師傅，呢度維持你最穩陣嘅原版傳輸方式
+                
                 await targetChar.writeValue(row);
-                if (y % 15 === 0) await new Promise(r => setTimeout(r, 60)); 
+                
+                // --- 這裡已修改：每 25 行休息 40 毫秒 ---
+                if (y % 25 === 0) { 
+                    await new Promise(r => setTimeout(r, 40)); 
+                }
             }
 
-            // --- 這裡是切紙關鍵 ---
-            // 1. 先走紙幾行 (Feed 6 lines)，確保文字已經離開刀口
+            // 走紙並切紙
             await targetChar.writeValue(new Uint8Array([0x1B, 0x64, 0x06]));
-            // 2. 傳送切紙指令 (GS V 0)
             await targetChar.writeValue(new Uint8Array([0x1D, 0x56, 0x00]));
 
             status.innerText = "✅ 列印完成！";
