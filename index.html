@@ -2,335 +2,127 @@
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>XPrinter 中文測試頁</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Million Noodles POS</title>
+    <script src="https://unpkg.com/gbk.js/dist/gbk.js"></script>
     <style>
-        body { 
-            font-family: "Microsoft JhengHei", sans-serif; 
-            display: flex; 
-            flex-direction: column;
-            justify-content: center; 
-            align-items: center; 
-            height: 100vh; 
-            margin: 0;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        }
-        .container {
-            background: white;
-            padding: 40px;
-            border-radius: 20px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
-            text-align: center;
-            max-width: 400px;
-        }
-        h1 { color: #333; margin-bottom: 30px; }
-        button {
-            background: #28a745;
-            color: white;
-            border: none;
-            padding: 20px 40px;
-            font-size: 18px;
-            border-radius: 10px;
-            cursor: pointer;
-            font-weight: bold;
-            box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
-            transition: all 0.3s;
-        }
-        button:hover {
-            background: #218838;
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(40, 167, 69, 0.4);
-        }
-        button:active {
-            transform: translateY(0);
-        }
-        .status {
-            margin-top: 20px;
-            padding: 15px;
-            border-radius: 8px;
-            font-size: 14px;
-            display: none;
-        }
-        .status.show {
-            display: block;
-        }
-        .status.success {
-            background: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
-        }
-        .status.error {
-            background: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
-        }
-        .status.info {
-            background: #d1ecf1;
-            color: #0c5460;
-            border: 1px solid #bee5eb;
-        }
-        .test-options {
-            margin-top: 20px;
-            display: flex;
-            gap: 10px;
-            flex-direction: column;
-        }
-        .test-btn {
-            background: #007bff;
-            padding: 12px 20px;
-            font-size: 14px;
-        }
-        .test-btn:hover {
-            background: #0056b3;
-        }
+        :root { --primary: #1a73e8; --secondary: #f0f2f5; --success: #34a853; --price-tag: #d93025; }
+        body { font-family: "Microsoft JhengHei", sans-serif; background: var(--secondary); margin: 0; padding: 10px; text-align: center; }
+        .container { max-width: 500px; margin: auto; background: white; padding: 15px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); padding-bottom: 90px; min-height: 85vh; position: relative; }
+        .step { display: none; }
+        .step.active { display: block; }
+        h2 { color: #333; font-size: 1.1rem; border-left: 5px solid var(--primary); padding-left: 10px; text-align: left; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .opt { background: #fff; border: 2px solid #eee; border-radius: 12px; padding: 15px 5px; font-weight: bold; cursor: pointer; }
+        .opt.selected { border-color: var(--primary); background: #e8f0fe; }
+        .cart-box { margin-top: 20px; padding: 15px; border: 2px dashed var(--primary); border-radius: 10px; text-align: left; background: #fffbe6; }
+        .total-price-bar { font-size: 1.8rem; color: var(--price-tag); font-weight: bold; margin: 20px 0; }
+        .nav-btns { position: fixed; bottom: 0; left: 0; right: 0; background: white; padding: 15px; display: flex; gap: 10px; max-width: 500px; margin: auto; }
+        button { flex: 1; padding: 15px; border-radius: 10px; border: none; font-size: 1.1rem; cursor: pointer; font-weight: bold; }
+        .btn-blue { background: var(--primary); color: white; }
+        .btn-green { background: var(--success); color: white; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h1>🖨️ XPrinter 測試工具</h1>
-    <button onclick="connectAndTest()">🔵 連接並測試列印</button>
-    
-    <div class="test-options">
-        <button class="test-btn" onclick="testEncoding('gbk')">測試 GBK 編碼</button>
-        <button class="test-btn" onclick="testEncoding('gb18030')">測試 GB18030 編碼</button>
-        <button class="test-btn" onclick="testEncoding('big5')">測試 BIG5 編碼</button>
-        <button class="test-btn" onclick="testSimplified()">測試簡體中文</button>
-        <button class="test-btn" onclick="testEnglish()">測試英文+數字</button>
+    <div class="step active" id="s1">
+        <h2>1. 選擇類別</h2>
+        <div class="grid">
+            <div class="opt" onclick="setCat('湯')">湯品</div>
+            <div class="opt" onclick="setCat('面')">麵食</div>
+        </div>
     </div>
-    
-    <div class="status" id="status"></div>
+
+    <div class="step" id="s2">
+        <h2 id="catTitle">2. 選擇品項</h2>
+        <div class="grid" id="itemGrid"></div>
+        <div class="nav-btns"><button class="btn-blue" onclick="goS3()">下一步</button></div>
+    </div>
+
+    <div class="step" id="s3">
+        <h2>🛒 購物車明細</h2>
+        <div id="cartBox" class="cart-box"></div>
+        <div class="total-price-bar">總計: $<span id="totalSum">0</span></div>
+        <div class="nav-btns">
+            <button class="btn-blue" onclick="location.reload()">重新開始</button>
+            <button class="btn-green" onclick="handlePrint()">🖨️ 藍牙出單</button>
+        </div>
+    </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/text-encoding@0.7.0/lib/encoding.min.js"></script>
 <script>
-    let printCharacteristic = null;
-    let deviceCache = null;
+    const menu = {
+        '湯': ['魚圓湯', '肉圓湯', '魚餃湯', '三寶湯'],
+        '面': ['魚圓面', '肉碎面', '招牌面', '餐餐面']
+    };
+    let cart = [];
+    let printChar;
 
-    function showStatus(msg, type = 'info') {
-        const status = document.getElementById('status');
-        status.textContent = msg;
-        status.className = 'status show ' + type;
+    function setCat(c) {
+        const grid = document.getElementById('itemGrid');
+        grid.innerHTML = '';
+        menu[c].forEach(i => {
+            const d = document.createElement('div'); d.className = 'opt'; d.innerText = i;
+            d.onclick = () => { d.classList.toggle('selected'); toggleItem(i); };
+            grid.appendChild(d);
+        });
+        goNext('s2');
     }
 
-    async function connectDevice() {
-        if (printCharacteristic) {
-            showStatus('已連接設備', 'success');
-            return true;
+    function toggleItem(i) {
+        const idx = cart.indexOf(i);
+        if(idx > -1) cart.splice(idx, 1); else cart.push(i);
+    }
+
+    function goS3() {
+        if(cart.length === 0) return alert("請先選餐");
+        let t = cart.length * 5; // 假設每份5元
+        document.getElementById('cartBox').innerHTML = cart.map(i => `<div>- ${i}</div>`).join('');
+        document.getElementById('totalSum').innerText = t;
+        goNext('s3');
+    }
+
+    function goNext(id) { document.querySelectorAll('.step').forEach(s=>s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
+
+    async function handlePrint() {
+        if (!printChar) {
+            try {
+                const device = await navigator.bluetooth.requestDevice({
+                    acceptAllDevices: true,
+                    optionalServices: ['0000ffe0-0000-1000-8000-00805f9b34fb']
+                });
+                const server = await device.gatt.connect();
+                // 根據自檢頁調整連線邏輯
+                const service = await server.getPrimaryService('0000ffe0-0000-1000-8000-00805f9b34fb');
+                printChar = await service.getCharacteristic('0000ffe1-0000-1000-8000-00805f9b34fb');
+                alert("已連線到 Printer001！請再按一次列印。");
+                return;
+            } catch (e) {
+                alert("連線失敗：" + e.message);
+                return;
+            }
         }
 
         try {
-            showStatus('正在搜尋藍牙設備...', 'info');
+            // ESC/POS 指令：初始化 + 進入漢字模式
+            const init = [0x1B, 0x40, 0x1C, 0x26];
+            let content = "\n  Million Noodles\n\n";
+            cart.forEach((item, idx) => { content += `${idx+1}. ${item}\n`; });
+            content += "\n----------------\n";
+            content += `TOTAL: $${document.getElementById('totalSum').innerText}\n\n\n\n\n`;
+
+            // 使用 GBK 轉碼 (解決簡體字庫顯示繁體變亂碼的問題)
+            const gbkBytes = gbk.encode(content);
+            const fullData = new Uint8Array([...init, ...gbkBytes]);
             
-            const device = await navigator.bluetooth.requestDevice({
-                acceptAllDevices: true,
-                optionalServices: [
-                    '0000ffe0-0000-1000-8000-00805f9b34fb',
-                    '000018f0-0000-1000-8000-00805f9b34fb',
-                    '49535343-fe7d-4ae5-8fa9-9fafd205e455'
-                ]
-            });
-            
-            deviceCache = device;
-            showStatus('正在連接 ' + device.name + '...', 'info');
-            
-            const server = await device.gatt.connect();
-            const services = await server.getPrimaryServices();
-            
-            if (services.length === 0) {
-                throw new Error("找不到藍牙服務");
-            }
-            
-            // 嘗試第一個服務
-            const characteristics = await services[0].getCharacteristics();
-            printCharacteristic = characteristics.find(c => 
-                c.properties.write || c.properties.writeWithoutResponse
-            );
-            
-            if (!printCharacteristic) {
-                throw new Error("找不到可寫入特徵值");
-            }
-            
-            showStatus('✅ 連接成功！設備：' + device.name, 'success');
-            return true;
-            
-        } catch (err) {
-            showStatus('❌ 連接失敗：' + err.message, 'error');
-            printCharacteristic = null;
-            return false;
+            await printChar.writeValue(fullData);
+            alert("列印成功！");
+        } catch (e) {
+            alert("列印失敗：" + e.message);
+            printChar = null;
         }
-    }
-
-    async function sendData(data) {
-        if (!printCharacteristic) {
-            showStatus('請先連接設備', 'error');
-            return;
-        }
-
-        try {
-            const CHUNK_SIZE = 512;
-            for (let i = 0; i < data.length; i += CHUNK_SIZE) {
-                const chunk = data.slice(i, Math.min(i + CHUNK_SIZE, data.length));
-                await printCharacteristic.writeValue(chunk);
-                await new Promise(resolve => setTimeout(resolve, 50));
-            }
-            showStatus('✅ 列印成功！', 'success');
-        } catch (err) {
-            showStatus('❌ 列印失敗：' + err.message, 'error');
-            printCharacteristic = null;
-        }
-    }
-
-    async function connectAndTest() {
-        const connected = await connectDevice();
-        if (connected) {
-            // 預設用 GBK 測試
-            await testEncoding('gbk');
-        }
-    }
-
-    async function testEncoding(encoding) {
-        if (!printCharacteristic) {
-            const connected = await connectDevice();
-            if (!connected) return;
-        }
-
-        showStatus(`正在使用 ${encoding.toUpperCase()} 編碼列印...`, 'info');
-
-        let buffer = [];
-        
-        // 初始化
-        buffer.push(new Uint8Array([0x1B, 0x40])); // ESC @
-        
-        // 設置編碼
-        if (encoding === 'gbk' || encoding === 'gb18030') {
-            buffer.push(new Uint8Array([0x1B, 0x74, 0x00])); // GBK
-        } else if (encoding === 'big5') {
-            buffer.push(new Uint8Array([0x1B, 0x74, 0x03])); // BIG5
-        }
-        
-        // 居中
-        buffer.push(new Uint8Array([0x1B, 0x61, 0x01]));
-        
-        // 使用對應編碼器
-        const encoder = new TextEncoder(encoding, { NONSTANDARD_allowLegacyEncoding: true });
-        
-        // 測試文字
-        buffer.push(new Uint8Array([0x1D, 0x21, 0x11])); // 放大
-        buffer.push(encoder.encode("中文列印測試\n"));
-        buffer.push(new Uint8Array([0x1D, 0x21, 0x00])); // 恢復
-        
-        buffer.push(encoder.encode("==================\n\n"));
-        
-        // 左對齊
-        buffer.push(new Uint8Array([0x1B, 0x61, 0x00]));
-        
-        buffer.push(encoder.encode(`編碼方式: ${encoding.toUpperCase()}\n`));
-        buffer.push(encoder.encode("繁體中文: 魚圓麵\n"));
-        buffer.push(encoder.encode("繁體中文: 香菇肉碎麵\n"));
-        buffer.push(encoder.encode("數字測試: 12345\n"));
-        buffer.push(encoder.encode("符號測試: $+-*/\n"));
-        buffer.push(encoder.encode("\n如果看到亂碼\n"));
-        buffer.push(encoder.encode("請嘗試其他編碼\n"));
-        
-        buffer.push(encoder.encode("\n\n\n"));
-        
-        // 切紙
-        buffer.push(new Uint8Array([0x1D, 0x56, 0x01]));
-        
-        // 合併
-        const totalLength = buffer.reduce((acc, arr) => acc + arr.length, 0);
-        const finalBuffer = new Uint8Array(totalLength);
-        let offset = 0;
-        buffer.forEach(arr => {
-            finalBuffer.set(arr, offset);
-            offset += arr.length;
-        });
-        
-        await sendData(finalBuffer);
-    }
-
-    async function testSimplified() {
-        if (!printCharacteristic) {
-            const connected = await connectDevice();
-            if (!connected) return;
-        }
-
-        showStatus('正在列印簡體中文...', 'info');
-
-        let buffer = [];
-        buffer.push(new Uint8Array([0x1B, 0x40])); // 初始化
-        buffer.push(new Uint8Array([0x1B, 0x74, 0x00])); // GBK
-        buffer.push(new Uint8Array([0x1B, 0x61, 0x01])); // 居中
-        
-        const encoder = new TextEncoder('gbk', { NONSTANDARD_allowLegacyEncoding: true });
-        
-        buffer.push(new Uint8Array([0x1D, 0x21, 0x11]));
-        buffer.push(encoder.encode("简体中文测试\n"));
-        buffer.push(new Uint8Array([0x1D, 0x21, 0x00]));
-        
-        buffer.push(encoder.encode("==================\n\n"));
-        buffer.push(new Uint8Array([0x1B, 0x61, 0x00]));
-        
-        buffer.push(encoder.encode("鱼圆面\n"));
-        buffer.push(encoder.encode("香菇肉碎面\n"));
-        buffer.push(encoder.encode("招牌面\n"));
-        buffer.push(encoder.encode("价格: $5\n"));
-        
-        buffer.push(encoder.encode("\n\n\n"));
-        buffer.push(new Uint8Array([0x1D, 0x56, 0x01]));
-        
-        const totalLength = buffer.reduce((acc, arr) => acc + arr.length, 0);
-        const finalBuffer = new Uint8Array(totalLength);
-        let offset = 0;
-        buffer.forEach(arr => {
-            finalBuffer.set(arr, offset);
-            offset += arr.length;
-        });
-        
-        await sendData(finalBuffer);
-    }
-
-    async function testEnglish() {
-        if (!printCharacteristic) {
-            const connected = await connectDevice();
-            if (!connected) return;
-        }
-
-        showStatus('正在列印英文...', 'info');
-
-        let buffer = [];
-        buffer.push(new Uint8Array([0x1B, 0x40]));
-        buffer.push(new Uint8Array([0x1B, 0x61, 0x01]));
-        
-        const encoder = new TextEncoder();
-        
-        buffer.push(new Uint8Array([0x1D, 0x21, 0x11]));
-        buffer.push(encoder.encode("PRINT TEST\n"));
-        buffer.push(new Uint8Array([0x1D, 0x21, 0x00]));
-        
-        buffer.push(encoder.encode("==================\n\n"));
-        buffer.push(new Uint8Array([0x1B, 0x61, 0x00]));
-        
-        buffer.push(encoder.encode("English Test\n"));
-        buffer.push(encoder.encode("Numbers: 1234567890\n"));
-        buffer.push(encoder.encode("Symbols: !@#$%^&*()\n"));
-        buffer.push(encoder.encode("Price: $5.00\n"));
-        
-        buffer.push(encoder.encode("\n\n\n"));
-        buffer.push(new Uint8Array([0x1D, 0x56, 0x01]));
-        
-        const totalLength = buffer.reduce((acc, arr) => acc + arr.length, 0);
-        const finalBuffer = new Uint8Array(totalLength);
-        let offset = 0;
-        buffer.forEach(arr => {
-            finalBuffer.set(arr, offset);
-            offset += arr.length;
-        });
-        
-        await sendData(finalBuffer);
     }
 </script>
-
 </body>
 </html>
