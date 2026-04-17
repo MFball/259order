@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Million 麵店 (預覽+省紙版)</title>
+    <title>Million 麵店 (自動連線預覽版)</title>
     <style>
         :root { --primary: #1a73e8; --secondary: #f0f2f5; --success: #34a853; --price-tag: #d93025; }
         body { font-family: "Microsoft JhengHei", sans-serif; background: var(--secondary); margin: 0; padding: 10px; text-align: center; }
@@ -32,33 +32,61 @@
         /* 預覽視窗樣式 */
         #preview-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 2000; justify-content: center; align-items: center; }
         .preview-content { background: #fff; width: 300px; padding: 20px; border-radius: 10px; font-family: monospace; text-align: left; max-height: 80vh; overflow-y: auto; box-shadow: 0 0 20px rgba(0,0,0,0.5); }
-        .preview-paper { border: 1px solid #ddd; padding: 10px; background: #fff; line-height: 1.2; white-space: pre-wrap; word-break: break-all; }
+        .preview-paper { border: 1px solid #ddd; padding: 10px; background: #fff; line-height: 1.2; white-space: pre-wrap; word-break: break-all; font-size: 14px; color: #000; }
         .preview-btns { margin-top: 15px; display: flex; gap: 10px; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <div id="status" style="font-size: 10px; color: #888; margin-bottom: 5px;">機台：未連接</div>
+    <div id="status" style="font-size: 10px; color: #888; margin-bottom: 5px;">機台狀態：未連接</div>
+    
     <div class="step active" id="step-start">
         <h2>1. 請選擇類別</h2>
         <div class="grid">
             <div class="opt" onclick="setCategory('湯')">
-                <div class="img-box"><img src="https://lh3.googleusercontent.com/pw/AP1GczOoXizYOs7TlJVh_ikXpPT_8uSFOyH2mnDMFvu2CIFXpJVYqNssfvAbgkwksOqIi89J0NAktQdtJStc5KB6YPkxqk0ccWLkjKAGWKILKERYMt_PYsI=w2400?source=screenshot.guru"></div>
+                <div class="img-box"><img src="https://via.placeholder.com/150?text=Soup"></div>
                 <span>湯品類</span>
             </div>
             <div class="opt" onclick="setCategory('面')">
-                <div class="img-box"><img src="https://lh3.googleusercontent.com/pw/AP1GczM1EgErnLz57PZ0ckyDapaXUx27rggwr5VvU49Yo1vpygNeiLiTCVK6nGMT7UewX9jWyWN7Q04y5g8QeGtKBFBtYod8YZd1L42sFsRuRCpY2EvidrI=w2400?source=screenshot.guru"></div>
+                <div class="img-box"><img src="https://via.placeholder.com/150?text=Noodle"></div>
                 <span>麵食類</span>
             </div>
         </div>
     </div>
-    <div class="step" id="step-soup-select"><div class="grid" id="grid-soupItems"></div><div class="nav-btns"><button class="btn-blue" onclick="checkSoupNext()">下一步</button></div></div>
-    <div class="step" id="step-food-select"><div class="grid" id="grid-foodItems"></div></div>
-    <div class="step" id="step-size"><div class="grid" id="grid-size"></div></div>
-    <div class="step" id="step-noodle-type"><div class="grid" id="grid-noodleType"></div></div>
-    <div class="step" id="step-sauce-select"><div class="grid" id="grid-sauce"></div><div class="nav-btns"><button class="btn-blue" onclick="addToCart()">✅ 加入購物車</button></div></div>
-    
+
+    <div class="step" id="step-soup-select">
+        <button class="back-btn-top" onclick="goNext('step-start')">←</button>
+        <h2>2. 選擇湯品 (最多2個)</h2>
+        <div class="grid" id="grid-soupItems"></div>
+        <div class="nav-btns"><button class="btn-blue" onclick="checkSoupNext()">下一步</button></div>
+    </div>
+
+    <div class="step" id="step-food-select">
+        <button class="back-btn-top" onclick="goNext('step-start')">←</button>
+        <h2>2. 選擇主食</h2>
+        <div class="grid" id="grid-foodItems"></div>
+    </div>
+
+    <div class="step" id="step-size">
+        <button class="back-btn-top" onclick="handleSizeBack()">←</button>
+        <h2>3. 選擇大小</h2>
+        <div class="grid" id="grid-size"></div>
+    </div>
+
+    <div class="step" id="step-noodle-type">
+        <button class="back-btn-top" onclick="goNext('step-size')">←</button>
+        <h2>4. 選擇麵類</h2>
+        <div class="grid" id="grid-noodleType"></div>
+    </div>
+
+    <div class="step" id="step-sauce-select">
+        <button class="back-btn-top" onclick="goNext('step-noodle-type')">←</button>
+        <h2>5. 選擇醬料 (1-3個)</h2>
+        <div class="grid" id="grid-sauce"></div>
+        <div class="nav-btns"><button class="btn-blue" onclick="addToCart()">✅ 加入購物車</button></div>
+    </div>
+
     <div class="step" id="step-finish">
         <h2>🛒 購物車明細</h2>
         <div class="cart-box" id="current-cart"></div>
@@ -96,10 +124,10 @@
     let tempItem = { category: '', names: [], size: '', noodle: '', sauces: [], price: 0 };
     let printCharacteristic;
 
-    // --- 初始化與邏輯 ---
     function init() {
         renderGrid(['魚圓湯','肉圓湯','魚餃湯','三寶湯'], 'grid-soupItems', (val, el) => toggleMulti(val, el, tempItem.names, 2), true);
-        renderGrid(['魚圓面', '香菇肉碎面', '招牌面', '餐餐面', '肉圓面', '蝦魚面', '西刀魚面', '香菇面', '魚餃面', '(純)肉碎面', '小魚香面'], 'grid-foodItems', (val) => { tempItem.names = [val]; goNext('step-size'); });
+        const foodOrder = ['魚圓面', '香菇肉碎面', '招牌面', '餐餐面', '肉圓面', '蝦魚面', '西刀魚面', '香菇面', '魚餃面', '(純)肉碎面', '小魚香面'];
+        renderGrid(foodOrder, 'grid-foodItems', (val) => { tempItem.names = [val]; goNext('step-size'); });
         renderGrid(['小的', '大的'], 'grid-size', (val) => { tempItem.size = val; if(tempItem.category === '湯') addToCart(); else goNext('step-noodle-type'); });
         renderGrid(Object.keys(config.noodleType), 'grid-noodleType', (val) => { tempItem.noodle = val; goNext('step-sauce-select'); });
         renderGrid(Object.keys(config.sauce), 'grid-sauce', (val, el) => toggleMulti(val, el, tempItem.sauces, 3), true);
@@ -129,6 +157,7 @@
     function goNext(id) { document.querySelectorAll('.step').forEach(s => s.classList.remove('active')); document.getElementById(id).classList.add('active'); window.scrollTo(0,0); }
     function checkSoupNext() { if(tempItem.names.length === 0) return alert("請至少選一個湯品"); goNext('step-size'); }
     function handleSizeBack() { goNext(tempItem.category === '湯' ? 'step-soup-select' : 'step-food-select'); }
+    
     function addToCart() {
         let price = 0;
         tempItem.names.forEach(n => price += (config[n]?.p || 0));
@@ -138,6 +167,7 @@
         updateCartDisplay();
         goNext('step-finish');
     }
+
     function updateCartDisplay() {
         let total = 0;
         document.getElementById('current-cart').innerHTML = cart.map((item, i) => {
@@ -146,13 +176,13 @@
         }).join('');
         document.getElementById('total-sum').innerText = total;
     }
+
     function resetForNewItem() {
         tempItem = { category: '', names: [], size: '', noodle: '', sauces: [], price: 0 };
         document.querySelectorAll('.opt').forEach(o => o.classList.remove('selected'));
         goNext('step-start');
     }
 
-    // --- 預覽功能 ---
     function generateReceiptText() {
         let text = "      Million Noodles\n";
         text += "--------------------------------\n";
@@ -176,52 +206,73 @@
 
     function closePreview() { document.getElementById('preview-modal').style.display = 'none'; }
 
-    // --- 列印連線 ---
+    // --- 強化版連線與列印 (整合全自動搜尋與分段傳送) ---
     async function handleActualPrint() {
         closePreview();
         const statusEl = document.getElementById('status');
         
         if (!printCharacteristic) {
             try {
-                statusEl.innerText = "正在連線...";
+                statusEl.innerText = "正在搜尋裝置...";
                 const device = await navigator.bluetooth.requestDevice({
                     acceptAllDevices: true,
-                    optionalServices: ['0000ffe0-0000-1000-8000-00805f9b34fb']
+                    optionalServices: [
+                        '0000ffe0-0000-1000-8000-00805f9b34fb', 
+                        '000018f0-0000-1000-8000-00805f9b34fb',
+                        '49535343-fe7d-4ae5-8fa9-9fafd205e455',
+                        '00001101-0000-1000-8000-00805f9b34fb'
+                    ]
                 });
+                
+                statusEl.innerText = "正在連線 GATT...";
                 const server = await device.gatt.connect();
-                const service = await server.getPrimaryService('0000ffe0-0000-1000-8000-00805f9b34fb');
-                printCharacteristic = await service.getCharacteristic('0000ffe1-0000-1000-8000-00805f9b34fb');
+                
+                statusEl.innerText = "搜尋服務中...";
+                const services = await server.getPrimaryServices();
+                
+                for (const service of services) {
+                    const characteristics = await service.getCharacteristics();
+                    printCharacteristic = characteristics.find(c => 
+                        c.properties.write || c.properties.writeWithoutResponse
+                    );
+                    if (printCharacteristic) break;
+                }
+
+                if (!printCharacteristic) throw new Error("找不到列印通道");
                 statusEl.innerText = "✅ 已連線";
-                // 連接後自動印一次
+                await new Promise(r => setTimeout(r, 500));
             } catch (err) {
                 statusEl.innerText = "❌ 連線失敗";
-                alert("連線失敗：" + err.message);
+                alert("連線錯誤：" + err.message);
                 return;
             }
         }
 
         try {
-            // ESC/POS 指令組合
-            const encoder = new TextEncoder(); // 預設使用 UTF-8
-            // 部分列印機需要切換成繁體模式
-            let initCmd = "\x1B\x40"; // 重置
-            initCmd += "\x1C\x26";    // 指定中文模式
+            statusEl.innerText = "正在傳送數據...";
+            const encoder = new TextEncoder();
             
-            const content = generateReceiptText();
-            const data = encoder.encode(initCmd + content);
+            // 初始化指令 (ESC @ + 指定中文)
+            const initCmd = new Uint8Array([0x1B, 0x40, 0x1C, 0x26]); 
+            await printCharacteristic.writeValue(initCmd);
 
-            // 分段發送防止卡機 (Chunking)
+            const content = generateReceiptText();
+            const data = encoder.encode(content);
+
+            // 分段傳送解決 undefined 報錯
             const CHUNK = 20;
             for (let i = 0; i < data.length; i += CHUNK) {
                 await printCharacteristic.writeValue(data.slice(i, i + CHUNK));
-                await new Promise(r => setTimeout(r, 30)); // 停頓 30ms 確保穩定
+                await new Promise(r => setTimeout(r, 50)); 
             }
             
-            alert("已送往列印！");
+            statusEl.innerText = "✅ 列印成功";
+            alert("已送往廚房！");
             cart = [];
             updateCartDisplay();
             resetForNewItem();
         } catch (err) {
+            statusEl.innerText = "❌ 傳輸錯誤";
             alert("列印失敗：" + err.message);
             printCharacteristic = null;
         }
