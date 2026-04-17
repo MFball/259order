@@ -33,7 +33,7 @@
 <body>
 
 <div class="container">
-    <div id="status" style="font-size: 10px; color: #888;">藍牙狀態：待命</div>
+    <div id="status" style="font-size: 11px; color: #666; font-weight: bold;">[ 藍牙待命中 ]</div>
     
     <div class="step active" id="step-start">
         <h2>1. 請選擇類別</h2>
@@ -87,13 +87,12 @@
         <div class="total-price-bar">總計: $<span id="total-sum">0</span></div>
         <div class="nav-btns">
             <button class="btn-blue" onclick="resetForNewItem()">➕ 繼續點餐</button>
-            <button class="btn-green" onclick="handleBTPrint()">🖨️ 列印收據</button>
+            <button class="btn-green" onclick="handleBTPrint()">🖨️ 連接並列印</button>
         </div>
     </div>
 </div>
 
 <script>
-    // --- 完整補回你原本的所有食物內容 ---
     const config = {
         '魚圓湯': { p: 5 }, '肉圓湯': { p: 5 }, '魚餃湯': { p: 5 }, '三寶湯': { p: 6 },
         '魚圓面': { p: 4 }, '香菇肉碎面': { p: 5 }, '招牌面': { p: 6 }, '餐餐面': { p: 6 },
@@ -107,7 +106,7 @@
     let cart = [];
     let tempItem = { category: '', names: [], size: '', noodle: '', sauces: [], price: 0 };
     let bleChar = null;
-    const t2s = {"麵":"面","魚":"鱼","餃":"饺","圓":"圆","湯":"汤","招":"招","牌":"牌","碎":"碎","醬":"酱","醋":"醋","條":"条","粿":"粿"};
+    const t2s = {"麵":"面","魚":"鱼","餃":"饺","圓":"圆","湯":"汤","招":"招","牌":"牌","碎":"碎","醬":"酱","醋":"醋","條":"条","粿":"粿","細":"细","麵":"面"};
 
     function init() {
         renderGrid(['魚圓湯','肉圓湯','魚餃湯','三寶湯'], 'grid-soupItems', (val, el) => toggleMulti(val, el, tempItem.names, 2), true);
@@ -164,7 +163,9 @@
         let total = 0;
         document.getElementById('current-cart').innerHTML = cart.map((item, i) => {
             total += item.price;
-            return `<div class="cart-item"><div><b>#${i+1} ${item.names.join('+')}</b> [${item.size}]<br><small>${item.noodle||''} ${item.sauces.join(',')}</small></div><div>$${item.price}</div></div>`;
+            const nTxt = item.noodle ? item.noodle : '';
+            const sTxt = item.sauces.length ? ' ' + item.sauces.join(',') : '';
+            return `<div class="cart-item"><div><b>#${i+1} ${item.names.join('+')}</b> [${item.size}]<br><small>${nTxt}${sTxt}</small></div><div>$${item.price}</div></div>`;
         }).join('');
         document.getElementById('total-sum').innerText = total;
     }
@@ -178,34 +179,55 @@
     async function handleBTPrint() {
         const status = document.getElementById('status');
         try {
-            if (!bleChar) {
-                const dev = await navigator.bluetooth.requestDevice({
-                    acceptAllDevices: true,
-                    optionalServices: ['0000ffe0-0000-1000-8000-00805f9b34fb']
-                });
-                const srv = await dev.gatt.connect();
-                const sc = await srv.getPrimaryService('0000ffe0-0000-1000-8000-00805f9b34fb');
-                const cs = await sc.getCharacteristics();
-                bleChar = cs.find(c => c.properties.write || c.properties.writeWithoutResponse);
+            status.innerText = "⏳ 正在連接...";
+            // 每次點擊都重新獲取裝置，避免 undefined
+            const dev = await navigator.bluetooth.requestDevice({
+                acceptAllDevices: true,
+                optionalServices: ['0000ffe0-0000-1000-8000-00805f9b34fb']
+            });
+            const srv = await dev.gatt.connect();
+            
+            // 自動搜尋服務，不硬寫死，增加成功率
+            const services = await srv.getPrimaryServices();
+            if (services.length === 0) throw new Error("找不到列印服務");
+            
+            // 找第一個可寫入的特徵值
+            let targetChar = null;
+            for (const s of services) {
+                const chars = await s.getCharacteristics();
+                targetChar = chars.find(c => c.properties.write || c.properties.writeWithoutResponse);
+                if (targetChar) break;
             }
-            status.innerText = "正在傳送...";
+
+            if (!targetChar) throw new Error("印表機不支援寫入數據");
+
+            status.innerText = "📤 正在列印...";
+            
             let txt = "      Million Noodles\n--------------------------------\n";
             cart.forEach((item, i) => {
-                let name = item.names.join('+').split('').map(c=>t2s[c]||c).join('');
-                txt += `#${i+1} ${name} [${item.size}]\n   ${item.noodle} ${item.sauces.join(',')}\n`.split('').map(c=>t2s[c]||c).join('');
+                let n = item.names.join('+').split('').map(c=>t2s[c]||c).join('');
+                let d = `${item.noodle} ${item.sauces.join(',')}`.split('').map(c=>t2s[c]||c).join('');
+                txt += `#${i+1} ${n} [${item.size}]\n   ${d}\n`;
             });
             txt += "--------------------------------\n";
             txt += `TOTAL: $${document.getElementById('total-sum').innerText}\n\n\n\n\n`;
+
             const codes = Array.from(txt).map(c => c.charCodeAt(0));
             const gbk = Encoding.convert(codes, { to: 'GBK', from: 'UNICODE' });
             const data = new Uint8Array(gbk);
+
+            // 分段傳送，避免 iPhone 負擔過重
             for (let i = 0; i < data.length; i += 20) {
-                await bleChar.writeValue(data.slice(i, i + 20));
+                await targetChar.writeValue(data.slice(i, i + 20));
                 await new Promise(r => setTimeout(r, 80));
             }
-            status.innerText = "列印成功";
+
+            status.innerText = "✅ 列印成功！";
             cart = []; updateCartDisplay(); resetForNewItem();
-        } catch (e) { alert("錯誤: " + e.message); bleChar = null; }
+        } catch (e) {
+            alert("錯誤: " + e.message);
+            status.innerText = "❌ 連接失敗";
+        }
     }
     init();
 </script>
