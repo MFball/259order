@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Million 麵店 - 正式營業版</title>
+    <title>Million 麵店 - 最終圖片修正版</title>
     <style>
         :root { --primary: #1a73e8; --secondary: #f0f2f5; --success: #34a853; --price-tag: #d93025; --cancel: #666; }
         body { font-family: sans-serif; background: var(--secondary); margin: 0; padding: 10px; text-align: center; }
@@ -14,10 +14,11 @@
         .back-btn-top { position: absolute; right: 0; top: 0; width: 35px; height: 35px; border-radius: 50%; background: #eee; color: #555; border: none; font-size: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 10; }
         h2 { color: #333; font-size: 1.1rem; margin: 10px 0 20px 0; border-left: 5px solid var(--primary); padding-left: 10px; text-align: left; }
         .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .opt { background: #fff; border: 2px solid #eee; border-radius: 12px; cursor: pointer; overflow: hidden; position: relative; display: flex; flex-direction: column; }
+        .opt { background: #fff; border: 2px solid #eee; border-radius: 12px; cursor: pointer; overflow: hidden; position: relative; display: flex; flex-direction: column; min-height: 140px; }
         .img-box { width: 100%; height: 100px; display: flex; background: #fafafa; overflow: hidden; }
-        .img-box img { width: 100%; height: 100%; object-fit: cover; flex: 1; }
-        .opt span { padding: 8px 5px; font-weight: bold; font-size: 0.9rem; }
+        .img-box img { width: 100%; height: 100%; object-fit: cover; flex: 1; border-right: 1px solid #eee; }
+        .img-box img:last-child { border-right: none; }
+        .opt span { padding: 8px 5px; font-weight: bold; font-size: 0.9rem; flex-grow: 1; display: flex; align-items: center; justify-content: center; }
         .opt.selected { border-color: var(--primary); background: #e8f0fe; }
         .cart-box { margin-top: 20px; padding: 10px; border: 1px solid #ddd; border-radius: 10px; text-align: left; background: #fff; }
         .cart-item { border-bottom: 1px solid #eee; padding: 8px 0; display: flex; justify-content: space-between; align-items: center; }
@@ -44,8 +45,14 @@
     <div class="step active" id="step-start">
         <h2>1. 請選擇類別</h2>
         <div class="grid">
-            <div class="opt" onclick="setCategory('湯')"><div class="img-box"><img src="https://lh3.googleusercontent.com/d/1Z_u8u8Uu_6U8v8U_u_6U8v8U_u_6U8v8=s200"></div><span>湯品類</span></div>
-            <div class="opt" onclick="setCategory('面')"><div class="img-box"><img src="https://lh3.googleusercontent.com/d/1A_u8u8Uu_6U8v8U_u_6U8v8U_u_6U8v8=s200"></div><span>麵食類</span></div>
+            <div class="opt" onclick="setCategory('湯')">
+                <div class="img-box"><img src="https://lh3.googleusercontent.com/pw/AP1GczPcUu3GOW3xZtOFVh7le33bCNVW4F1tyBvv5cJ2V7meVDPq0zf1ZGjITf5IZdLkRv1icKIZPDvvAphvYNS6T0ZNbId2RSHGREkuS7uzTiz8boh3Fo8=w2400?source=screenshot.guru"></div>
+                <span>湯品類</span>
+            </div>
+            <div class="opt" onclick="setCategory('面')">
+                <div class="img-box"><img src="https://lh3.googleusercontent.com/pw/AP1GczM1EgErnLz57PZ0ckyDapaXUx27rggwr5VvU49Yo1vpygNeiLiTCVK6nGMT7UewX9jWyWN7Q04y5g8QeGtKBFBtYod8YZd1L42sFsRuRCpY2EvidrI=w2400?source=screenshot.guru"></div>
+                <span>麵食類</span>
+            </div>
         </div>
     </div>
 
@@ -59,12 +66,10 @@
         <h2>🛒 購物車明細</h2>
         <div class="cart-box" id="current-cart"></div>
         <div class="total-price-bar">總金額: $<span id="total-sum">0</span></div>
-        
         <div id="preview-area">
             <p>【列印預覽】</p>
             <img id="printPreviewImg" src="" alt="列印預覽">
         </div>
-
         <div class="nav-btns">
             <button class="btn-red" onclick="cancelAndClear()">❌ 取消重選</button>
             <button class="btn-blue" onclick="resetForNewItem()">➕ 繼續點餐</button>
@@ -76,29 +81,44 @@
 <canvas id="printCanvas" width="384"></canvas>
 
 <script>
+    // --- 師傅，圖片網址已經全部整合喺呢度 ---
     const config = {
-        '魚圓湯': { p: 5, img: '1YVjU6A0uV3f_8_p_u8U_u_6U8v8U_u_6' }, // 範例ID，請確保此處ID對應你的雲端圖片
-        '肉圓湯': { p: 5, img: '1Z_u8u8Uu_6U8v8U_u_6U8v8U_u_6U8v8' },
-        '魚餃湯': { p: 5, img: '1B_u8u8Uu_6U8v8U_u_6U8v8U_u_6U8v8' },
-        '三寶湯': { p: 6, img: '1C_u8u8Uu_6U8v8U_u_6U8v8U_u_6U8v8' },
-        '魚圓面': { p: 4, img: '1D_u8u8Uu_6U8v8U_u_6U8v8U_u_6U8v8' },
-        '香菇肉碎面': { p: 5, img: '1E_u8u8Uu_6U8v8U_u_6U8v8U_u_6U8v8' },
-        '招牌面': { p: 6, img: '1F_u8u8Uu_6U8v8U_u_6U8v8U_u_6U8v8' },
-        '餐餐面': { p: 6, img: '1G_u8u8Uu_6U8v8U_u_6U8v8U_u_6U8v8' },
-        '肉圓面': { p: 4, img: '1H_u8u8Uu_6U8v8U_u_6U8v8U_u_6U8v8' },
-        '蝦魚面': { p: 5, img: '1I_u8u8Uu_6U8v8U_u_6U8v8U_u_6U8v8' },
-        '西刀魚面': { p: 4, img: '1J_u8u8Uu_6U8v8U_u_6U8v8U_u_6U8v8' },
-        '香菇面': { p: 5, img: '1K_u8u8Uu_6U8v8U_u_6U8v8U_u_6U8v8' },
-        '魚餃面': { p: 4, img: '1L_u8u8Uu_6U8v8U_u_6U8v8U_u_6U8v8' },
-        '(純)肉碎面': { p: 4, img: '1M_u8u8Uu_6U8v8U_u_6U8v8U_u_6U8v8' },
-        '小魚香面': { p: 4, img: '1N_u8u8Uu_6U8v8U_u_6U8v8U_u_6U8v8' },
-        '小的': { p: 0, img: '1O_u8u8Uu_6U8v8U_u_6U8v8U_u_6U8v8' },
-        '大的': { p: 1, img: '1P_u8u8Uu_6U8v8U_u_6U8v8U_u_6U8v8' },
+        '魚圓湯': { p: 5, img: 'https://lh3.googleusercontent.com/pw/AP1GczOoXizYOs7TlJVh_ikXpPT_8uSFOyH2mnDMFvu2CIFXpJVYqNssfvAbgkwksOqIi89J0NAktQdtJStc5KB6YPkxqk0ccWLkjKAGWKILKERYMt_PYsI=w2400?source=screenshot.guru' }, 
+        '肉圓湯': { p: 5, img: 'https://lh3.googleusercontent.com/pw/AP1GczO53IM8P6okuoqH4lpXGLStyLy4PSLp2LEAXBolANcUA0dm0WBHCGxJ965cGrMP9F72cF24Uln8JbdwG9pt910rs1pG-dnU-CrwKWKcOhZoPnNbR6Q=w2400?source=screenshot.guru' }, 
+        '魚餃湯': { p: 5, img: 'https://lh3.googleusercontent.com/pw/AP1GczN3UWnlef_F80kDzpyJtDbUke-trWR_2HA4zVAnHG8PlM1N9FoBkIAThTpdOffxXiIKGYn9gNQV9Defs8T8CC7ChbKQGKCLctVtW-G84qTu6qGcuvM=w2400?source=screenshot.guru' }, 
+        '三寶湯': { p: 6, img: 'https://lh3.googleusercontent.com/pw/AP1GczOGkSr6douVYw5ED49ONXDbTqp9tX92Syg3QnRHG43a8zZebTgtjWEUXgLieeqYOw-7CQdLF9Tm_1aVhak1HCxrCdPKf6lwtrrL9GopjkdCwX9FUtM=w2400?source=screenshot.guru' },
+        '魚圓面': { p: 4, img: 'https://lh3.googleusercontent.com/pw/AP1GczM1EgErnLz57PZ0ckyDapaXUx27rggwr5VvU49Yo1vpygNeiLiTCVK6nGMT7UewX9jWyWN7Q04y5g8QeGtKBFBtYod8YZd1L42sFsRuRCpY2EvidrI=w2400?source=screenshot.guru' }, 
+        '香菇肉碎面': { p: 5, img: 'https://lh3.googleusercontent.com/pw/AP1GczPRrBESQHr4MjJaDdiXYFda03b72aUrxqrO--coLUrariBXksy0KTPNNaXhzOmmrVhkbChOGKQFqiR8zRRcPZWSd7Hk-inOhSXStOXgC8d0a85lycU=w2400?source=screenshot.guru' },
+        '招牌面': { p: 6, img: 'https://lh3.googleusercontent.com/pw/AP1GczOVfyFF0BVjs49utoC4oxktdqpCblSROVp-z7A0aH5pjECVNDmcaKulF2YA7DBUEDZxzEij53427j1LqfZYPzUSFGdUM2_Zt-aYxIYJY40qAfH5wq8=w2400?source=screenshot.guru' }, 
+        '餐餐面': { p: 6, img: 'https://lh3.googleusercontent.com/pw/AP1GczPI477AgneL3f4pcuLKg25GQlwB9XCNdxRaABOxwTvciSuYeGzbEu1cez6OIb25ZSS6RMchPIuuTEFHKttxXRnvYboZ5PQh-0HJH1MtI49AWBL1GDA=w2400?source=screenshot.guru' }, 
+        '肉圓面': { p: 4, img: 'https://lh3.googleusercontent.com/pw/AP1GczO2J-xP5sDqsYL-5nFYQgmYldq26dabn-ezwb-vCUGDZ-S5nq_i7dsnWNmsswG5ippV0aBSwxf3zx6lfCHrhVOehydel1JSOBnr0aXMXmInJ1_9gnM=w2400?source=screenshot.guru' }, 
+        '蝦魚面': { p: 5, img: 'https://lh3.googleusercontent.com/pw/AP1GczPzLY41C33tAb9NV8EUJrRpiZGqc1WqVhSNhr9K5H41JKgfnEG4CqFIDluEUqs4wRf67VHhOcvgN_9z1J6UrQAQWtj-SvpBk8V7RoiRxNjsTE-NfVE=w2400?source=screenshot.guru' }, 
+        '西刀魚面': { p: 4, img: 'https://lh3.googleusercontent.com/pw/AP1GczP8Id6j5IYXzYS9x0xyNmfZWXGzQHCdfQBNbC34EmSqOTaA8rw5DGfhdsijfjfb_EnoCdl4nbXlowqkys6NnbQok762CxfDYno4mODYOp4oEp4EqAM=w2400?source=screenshot.guru' }, 
+        '香菇面': { p: 5, img: 'https://lh3.googleusercontent.com/pw/AP1GczOMJvr-1snMcDEsJsBV_QX2oISkKXtVZQGiajhBRNCUkTEpzev8LTJzjQ4jzeziLq4inDVPgROLRQ9NXxT3tnZGxJAgPNtPg3lgC-Cs582xH1jRiho=w2400?source=screenshot.guru' }, 
+        '魚餃面': { p: 4, img: 'https://lh3.googleusercontent.com/pw/AP1GczP8Id6j5IYXzYS9x0xyNmfZWXGzQHCdfQBNbC34EmSqOTaA8rw5DGfhdsijfjfb_EnoCdl4nbXlowqkys6NnbQok762CxfDYno4mODYOp4oEp4EqAM=w2400?source=screenshot.guru' }, 
+        '(純)肉碎面': { p: 4, img: 'https://lh3.googleusercontent.com/pw/AP1GczM1EgErnLz57PZ0ckyDapaXUx27rggwr5VvU49Yo1vpygNeiLiTCVK6nGMT7UewX9jWyWN7Q04y5g8QeGtKBFBtYod8YZd1L42sFsRuRCpY2EvidrI=w2400?source=screenshot.guru' },
+        '小魚香面': { p: 4, img: 'https://lh3.googleusercontent.com/pw/AP1GczMOea7U-V10ztFr3Yim6w3K_-waMrZWgn9f5VdLk6JeObgOJpJu47IZGZ_N2Ok0WW57U0oCvjQ8Cd1llJYnEiMKw5BSLetmhF5BBxFnnGQwFCqmUjE=w2400?source=screenshot.guru' }, 
+        '小的': { p: 0, img: 'https://lh3.googleusercontent.com/pw/AP1GczPVUDzaSjsxGM5SLTH5vQ1L3q_kYvg-rODSuyuaMc7cvzy7mE6J444Su11jn8BcNozPnU1HugjPWT7yrwmi32UXTzLVKmnU8UxmXgChQwef44QHmks=w2400?source=screenshot.guru' }, 
+        '大的': { p: 1, img: 'https://lh3.googleusercontent.com/pw/AP1GczMvZGsBT3O0_nf6xlgiB6CabiQfww_9AMqN0gtyoo7SQtrWKBMnV73nMe6xLathms5gRBnv-nGEs6sK0kT6SHvbjlnbmd40MmVv1R9m7xLD3eoBYZg=w2400?source=screenshot.guru' },
         'noodleType': { 
-            '面薄':'1Q','幼面':'1R','粿條':'1S','熟面':'1T','米粉':'1U','米太目':'20','冬粉':'21','粿條面':'22','粿條米粉':'23','米粉面':'24' 
+            '面薄': 'https://lh3.googleusercontent.com/pw/AP1GczPTdYtkKQVVtu2xC4GqatBEs58tYr0xrU6-P08JGLPXNa9URyrd85OABGJvhRRywZqI_6ILtjozkyDCPJWyfo34-z3KP5EPG56bOb6S73_130W3J00=w2400?source=screenshot.guru',
+            '幼面': 'https://lh3.googleusercontent.com/pw/AP1GczNzHJopdj33Emt-5K2nGrlY8AQRwcGxsmIGUyy2dzSKyFYLHxqH-tz7bIRoqlVFfxfetpW7bKNjWvenQuHQ1oPEWLa8r0Zv98IXzUaIhJlRpdNaMJU=w2400?source=screenshot.guru',
+            '粿條': 'https://lh3.googleusercontent.com/pw/AP1GczPwzNH0_FdwO99aeaxK8kWR64JXsBGwj4s5HB13lSvp-sZwggbp8XT8yfDkbp7Cz_ZB-jynkrLK7FFpIQSTf_t4Umd8Eje8i_nWWxFshmGTKkrzCn4=w2400?source=screenshot.guru',
+            '熟面': 'https://lh3.googleusercontent.com/pw/AP1GczO5hHYBkxDeOygQ1hWxWYtPlMOGUWWImLcvrXSe9dYeWIPukbqHY5O9qq6IrM9Q88jSG6EE8HmeIM9jOg081VP1KcW7uXlnaMCsWb56wt3dRd9WJJw=w2400?source=screenshot.guru',
+            '米粉': 'https://lh3.googleusercontent.com/pw/AP1GczMCq_h1GaefE-Kpouj1xUx_GoEhsa6BHL7giIsCTbZqtOKJG_8AJIpYSsqpPEiR5Ao00oYTYixHE7KxdZjWSv2LTg-CQ_xWVBv8OfAB98J7Z1wPYG0=w2400?source=screenshot.guru',
+            '米太目': 'https://lh3.googleusercontent.com/pw/AP1GczNPdhdHay7KR_IB303jyQY9PkJv14r8_ctsIwsnIGVdX5m0e4mAQjGoW6kMCuWfZEzoGn0PfIS4YbYsam7ncI1eDn9rYAbQ53qUsbpt4BHxE2Gur3k=w600-h315-p-k',
+            '冬粉': 'https://lh3.googleusercontent.com/pw/AP1GczMjjBg1W6WSV-nXO1fI3_rZXHO1u53fhIyPuY8F5PfDsGsSNuMqbrcoNbcIYTISpCvg-YzHA3xOyUmD1SUOQQvXXoAsXW9wTiEt9IswwswNBTCsoCc=w2400?source=screenshot.guru',
+            '粿條面': ['https://lh3.googleusercontent.com/pw/AP1GczPwzNH0_FdwO99aeaxK8kWR64JXsBGwj4s5HB13lSvp-sZwggbp8XT8yfDkbp7Cz_ZB-jynkrLK7FFpIQSTf_t4Umd8Eje8i_nWWxFshmGTKkrzCn4=w2400?source=screenshot.guru', 'https://lh3.googleusercontent.com/pw/AP1GczO5hHYBkxDeOygQ1hWxWYtPlMOGUWWImLcvrXSe9dYeWIPukbqHY5O9qq6IrM9Q88jSG6EE8HmeIM9jOg081VP1KcW7uXlnaMCsWb56wt3dRd9WJJw=w2400?source=screenshot.guru'],
+            '粿條米粉': ['https://lh3.googleusercontent.com/pw/AP1GczPwzNH0_FdwO99aeaxK8kWR64JXsBGwj4s5HB13lSvp-sZwggbp8XT8yfDkbp7Cz_ZB-jynkrLK7FFpIQSTf_t4Umd8Eje8i_nWWxFshmGTKkrzCn4=w2400?source=screenshot.guru', 'https://lh3.googleusercontent.com/pw/AP1GczMCq_h1GaefE-Kpouj1xUx_GoEhsa6BHL7giIsCTbZqtOKJG_8AJIpYSsqpPEiR5Ao00oYTYixHE7KxdZjWSv2LTg-CQ_xWVBv8OfAB98J7Z1wPYG0=w2400?source=screenshot.guru'],
+            '米粉面': ['https://lh3.googleusercontent.com/pw/AP1GczMCq_h1GaefE-Kpouj1xUx_GoEhsa6BHL7giIsCTbZqtOKJG_8AJIpYSsqpPEiR5Ao00oYTYixHE7KxdZjWSv2LTg-CQ_xWVBv8OfAB98J7Z1wPYG0=w2400?source=screenshot.guru', 'https://lh3.googleusercontent.com/pw/AP1GczO5hHYBkxDeOygQ1hWxWYtPlMOGUWWImLcvrXSe9dYeWIPukbqHY5O9qq6IrM9Q88jSG6EE8HmeIM9jOg081VP1KcW7uXlnaMCsWb56wt3dRd9WJJw=w2400?source=screenshot.guru']
         },
         'sauce': { 
-            '辣椒':'22','茄汁':'23','黑醬油':'24','白醬青':'25','黑醋':'26','(湯)':'27' 
+            '辣椒': 'https://lh3.googleusercontent.com/pw/AP1GczNBNIkcqcHrGu9RGmYKVLG473IryGY_cMr8txZuvSUl7_F3EdvsjOzGSk56yEoy3btyHQ1L5c3FC7gHvchhgxPREi99F5m5c6Si9_RDp3mkM2crK9A=w2400?source=screenshot.guru',
+            '茄汁': 'https://lh3.googleusercontent.com/pw/AP1GczPMo2OG1kFt1C_OFN_tugGiJoOS2J2g30EydgqVl_rVueJJaUWq_0MLR2CRkdIXzgpXLSPoBdufuMmMv_YdFrew1-Qfi_KZDwo6iXd9BJK1E-jdPp4=w2400?source=screenshot.guru',
+            '黑醬油': 'https://lh3.googleusercontent.com/pw/AP1GczM_Ogtz5euEqtTluhoqtEIKJyfVts2a-grnZ-INkM8jWyXh9mH13SlBrlvN6ccWl5PNecn1xnPOkNY3IuFZh3gQ8FKhbtBVFtIOfsKCVwlDVcg_WEM=w2400?source=screenshot.guru',
+            '白醬青': 'https://lh3.googleusercontent.com/pw/AP1GczM0Y5r1CNFN7i_N0xRl3dGh55awsKnRrUnvb-xeZVVQK_8k_1drXDQXq77P9eSpaewdn8zQN8_Yq1LELzh2GZgK08Bm2h1mK-AUPq6Kaoqcj_tvvAU=w2400?source=screenshot.guru',
+            '黑醋': 'https://lh3.googleusercontent.com/pw/AP1GczP78L4yujnIpxn3K004iS-q6Vm-A6Vp4UpTY6lKmyWVCrSsMU4XOLG6Em-03KJsMHT1YK94ae2-7QQ5bkhtbZNKo0mexj960hV9hUo0Q2-kLK1SZvo=w2400?source=screenshot.guru',
+            '湯': 'https://lh3.googleusercontent.com/pw/AP1GczO41yvP4P-hmNWhW-kkM1iDfiDE0_-ugwWzhVxfF70z_xsDJE1VhyFZxt8PnlqS5J4VTcjIHwp7qIpF0wrBZnN73nM8zMLpnfN1MQaeuk9lNzU1RwE=w2400?source=screenshot.guru'
         }
     };
 
@@ -119,15 +139,23 @@
     function renderGrid(list, id, clickFn, multi = false) {
         const cont = document.getElementById(id); if(!cont) return;
         cont.innerHTML = '';
-        list.forEach((name, idx) => {
+        list.forEach(name => {
             const div = document.createElement('div');
             div.className = 'opt';
-            let imgId;
-            if (id === 'grid-noodleType') imgId = config.noodleType[name];
-            else if (id === 'grid-sauce') imgId = config.sauce[name];
-            else imgId = config[name]?.img || idx;
+            let imgSrc;
+            if (id === 'grid-noodleType') imgSrc = config.noodleType[name];
+            else if (id === 'grid-sauce') imgSrc = config.sauce[name];
+            else imgSrc = config[name]?.img;
             
-            div.innerHTML = `<div class="img-box"><img src="https://lh3.googleusercontent.com/d/${imgId}=s200" onerror="this.src='https://via.placeholder.com/100?text=Food'"></div><span>${name}</span>`;
+            // 處理並排圖片邏輯
+            let imgHTML = '';
+            if (Array.isArray(imgSrc)) {
+                imgHTML = imgSrc.map(url => `<img src="${url}" onerror="this.src='https://via.placeholder.com/100?text=Food'">`).join('');
+            } else {
+                imgHTML = `<img src="${imgSrc || 'https://via.placeholder.com/100?text=Food'}" onerror="this.src='https://via.placeholder.com/100?text=Food'">`;
+            }
+
+            div.innerHTML = `<div class="img-box">${imgHTML}</div><span>${name}</span>`;
             div.onclick = () => { if(!multi) Array.from(cont.children).forEach(c=>c.classList.remove('selected')); div.classList.add('selected'); clickFn(name, div); };
             cont.appendChild(div);
         });
@@ -142,9 +170,7 @@
     function generatePreviewAndGo() {
         let p = 0; tempItem.names.forEach(n => p += (config[n]?.p || 0)); p += (config[tempItem.size]?.p || 0);
         tempItem.price = p; cart.push(JSON.parse(JSON.stringify(tempItem))); 
-        updateCartDisplay(); 
-        drawPrintCanvas();
-        goNext('step-finish');
+        updateCartDisplay(); drawPrintCanvas(); goNext('step-finish');
     }
 
     function updateCartDisplay() {
@@ -152,9 +178,7 @@
         document.getElementById('total-sum').innerText = t;
     }
 
-    function cancelAndClear() {
-        if(confirm("確定要清空所有點餐嗎？")) { cart = []; updateCartDisplay(); resetForNewItem(); }
-    }
+    function cancelAndClear() { if(confirm("確定要清空所有點餐嗎？")) { cart = []; updateCartDisplay(); resetForNewItem(); } }
 
     function drawPrintCanvas() {
         const canvas = document.getElementById('printCanvas');
@@ -179,7 +203,6 @@
         });
         ctx.font = "bold 26px sans-serif";
         ctx.fillText("----------------------------", 10, y); y += 45;
-        // 加大銀碼列印效果
         ctx.font = "bold 42px sans-serif";
         ctx.fillText("TOTAL: $" + document.getElementById('total-sum').innerText, 10, y);
         previewImg.src = canvas.toDataURL("image/png");
@@ -231,13 +254,13 @@
                     for (let bit = 0; bit < 8; bit++) {
                         let idx = ((y * 384) + (x * 8 + bit)) * 4;
                         let gray = pixels[idx] * 0.3 + pixels[idx+1] * 0.59 + pixels[idx+2] * 0.11;
-                        if (gray < 135) b |= (1 << (7 - bit)); // 提高黑白對比，令文字更實色
+                        if (gray < 135) b |= (1 << (7 - bit));
                     }
                     row[8 + x] = b;
                 }
                 if (isFastMode) await targetChar.writeValueWithoutResponse(row);
                 else await targetChar.writeValue(row);
-                if (y % 20 === 0) await new Promise(r => setTimeout(r, 100)); // 維持你自改的順滑速度
+                if (y % 20 === 0) await new Promise(r => setTimeout(r, 100));
             }
             await targetChar.writeValue(new Uint8Array([0x1B, 0x64, 0x08]));
             await targetChar.writeValue(new Uint8Array([0x1D, 0x56, 0x00]));
