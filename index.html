@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Million 麵店 - 最終穩定版</title>
+    <title>Million 麵店 - 最終修正版</title>
     <style>
         :root { --primary: #1a73e8; --secondary: #f0f2f5; --success: #34a853; --price-tag: #d93025; }
         body { font-family: sans-serif; background: var(--secondary); margin: 0; padding: 10px; text-align: center; }
@@ -26,14 +26,14 @@
         button { flex: 1; padding: 15px; border-radius: 10px; border: none; font-size: 1rem; cursor: pointer; font-weight: bold; }
         .btn-blue { background: var(--primary); color: white; }
         .btn-green { background: var(--success); color: white; }
-        #status { font-size: 12px; color: #1a73e8; font-weight: bold; padding: 5px; }
+        #status { font-size: 12px; color: #d93025; font-weight: bold; padding: 5px; border: 1px solid #ddd; border-radius: 5px; margin-bottom: 10px; }
         canvas { display: none; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <div id="status">● 藍牙準備就緒 (請按列印連線)</div>
+    <div id="status">● 準備連線 Printer001</div>
     
     <div class="step active" id="step-start">
         <h2>1. 請選擇類別</h2>
@@ -65,7 +65,7 @@
         <div class="total-price-bar">總計: $<span id="total-sum">0</span></div>
         <div class="nav-btns">
             <button class="btn-blue" onclick="resetForNewItem()">➕ 再點一份</button>
-            <button class="btn-green" id="printBtn" onclick="handleStablePrint()">🖨️ 列印收據</button>
+            <button class="btn-green" id="printBtn" onclick="handleHardPrint()">🖨️ 列印收據</button>
         </div>
     </div>
 </div>
@@ -112,31 +112,22 @@
     function goNext(id) { document.querySelectorAll('.step').forEach(s => s.classList.remove('active')); document.getElementById(id).classList.add('active'); window.scrollTo(0,0); }
     function checkSoupNext() { if(tempItem.names.length>0) goNext('step-size'); }
     function handleSizeBack() { goNext(tempItem.category==='湯'?'step-soup-select':'step-food-select'); }
-    
-    function addToCart() {
-        let p = 0; tempItem.names.forEach(n => p += (config[n]?.p || 0)); p += (config[tempItem.size]?.p || 0);
-        tempItem.price = p; cart.push(JSON.parse(JSON.stringify(tempItem))); updateCartDisplay(); goNext('step-finish');
-    }
-    
-    function updateCartDisplay() {
-        let t = 0; document.getElementById('current-cart').innerHTML = cart.map((item, i) => { t += item.price; return `<div class="cart-item"><div><b>#${i+1} ${item.names.join('+')}</b> [${item.size}]<br><small>${item.noodle||''} ${item.sauces.join(',')}</small></div><div>$${item.price}</div></div>`; }).join('');
-        document.getElementById('total-sum').innerText = t;
-    }
-
+    function addToCart() { let p = 0; tempItem.names.forEach(n => p += (config[n]?.p || 0)); p += (config[tempItem.size]?.p || 0); tempItem.price = p; cart.push(JSON.parse(JSON.stringify(tempItem))); updateCartDisplay(); goNext('step-finish'); }
+    function updateCartDisplay() { let t = 0; document.getElementById('current-cart').innerHTML = cart.map((item, i) => { t += item.price; return `<div class="cart-item"><div><b>#${i+1} ${item.names.join('+')}</b> [${item.size}]<br><small>${item.noodle||''} ${item.sauces.join(',')}</small></div><div>$${item.price}</div></div>`; }).join(''); document.getElementById('total-sum').innerText = t; }
     function resetForNewItem() { tempItem={category:'', names:[], size:'', noodle:'', sauces:[], price:0}; document.querySelectorAll('.opt').forEach(o=>o.classList.remove('selected')); goNext('step-start'); }
 
-    // --- 穩定圖片化列印邏輯 ---
-    async function handleStablePrint() {
+    // --- 暴力修復列印邏輯 ---
+    async function handleHardPrint() {
         const status = document.getElementById('status');
         const btn = document.getElementById('printBtn');
         const canvas = document.getElementById('printCanvas');
         const ctx = canvas.getContext('2d');
         
+        let device, server, characteristic;
+
         try {
             btn.disabled = true;
-            status.innerText = "⏳ 正在生成收據影像...";
-            
-            // 繪圖
+            status.innerText = "⏳ 生成影像中...";
             canvas.height = 180 + (cart.length * 100);
             ctx.fillStyle = "white"; ctx.fillRect(0, 0, 384, canvas.height);
             ctx.fillStyle = "black"; ctx.textAlign = "center";
@@ -152,56 +143,62 @@
             ctx.font = "bold 32px Arial"; ctx.fillText("TOTAL: $" + document.getElementById('total-sum').innerText, 10, y);
 
             status.innerText = "🔍 正在搜尋 Printer001...";
-            const device = await navigator.bluetooth.requestDevice({ acceptAllDevices: true, optionalServices: ['0000ffe0-0000-1000-8000-00805f9b34fb'] });
-            const server = await device.gatt.connect();
-            const service = await server.getPrimaryService('0000ffe0-0000-1000-8000-00805f9b34fb');
-            
-            // 重要：動態尋找可寫入的特徵值，防止 undefined
-            const chars = await service.getCharacteristics();
-            const characteristic = chars.find(c => c.properties.write || c.properties.writeWithoutResponse);
-            
-            if (!characteristic) throw new Error("找不到列印特徵值");
+            // 強制彈出選擇視窗
+            device = await navigator.bluetooth.requestDevice({ 
+                acceptAllDevices: true,
+                optionalServices: ['0000ffe0-0000-1000-8000-00805f9b34fb']
+            });
 
-            status.innerText = "📤 正在傳送 (請稍候)...";
+            status.innerText = "🔗 連接中...";
+            server = await device.gatt.connect();
+            
+            status.innerText = "📡 獲取通訊協議...";
+            const service = await server.getPrimaryService('0000ffe0-0000-1000-8000-00805f9b34fb');
+            const chars = await service.getCharacteristics();
+            characteristic = chars.find(c => c.properties.write || c.properties.writeWithoutResponse);
+
+            if (!characteristic) throw new Error("找不到列印插口");
+
+            status.innerText = "📤 正在傳送收據數據...";
             const imgData = ctx.getImageData(0, 0, 384, canvas.height);
             const pixels = imgData.data;
             const widthBytes = 384 / 8;
 
-            // 初始化
             await characteristic.writeValue(new Uint8Array([0x1B, 0x40]));
 
-            // 分行傳送，每行 48 字節 + 指令 = 56 字節
-            // 由於藍牙 MTU 限制，我們每次傳送一行的數據，並加小量延遲確保穩定
             for (let y = 0; y < canvas.height; y++) {
-                let rowData = new Uint8Array(8 + widthBytes);
-                rowData.set([0x1D, 0x76, 0x30, 0, widthBytes, 0, 1, 0]);
+                let row = new Uint8Array(8 + widthBytes);
+                row.set([0x1D, 0x76, 0x30, 0, widthBytes, 0, 1, 0]);
                 for (let x = 0; x < widthBytes; x++) {
                     let b = 0;
                     for (let bit = 0; bit < 8; bit++) {
                         let idx = ((y * 384) + (x * 8 + bit)) * 4;
-                        if (pixels[idx] < 128) b |= (1 << (7 - bit)); // 黑色像素
+                        if (pixels[idx] < 128) b |= (1 << (7 - bit));
                     }
-                    rowData[8 + x] = b;
+                    row[8 + x] = b;
                 }
                 
-                // 執行傳送 (分段寫入以防超過 20 字節限制)
-                for (let i = 0; i < rowData.length; i += 20) {
-                    await characteristic.writeValue(new Uint8Array(rowData.slice(i, i + 20)));
+                // 穩定傳送：每行分拆成小包
+                for (let i = 0; i < row.length; i += 20) {
+                    await characteristic.writeValue(new Uint8Array(row.slice(i, i + 20)));
                 }
                 
-                // 每印 5 行停 20ms，防止印表機 buffer 爆倉
-                if (y % 5 === 0) await new Promise(r => setTimeout(r, 20));
+                // 每印 3 行稍等 30ms，極度保險
+                if (y % 3 === 0) await new Promise(r => setTimeout(r, 30));
             }
 
-            // 走紙
             await characteristic.writeValue(new Uint8Array([0x1B, 0x64, 0x05]));
             status.innerText = "✅ 列印成功！";
             cart = []; updateCartDisplay(); btn.disabled = false; resetForNewItem();
+            
+            // 完咗之後斷開連線，等下次可以乾淨重新連
+            await device.gatt.disconnect();
 
         } catch (e) {
-            alert("列印錯誤: " + e.message);
-            status.innerText = "❌ 列印失敗";
+            status.innerText = "❌ 錯誤: " + e.message;
+            console.error(e);
             btn.disabled = false;
+            if (device && device.gatt.connected) await device.gatt.disconnect();
         }
     }
     init();
