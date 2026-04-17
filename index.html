@@ -1,62 +1,156 @@
-// ====== 只給列印用：中文 -> 英文對照（畫面不變） ======
-const printNameMap = {
-  // Soup
-  '魚圓湯': 'Fish Ball Soup',
-  '肉圓湯': 'Meatball Soup',
-  '魚餃湯': 'Fish Dumpling Soup',
-  '三寶湯': '3-Delight Soup',
+<script>
+    const config = {
+        '魚圓湯': { p: 5, en: 'Fishball Soup' }, '肉圓湯': { p: 5, en: 'Meatball Soup' }, 
+        '魚餃湯': { p: 5, en: 'Fish Dumpling Soup' }, '三寶湯': { p: 6, en: '3 Treasure Soup' },
+        '魚圓面': { p: 4, en: 'Fishball Noodle' }, '香菇肉碎面': { p: 5, en: 'Mushroom Minced Meat Noodle' }, 
+        '招牌面': { p: 6, en: 'Signature Noodle' }, '餐餐面': { p: 6, en: 'Meal Meal Noodle' },
+        '肉圓面': { p: 4, en: 'Meatball Noodle' }, '蝦魚面': { p: 5, en: 'Prawn Fish Noodle' }, 
+        '西刀魚面': { p: 4, en: 'Ikan Parang Noodle' }, '香菇面': { p: 5, en: 'Mushroom Noodle' },
+        '魚餃面': { p: 4, en: 'Fish Dumpling Noodle' }, '(純)肉碎面': { p: 4, en: 'Pure Minced Meat Noodle' }, 
+        '小魚香面': { p: 4, en: 'Small Fish Fragrant Noodle' },
+        '小的': { p: 0, en: 'Small' }, '大的': { p: 1, en: 'Large' },
+        'noodleType': { 
+            '面薄': 'Mee Pok', '幼面': 'Mee Kia', '粿條': 'Kway Teow', '熟面': 'Yellow Noodle', 
+            '米粉': 'Bee Hoon', '米太目': 'Mee Tai Mak', '冬粉': 'Tang Hoon', 
+            '粿條面': 'Kway Teow Mee', '粿條米粉': 'Kway Teow Bee Hoon', '米粉面': 'Bee Hoon Mee' 
+        },
+        'sauce': { 
+            '辣椒': 'Chilli', '茄汁': 'Tomato', '黑醬油': 'Black Sauce', 
+            '白醬青': 'Light Soy Sauce', '黑醋': 'Black Vinegar', '(湯)': 'Soup' 
+        }
+    };
 
-  // Noodles
-  '魚圓面': 'Fish Ball Noodles',
-  '香菇肉碎面': 'Mushroom Minced Pork Noodles',
-  '招牌面': 'Signature Noodles',
-  '餐餐面': 'House Noodles',
-  '肉圓面': 'Meatball Noodles',
-  '蝦魚面': 'Shrimp Fish Noodles',
-  '西刀魚面': 'Xidao Fish Noodles',
-  '香菇面': 'Mushroom Noodles',
-  '魚餃面': 'Fish Dumpling Noodles',
-  '(純)肉碎面': 'Plain Minced Pork Noodles',
-  '小魚香面': 'Small Fish Noodles',
+    let cart = [];
+    let tempItem = { category: '', names: [], size: '', noodle: '', sauces: [], price: 0 };
+    let printCharacteristic;
 
-  // Size
-  '小的': 'Small',
-  '大的': 'Large',
+    function init() {
+        renderGrid(['魚圓湯','肉圓湯','魚餃湯','三寶湯'], 'grid-soupItems', (val, el) => toggleMulti(val, el, tempItem.names, 2), true);
+        const foodOrder = ['魚圓面', '香菇肉碎面', '招牌面', '餐餐面', '肉圓面', '蝦魚面', '西刀魚面', '香菇面', '魚餃面', '(純)肉碎面', '小魚香面'];
+        renderGrid(foodOrder, 'grid-foodItems', (val) => { tempItem.names = [val]; goNext('step-size'); });
+        renderGrid(['小的', '大的'], 'grid-size', (val) => { 
+            tempItem.size = val; 
+            if(tempItem.category === '湯') addToCart(); 
+            else goNext('step-noodle-type'); 
+        });
+        renderGrid(Object.keys(config.noodleType), 'grid-noodleType', (val) => { tempItem.noodle = val; goNext('step-sauce-select'); });
+        renderGrid(Object.keys(config.sauce), 'grid-sauce', (val, el) => toggleMulti(val, el, tempItem.sauces, 3), true);
+    }
 
-  // Noodle type
-  '面薄': 'Thin Noodles',
-  '幼面': 'Fine Noodles',
-  '粿條': 'Kway Teow',
-  '熟面': 'Yellow Noodles',
-  '米粉': 'Rice Vermicelli',
-  '米太目': 'Mee Tai Mak',
-  '冬粉': 'Glass Noodles',
-  '粿條面': 'Kway Teow + Noodles',
-  '粿條米粉': 'Kway Teow + Rice Vermicelli',
-  '米粉面': 'Rice Vermicelli + Noodles',
+    function renderGrid(list, containerId, clickFn, isMulti = false) {
+        const cont = document.getElementById(containerId);
+        if(!cont) return;
+        cont.innerHTML = ''; 
+        list.forEach(name => {
+            const div = document.createElement('div');
+            div.className = 'opt';
+            div.innerHTML = `<span>${name}</span>${(config[name] && config[name].p > 0) ? '<div class="price-label">+$'+config[name].p+'</div>' : ''}`;
+            div.onclick = function() {
+                if(!isMulti) { cont.querySelectorAll('.opt').forEach(o => o.classList.remove('selected')); div.classList.add('selected'); }
+                clickFn(name, div);
+            };
+            cont.appendChild(div);
+        });
+    }
 
-  // Sauce
-  '辣椒': 'Chili',
-  '茄汁': 'Ketchup',
-  '黑醬油': 'Dark Soy',
-  '白醬青': 'Light Soy',
-  '黑醋': 'Black Vinegar',
-  '(湯)': 'Soup'
-};
+    function setCategory(val) { tempItem.category = val; goNext(val === '湯' ? 'step-soup-select' : 'step-food-select'); }
+    function toggleMulti(val, el, list, max) {
+        if(list.includes(val)) { list.splice(list.indexOf(val), 1); el.classList.remove('selected'); } 
+        else { if(list.length >= max) return alert("最多選"+max+"個"); list.push(val); el.classList.add('selected'); }
+    }
+    function goNext(id) {
+        document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+        window.scrollTo(0,0);
+    }
+    function checkSoupNext() { if(tempItem.names.length === 0) return alert("請至少選一個湯品"); goNext('step-size'); }
+    function handleSizeBack() { goNext(tempItem.category === '湯' ? 'step-soup-select' : 'step-food-select'); }
 
-function toPrintName(zh) {
-  return printNameMap[zh] || 'Unknown';
-}
+    function addToCart() {
+        let price = 0;
+        tempItem.names.forEach(n => price += (config[n]?.p || 0));
+        price += (config[tempItem.size]?.p || 0);
+        tempItem.price = price;
+        cart.push(JSON.parse(JSON.stringify(tempItem)));
+        updateCartDisplay();
+        goNext('step-finish');
+    }
 
-// 保證只輸出 ASCII（避免印表機遇到繁中就亂碼）
-function asciiOnly(str) {
-  return String(str).replace(/[^\x0A\x0D\x20-\x7E]/g, '');
-}
+    function updateCartDisplay() {
+        let total = 0;
+        document.getElementById('current-cart').innerHTML = cart.map((item, i) => {
+            total += item.price;
+            return `<div class="cart-item"><div><b>#${i+1} ${item.names.join('+')}</b> [${item.size}]<br><small>${item.noodle || ''} ${item.sauces.length ? ' / ' + item.sauces.join(',') : ''}</small></div><div>$${item.price}</div></div>`;
+        }).join('');
+        document.getElementById('total-sum').innerText = total;
+    }
 
-// BLE 寫入常需要分段送（更穩定）
-async function writeInChunks(characteristic, uint8, chunkSize = 180) {
-  for (let i = 0; i < uint8.length; i += chunkSize) {
-    const chunk = uint8.slice(i, i + chunkSize);
-    await characteristic.writeValue(chunk);
-  }
-}
+    function resetForNewItem() {
+        tempItem = { category: '', names: [], size: '', noodle: '', sauces: [], price: 0 };
+        document.querySelectorAll('.opt').forEach(o => o.classList.remove('selected'));
+        goNext('step-start');
+    }
+
+    async function handlePrintAndFinish() {
+        if (!printCharacteristic) {
+            try {
+                const device = await navigator.bluetooth.requestDevice({
+                    acceptAllDevices: true,
+                    optionalServices: ['0000ffe0-0000-1000-8000-00805f9b34fb', '000018f0-0000-1000-8000-00805f9b34fb', '49535343-fe7d-4ae5-8fa9-9fafd205e455']
+                });
+                const server = await device.gatt.connect();
+                const services = await server.getPrimaryServices();
+                if (services.length === 0) throw new Error("找不到打印服務");
+                const characteristics = await services[0].getCharacteristics();
+                printCharacteristic = characteristics.find(c => c.properties.write || c.properties.writeWithoutResponse);
+                if (!printCharacteristic) throw new Error("找不到寫入特徵值");
+                alert("連接成功！請再次點擊「藍牙列印」出單。");
+                return;
+            } catch (err) {
+                alert("連接失敗：" + err.message);
+                return;
+            }
+        }
+
+        try {
+            // --- 核心修改：列印內容翻譯邏輯 ---
+            let receipt = "\x1B\x40"; // 重置列印機
+            receipt += "\x1B\x61\x01Million Noodles\n\n"; // 居中
+            receipt += "\x1B\x61\x00"; // 左對齊
+            
+            cart.forEach((item, i) => {
+                // 翻譯名稱 (names)
+                const enNames = item.names.map(n => config[n]?.en || n).join(' + ');
+                // 翻譯大小 (size)
+                const enSize = config[item.size]?.en || item.size;
+                // 翻譯麵類 (noodle)
+                const enNoodle = config.noodleType[item.noodle] || item.noodle;
+                // 翻譯醬料 (sauces)
+                const enSauces = item.sauces.map(s => config.sauce[s] || s).join(', ');
+
+                receipt += `ORDER #${i+1}\n`;
+                receipt += `${enNames} (${enSize})\n`;
+                if(item.noodle) receipt += ` - Noodle: ${enNoodle}\n`;
+                if(item.sauces.length) receipt += ` - Sauce: ${enSauces}\n`;
+                receipt += `Price: $${item.price}\n`;
+                receipt += "--------------------------------\n";
+            });
+
+            receipt += `TOTAL: $${document.getElementById('total-sum').innerText}\n`;
+            receipt += "\n\n\n\n\n"; // 留白
+
+            const encoder = new TextEncoder();
+            await printCharacteristic.writeValue(encoder.encode(receipt));
+            
+            alert("已送往廚房！");
+            cart = [];
+            updateCartDisplay();
+            resetForNewItem();
+        } catch (err) {
+            alert("打印出錯：" + err.message);
+            printCharacteristic = null;
+        }
+    }
+
+    init();
+</script>
