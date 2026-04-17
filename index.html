@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Million 麵店 - 50B高速版</title>
+    <title>Million 麵店 - 40B高速版</title>
     <style>
         :root { --primary: #1a73e8; --secondary: #f0f2f5; --success: #34a853; --price-tag: #d93025; }
         body { font-family: sans-serif; background: var(--secondary); margin: 0; padding: 10px; text-align: center; }
@@ -157,8 +157,8 @@
                 }
                 
                 // --- 改用 50 字節一包 ---
-                for (let i = 0; i < row.length; i += 50) {
-                    await characteristic.writeValue(new Uint8Array(row.slice(i, i + 50)));
+                for (let i = 0; i < row.length; i += 40) {
+                    await characteristic.writeValue(new Uint8Array(row.slice(i, i + 40)));
                 }
                 
                 if (y % 8 === 0) await new Promise(r => setTimeout(r, 12));
