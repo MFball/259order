@@ -3,38 +3,34 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>打印機中文指令測試</title>
+    <title>Million Noodles 終極測試</title>
     <style>
-        body { font-family: sans-serif; text-align: center; padding: 50px; background: #f0f2f5; }
-        button { 
-            padding: 20px 40px; font-size: 1.5rem; background: #1a73e8; 
-            color: white; border: none; border-radius: 10px; cursor: pointer;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        body { font-family: sans-serif; text-align: center; padding: 30px; background: #f4f7f9; }
+        .btn { 
+            padding: 25px 40px; font-size: 1.4rem; background: #d93025; 
+            color: white; border: none; border-radius: 50px; cursor: pointer;
+            box-shadow: 0 6px 15px rgba(0,0,0,0.2); font-weight: bold;
         }
-        button:active { background: #1557b0; }
-        .info { margin-top: 20px; color: #666; font-size: 0.9rem; }
+        .status { margin-top: 25px; padding: 15px; border-radius: 10px; background: #fff; display: inline-block; }
     </style>
 </head>
 <body>
 
-    <h2>Million Noodles 測試工具</h2>
-    <p>點擊下方按鈕，嘗試激活打印機內置中文字庫</p>
+    <h2>中文字庫強制測試</h2>
+    <p>請確保打印機已開機，且未連接其他手機 App</p>
     
-    <button onclick="testChinese()">測試：中文列印成功</button>
+    <button class="btn" onclick="runTest()">開始測試連接與列印</button>
 
-    <div class="info">
-        此按鈕會嘗試發送：<br>
-        1. 初始化指令 (ESC @)<br>
-        2. 進入漢字模式 (FS &)<br>
-        3. 設定字符集 (ESC t 0)<br>
-        4. 文字內容
-    </div>
+    <div id="log" class="status">狀態：待機中...</div>
 
 <script>
-    let deviceChar;
+    let char;
 
-    async function testChinese() {
-        if (!deviceChar) {
+    async function runTest() {
+        const log = document.getElementById('log');
+        
+        if (!char) {
+            log.innerText = "正在搜尋打印機...";
             try {
                 const device = await navigator.bluetooth.requestDevice({
                     acceptAllDevices: true,
@@ -42,36 +38,42 @@
                 });
                 const server = await device.gatt.connect();
                 const service = await server.getPrimaryService('0000ffe0-0000-1000-8000-00805f9b34fb');
-                deviceChar = await service.getCharacteristic('0000ffe1-0000-1000-8000-00805f9b34fb');
-                alert("藍牙已連上！請再按一次按鈕進行測試。");
+                char = await service.getCharacteristic('0000ffe1-0000-1000-8000-00805f9b34fb');
+                log.innerText = "✅ 已連上！請再按一次進行測試。";
                 return;
             } catch (e) {
-                alert("連線失敗：" + e.message);
+                log.innerText = "❌ 失敗：" + e.message;
                 return;
             }
         }
 
         try {
-            // 構建測試指令包 (Uint8Array 確保數據不被瀏覽器二次編碼)
-            const data = new Uint8Array([
-                0x1B, 0x40,              // ESC @ : 初始化
-                0x1C, 0x26,              // FS &  : 進入漢字模式 (核心)
-                0x1B, 0x74, 0x00,        // ESC t 0 : 選擇代碼頁 0
-                0x1B, 0x61, 0x01,        // ESC a 1 : 居中
+            log.innerText = "正在發送測試指令...";
+            
+            // 組合多種編碼模式一次過發送
+            const testData = new Uint8Array([
+                0x1B, 0x40,              // 初始化
                 
-                // 「中文列印成功」的 GBK 編碼 (手動寫入，不依賴庫)
-                0xD6, 0xD0, 0xCE, 0xC4,  // 中文
-                0xC1, 0xD0, 0xD3, 0xA1,  // 列印 (簡體編碼，多數打印機內置簡體庫)
-                0xB3, 0x11, 0xB9, 0xA6,  // 成功
+                // --- 測試 1: 強制開啟漢字模式 (GBK/GB2312) ---
+                0x1C, 0x26,              // FS & (進入漢字模式)
+                0x1B, 0x33, 0x30,        // 設定行距
+                0x0A, 0x4D, 0x6F, 0x64, 0x65, 0x31, 0x20, 0x28, 0x47, 0x42, 0x4B, 0x29, 0x3A, 0x0A,
+                0xD6, 0xD0, 0xCE, 0xC4, 0xB3, 0x11, 0xB9, 0xA6, // "中文成功" (GBK 簡體編碼)
+                0x0A, 
                 
-                0x0A, 0x0A, 0x0A, 0x0A   // 走紙
+                // --- 測試 2: Big5 編碼 (部分港版打印機) ---
+                0x0A, 0x4D, 0x6F, 0x64, 0x65, 0x32, 0x20, 0x28, 0x42, 0x69, 0x67, 0x35, 0x29, 0x3A, 0x0A,
+                0xA4, 0xA4, 0xA4, 0xE5, 0xA6, 0xA8, 0xA5, 0x5C, // "中文成功" (Big5 繁體編碼)
+                0x0A,
+
+                0x0A, 0x0A, 0x0A, 0x0A, 0x0A // 走紙
             ]);
 
-            await deviceChar.writeValue(data);
-            alert("指令已發送，請查看打印結果。");
+            await char.writeValue(testData);
+            log.innerText = "✅ 指令已送出！請看紙上有哪一行是中文。";
         } catch (e) {
-            alert("列印失敗：" + e.message);
-            deviceChar = null;
+            log.innerText = "❌ 列印出錯：" + e.message;
+            char = null;
         }
     }
 </script>
