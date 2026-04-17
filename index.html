@@ -1,1 +1,140 @@
 
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Million Noodles POS</title>
+    <style>
+        :root { --primary: #1a73e8; --secondary: #f0f2f5; --success: #34a853; --price-tag: #d93025; }
+        body { font-family: sans-serif; background: var(--secondary); margin: 0; padding: 10px; text-align: center; }
+        .container { max-width: 500px; margin: auto; background: white; padding: 15px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); min-height: 85vh; padding-bottom: 90px; }
+        .step { display: none; }
+        .step.active { display: block; }
+        h2 { color: #333; border-left: 5px solid var(--primary); padding-left: 10px; text-align: left; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .opt { background: #fff; border: 2px solid #eee; border-radius: 12px; cursor: pointer; padding: 10px; font-weight: bold; position: relative; }
+        .opt img { width: 100%; border-radius: 8px; margin-bottom: 5px; }
+        .opt.selected { border-color: var(--primary); background: #e8f0fe; }
+        .cart-box { margin-top: 20px; padding: 15px; border: 2px dashed var(--primary); border-radius: 10px; text-align: left; background: #fffbe6; }
+        .total-price-bar { font-size: 1.8rem; color: var(--price-tag); font-weight: bold; margin: 20px 0; }
+        .nav-btns { position: fixed; bottom: 0; left: 0; right: 0; background: white; padding: 15px; display: flex; gap: 10px; max-width: 500px; margin: auto; }
+        button { flex: 1; padding: 15px; border-radius: 10px; border: none; font-size: 1.1rem; cursor: pointer; font-weight: bold; }
+        .btn-blue { background: var(--primary); color: white; }
+        .btn-green { background: var(--success); color: white; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="step active" id="s1">
+        <h2>1. 選擇品項</h2>
+        <div class="grid" id="main-menu">
+            <div class="opt" onclick="toggleItem('魚圓湯', 5, this)">
+                <img src="fishball_soup.jpg" alt="魚圓湯">
+                魚圓湯 ($5)
+            </div>
+            <div class="opt" onclick="toggleItem('肉圓面', 6, this)">
+                <img src="meatball_noodle.jpg" alt="肉圓面">
+                肉圓面 ($6)
+            </div>
+            </div>
+        <div class="nav-btns">
+            <button class="btn-blue" onclick="goS2()">下一步 (結算)</button>
+        </div>
+    </div>
+
+    <div class="step" id="s2">
+        <h2>🛒 購物車明細</h2>
+        <div id="cart-content" class="cart-box"></div>
+        <div class="total-price-bar">總計: $<span id="total-price">0</span></div>
+        <div class="nav-btns">
+            <button style="background:#ccc" onclick="goS1()">返回修改</button>
+            <button class="btn-green" onclick="handlePrint()">🖨️ 藍牙出單</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    let cart = [];
+    let totalPrice = 0;
+    let bluetoothChar;
+
+    function toggleItem(name, price, element) {
+        element.classList.toggle('selected');
+        const index = cart.findIndex(i => i.name === name);
+        if (index > -1) {
+            totalPrice -= cart[index].price;
+            cart.splice(index, 1);
+        } else {
+            cart.push({name, price});
+            totalPrice += price;
+        }
+    }
+
+    function goS1() { 
+        document.getElementById('s2').classList.remove('active');
+        document.getElementById('s1').classList.add('active');
+    }
+
+    function goS2() {
+        if (cart.length === 0) return alert("請先選餐");
+        document.getElementById('s1').classList.remove('active');
+        document.getElementById('s2').classList.add('active');
+        const box = document.getElementById('cart-content');
+        box.innerHTML = cart.map(i => `<div>- ${i.name} <span style="float:right">$${i.price}</span></div>`).join('');
+        document.getElementById('total-price').innerText = totalPrice;
+    }
+
+    async function handlePrint() {
+        // 如果還沒連接，先進行連接
+        if (!bluetoothChar) {
+            try {
+                // 根據自檢頁：BT NAME 是 Printer001
+                const device = await navigator.bluetooth.requestDevice({
+                    acceptAllDevices: true,
+                    optionalServices: ['0000ffe0-0000-1000-8000-00805f9b34fb']
+                });
+                const server = await device.gatt.connect();
+                // 這是 XP 類打印機最通用的 Service UUID
+                const service = await server.getPrimaryService('0000ffe0-0000-1000-8000-00805f9b34fb');
+                bluetoothChar = await service.getCharacteristic('0000ffe1-0000-1000-8000-00805f9b34fb');
+                alert("已連接 Printer001！請再按一次列印。");
+                return;
+            } catch (e) {
+                alert("連接失敗: " + e.message);
+                return;
+            }
+        }
+
+        try {
+            // 現在機器是繁體了，我們直接用 UTF-8 發送，機器會自己轉
+            const encoder = new TextEncoder();
+            
+            // ESC/POS 指令初始化
+            const init = new Uint8Array([0x1B, 0x40]); 
+            let text = "\n   Million Noodles\n";
+            text += "--------------------------------\n";
+            cart.forEach((i, index) => {
+                text += `${index + 1}. ${i.name}      $${i.price}\n`;
+            });
+            text += "--------------------------------\n";
+            text += `TOTAL:          $${totalPrice}\n\n\n\n\n`;
+
+            // 分段發送數據，避免藍牙崩潰
+            await bluetoothChar.writeValue(init);
+            const data = encoder.encode(text);
+            const CHUNK_SIZE = 20; // 某些新機器在低功耗藍牙下一次只能收 20 字節
+            for (let i = 0; i < data.length; i += CHUNK_SIZE) {
+                await bluetoothChar.writeValue(data.slice(i, i + CHUNK_SIZE));
+            }
+            
+            alert("列印成功！");
+        } catch (e) {
+            alert("列印出錯: " + e.message);
+            bluetoothChar = null; // 出錯時清空，下次重連
+        }
+    }
+</script>
+</body>
+</html>
