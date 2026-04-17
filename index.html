@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Million 麵店 - 最終優化版</title>
+    <title>Million 麵店 - 極速排版版</title>
     <style>
         :root { --primary: #1a73e8; --secondary: #f0f2f5; --success: #34a853; --price-tag: #d93025; }
         body { font-family: sans-serif; background: var(--secondary); margin: 0; padding: 10px; text-align: center; }
@@ -126,11 +126,10 @@
             btn.disabled = true;
             status.innerText = "⏳ 正在排版...";
             
-            // --- 重點 1: 加大畫布高度，防止壓縮 ---
+            // 1. 排版優化：加大高度
             canvas.height = 350 + (cart.length * 120); 
             ctx.fillStyle = "white"; ctx.fillRect(0, 0, 384, canvas.height);
             ctx.fillStyle = "black"; ctx.textAlign = "center";
-            
             ctx.font = "bold 34px sans-serif"; 
             ctx.fillText("Million Noodles", 192, 60);
             
@@ -138,14 +137,13 @@
             let y = 120; 
 
             cart.forEach((item, i) => {
-                // --- 重點 2: 加大行距，防止文字叠埋 ---
+                // 2. 排版優化：加大行距
                 ctx.font = "bold 30px sans-serif"; 
                 ctx.fillText(`#${i+1} ${item.names.join('+')} (${item.size})`, 10, y); 
-                y += 50; // 下移 50 像素
-
+                y += 50; 
                 ctx.font = "24px sans-serif"; 
                 ctx.fillText(`  ${item.noodle||''} ${item.sauces.join(',')}`, 10, y); 
-                y += 65; // 下一項開始前空 65 像素
+                y += 65; 
             });
 
             ctx.font = "26px sans-serif";
@@ -166,7 +164,7 @@
 
             if (!targetChar) throw new Error("找不到列印通道");
 
-            status.innerText = "📤 列印中...";
+            status.innerText = "🚀 極速列印中...";
             const imgData = ctx.getImageData(0, 0, 384, canvas.height);
             const pixels = imgData.data;
             await targetChar.writeValue(new Uint8Array([0x1B, 0x40])); 
@@ -185,15 +183,17 @@
                 }
                 await targetChar.writeValue(row);
 
-                // --- 重點 3: 你覺得好快好穩嘅速度設定 ---
-                if (y % 25 === 0) await new Promise(r => setTimeout(r, 40)); 
+                // 3. 速度極速化設定：40行抖 20ms
+                if (y % 40 === 0) { 
+                    await new Promise(r => setTimeout(r, 20)); 
+                }
             }
 
             // 走紙兼切紙
             await targetChar.writeValue(new Uint8Array([0x1B, 0x64, 0x06]));
             await targetChar.writeValue(new Uint8Array([0x1D, 0x56, 0x00]));
 
-            status.innerText = "✅ 列印成功！";
+            status.innerText = "✅ 列印完成！";
             cart = []; updateCartDisplay(); btn.disabled = false; resetForNewItem();
             await server.disconnect();
 
