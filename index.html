@@ -130,7 +130,7 @@
         
         try {
             btn.disabled = true;
-            status.innerText = "🚀 加速列印中...";
+            status.innerText = "🚀 極速傳輸模式...";
             canvas.height = 250 + (cart.length * 90);
             ctx.fillStyle = "white"; ctx.fillRect(0, 0, 384, canvas.height);
             ctx.fillStyle = "black"; ctx.textAlign = "center";
@@ -151,15 +151,20 @@
             
             const services = await server.getPrimaryServices();
             let targetChar = null;
+            let canFast = false;
+
             for (const s of services) {
                 const chars = await s.getCharacteristics();
-                targetChar = chars.find(c => c.properties.write || c.properties.writeWithoutResponse);
+                // 優先尋找支援 writeWithoutResponse 的通道
+                targetChar = chars.find(c => c.properties.writeWithoutResponse);
+                if (targetChar) { canFast = true; break; }
+                targetChar = chars.find(c => c.properties.write);
                 if (targetChar) break;
             }
 
             if (!targetChar) throw new Error("找不到列印通道");
 
-            status.innerText = "📤 傳送數據...";
+            status.innerText = "📤 衝刺中...";
             const imgData = ctx.getImageData(0, 0, 384, canvas.height);
             const pixels = imgData.data;
 
@@ -178,11 +183,16 @@
                     row[8 + x] = b;
                 }
                 
-                await targetChar.writeValue(row);
+                // --- 這裡是核心修改點：使用快速傳輸模式 ---
+                if (canFast) {
+                    await targetChar.writeValueWithoutResponse(row);
+                } else {
+                    await targetChar.writeValue(row);
+                }
                 
-                // --- 這裡已修改：每 25 行休息 40 毫秒 ---
-                if (y % 200 === 0) { 
-                    await new Promise(r => setTimeout(r, 5)); 
+                // 快速模式下，我們每 50 行稍微停一下下，讓印表機 Buffer 消化
+                if (y % 50 === 0) { 
+                    await new Promise(r => setTimeout(r, 10)); 
                 }
             }
 
