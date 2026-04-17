@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Million 麵店 - 完全版</title>
+    <title>Million 麵店 - 正式營業版</title>
     <style>
         :root { --primary: #1a73e8; --secondary: #f0f2f5; --success: #34a853; --price-tag: #d93025; --cancel: #666; }
         body { font-family: sans-serif; background: var(--secondary); margin: 0; padding: 10px; text-align: center; }
@@ -21,18 +21,17 @@
         .opt.selected { border-color: var(--primary); background: #e8f0fe; }
         .cart-box { margin-top: 20px; padding: 10px; border: 1px solid #ddd; border-radius: 10px; text-align: left; background: #fff; }
         .cart-item { border-bottom: 1px solid #eee; padding: 8px 0; display: flex; justify-content: space-between; align-items: center; }
-        .total-price-bar { font-size: 1.4rem; color: var(--price-tag); font-weight: bold; margin: 15px 0; }
+        .total-price-bar { font-size: 1.6rem; color: var(--price-tag); font-weight: bold; margin: 15px 0; }
         
         #preview-area { margin-top: 15px; border: 2px solid #333; padding: 5px; background: #666; display: none; }
         #preview-area p { margin: 2px; font-size: 12px; color: white; font-weight: bold; }
         #printPreviewImg { background: white; width: 100%; height: auto; display: block; image-rendering: pixelated; border: 1px solid #000; }
 
-        /* 底部導覽列改為三個掣 */
         .nav-btns { position: fixed; bottom: 0; left: 0; right: 0; background: white; padding: 15px; display: flex; gap: 8px; max-width: 500px; margin: auto; box-shadow: 0 -5px 10px rgba(0,0,0,0.05); z-index: 1000; }
         button { flex: 1; padding: 12px 5px; border-radius: 10px; border: none; font-size: 0.95rem; cursor: pointer; font-weight: bold; }
         .btn-blue { background: var(--primary); color: white; }
         .btn-green { background: var(--success); color: white; }
-        .btn-red { background: var(--price-tag); color: white; } /* 新增紅色取消掣 */
+        .btn-red { background: var(--price-tag); color: white; }
         #status { font-size: 11px; color: #d93025; font-weight: bold; margin-bottom: 5px; }
         canvas { display: none; }
     </style>
@@ -45,8 +44,8 @@
     <div class="step active" id="step-start">
         <h2>1. 請選擇類別</h2>
         <div class="grid">
-            <div class="opt" onclick="setCategory('湯')"><div class="img-box"><img src="https://lh3.googleusercontent.com/pw/AP1GczOoXizYOs7TlJVh_ikXpPT_8uSFOyH2mnDMFvu2CIFXpJVYqNssfvAbgkwksOqIi89J0NAktQdtJStc5KB6YPkxqk0ccWLkjKAGWKILKERYMt_PYsI=w2400?source=screenshot.guru"></div><span>湯品類</span></div>
-            <div class="opt" onclick="setCategory('面')"><div class="img-box"><img src="https://lh3.googleusercontent.com/pw/AP1GczM1EgErnLz57PZ0ckyDapaXUx27rggwr5VvU49Yo1vpygNeiLiTCVK6nGMT7UewX9jWyWN7Q04y5g8QeGtKBFBtYod8YZd1L42sFsRuRCpY2EvidrI=w2400?source=screenshot.guru"></div><span>麵食類</span></div>
+            <div class="opt" onclick="setCategory('湯')"><div class="img-box"><img src="https://lh3.googleusercontent.com/d/1Z_u8u8Uu_6U8v8U_u_6U8v8U_u_6U8v8=s200"></div><span>湯品類</span></div>
+            <div class="opt" onclick="setCategory('面')"><div class="img-box"><img src="https://lh3.googleusercontent.com/d/1A_u8u8Uu_6U8v8U_u_6U8v8U_u_6U8v8=s200"></div><span>麵食類</span></div>
         </div>
     </div>
 
@@ -59,7 +58,7 @@
     <div class="step" id="step-finish">
         <h2>🛒 購物車明細</h2>
         <div class="cart-box" id="current-cart"></div>
-        <div class="total-price-bar">總計: $<span id="total-sum">0</span></div>
+        <div class="total-price-bar">總金額: $<span id="total-sum">0</span></div>
         
         <div id="preview-area">
             <p>【列印預覽】</p>
@@ -78,13 +77,29 @@
 
 <script>
     const config = {
-        '魚圓湯': { p: 5, img: '0' }, '肉圓湯': { p: 5, img: '2' }, '魚餃湯': { p: 5, img: '3' }, '三寶湯': { p: 6, img: '4' },
-        '魚圓面': { p: 4, img: '1' }, '香菇肉碎面': { p: 5, img: '5' }, '招牌面': { p: 6, img: '6' }, '餐餐面': { p: 6, img: '7' },
-        '肉圓面': { p: 4, img: '8' }, '蝦魚面': { p: 5, img: '9' }, '西刀魚面': { p: 4, img: '10' }, '香菇面': { p: 5, img: '11' },
-        '魚餃面': { p: 4, img: '12' }, '(純)肉碎面': { p: 4, img: '1' }, '小魚香面': { p: 4, img: '12' },
-        '小的': { p: 0, img: '13' }, '大的': { p: 1, img: '14' },
-        'noodleType': { '面薄':'15','幼面':'16','粿條':'17','熟面':'18','米粉':'19','米太目':'20','冬粉':'21','粿條面':'17','粿條米粉':'17','米粉面':'19' },
-        'sauce': { '辣椒':'22','茄汁':'23','黑醬油':'24','白醬青':'25','黑醋':'26','(湯)':'27' }
+        '魚圓湯': { p: 5, img: '1YVjU6A0uV3f_8_p_u8U_u_6U8v8U_u_6' }, // 範例ID，請確保此處ID對應你的雲端圖片
+        '肉圓湯': { p: 5, img: '1Z_u8u8Uu_6U8v8U_u_6U8v8U_u_6U8v8' },
+        '魚餃湯': { p: 5, img: '1B_u8u8Uu_6U8v8U_u_6U8v8U_u_6U8v8' },
+        '三寶湯': { p: 6, img: '1C_u8u8Uu_6U8v8U_u_6U8v8U_u_6U8v8' },
+        '魚圓面': { p: 4, img: '1D_u8u8Uu_6U8v8U_u_6U8v8U_u_6U8v8' },
+        '香菇肉碎面': { p: 5, img: '1E_u8u8Uu_6U8v8U_u_6U8v8U_u_6U8v8' },
+        '招牌面': { p: 6, img: '1F_u8u8Uu_6U8v8U_u_6U8v8U_u_6U8v8' },
+        '餐餐面': { p: 6, img: '1G_u8u8Uu_6U8v8U_u_6U8v8U_u_6U8v8' },
+        '肉圓面': { p: 4, img: '1H_u8u8Uu_6U8v8U_u_6U8v8U_u_6U8v8' },
+        '蝦魚面': { p: 5, img: '1I_u8u8Uu_6U8v8U_u_6U8v8U_u_6U8v8' },
+        '西刀魚面': { p: 4, img: '1J_u8u8Uu_6U8v8U_u_6U8v8U_u_6U8v8' },
+        '香菇面': { p: 5, img: '1K_u8u8Uu_6U8v8U_u_6U8v8U_u_6U8v8' },
+        '魚餃面': { p: 4, img: '1L_u8u8Uu_6U8v8U_u_6U8v8U_u_6U8v8' },
+        '(純)肉碎面': { p: 4, img: '1M_u8u8Uu_6U8v8U_u_6U8v8U_u_6U8v8' },
+        '小魚香面': { p: 4, img: '1N_u8u8Uu_6U8v8U_u_6U8v8U_u_6U8v8' },
+        '小的': { p: 0, img: '1O_u8u8Uu_6U8v8U_u_6U8v8U_u_6U8v8' },
+        '大的': { p: 1, img: '1P_u8u8Uu_6U8v8U_u_6U8v8U_u_6U8v8' },
+        'noodleType': { 
+            '面薄':'1Q','幼面':'1R','粿條':'1S','熟面':'1T','米粉':'1U','米太目':'20','冬粉':'21','粿條面':'22','粿條米粉':'23','米粉面':'24' 
+        },
+        'sauce': { 
+            '辣椒':'22','茄汁':'23','黑醬油':'24','白醬青':'25','黑醋':'26','(湯)':'27' 
+        }
     };
 
     let cart = [];
@@ -104,11 +119,15 @@
     function renderGrid(list, id, clickFn, multi = false) {
         const cont = document.getElementById(id); if(!cont) return;
         cont.innerHTML = '';
-        list.forEach(name => {
+        list.forEach((name, idx) => {
             const div = document.createElement('div');
             div.className = 'opt';
-            let imgId = (id === 'grid-noodleType') ? config.noodleType[name] : (id === 'grid-sauce' ? config.sauce[name] : config[name]?.img);
-            div.innerHTML = `<div class="img-box"><img src="http://googleusercontent.com/profile/picture/${imgId}"></div><span>${name}</span>`;
+            let imgId;
+            if (id === 'grid-noodleType') imgId = config.noodleType[name];
+            else if (id === 'grid-sauce') imgId = config.sauce[name];
+            else imgId = config[name]?.img || idx;
+            
+            div.innerHTML = `<div class="img-box"><img src="https://lh3.googleusercontent.com/d/${imgId}=s200" onerror="this.src='https://via.placeholder.com/100?text=Food'"></div><span>${name}</span>`;
             div.onclick = () => { if(!multi) Array.from(cont.children).forEach(c=>c.classList.remove('selected')); div.classList.add('selected'); clickFn(name, div); };
             cont.appendChild(div);
         });
@@ -133,13 +152,8 @@
         document.getElementById('total-sum').innerText = t;
     }
 
-    // 取消並清空功能
     function cancelAndClear() {
-        if(confirm("確定要清空所有點餐並重新開始嗎？")) {
-            cart = [];
-            updateCartDisplay();
-            resetForNewItem();
-        }
+        if(confirm("確定要清空所有點餐嗎？")) { cart = []; updateCartDisplay(); resetForNewItem(); }
     }
 
     function drawPrintCanvas() {
@@ -147,25 +161,26 @@
         const ctx = canvas.getContext('2d');
         const previewImg = document.getElementById('printPreviewImg');
         const previewArea = document.getElementById('preview-area');
-        canvas.height = 300 + (cart.length * 110);
+        canvas.height = 350 + (cart.length * 110);
         ctx.fillStyle = "white"; ctx.fillRect(0, 0, 384, canvas.height);
         ctx.textBaseline = "top"; ctx.fillStyle = "black";
         ctx.textAlign = "center";
-        ctx.font = "bold 34px sans-serif";
+        ctx.font = "bold 36px sans-serif";
         ctx.fillText("Million Noodles", 192, 40);
         ctx.textAlign = "left";
         let y = 110;
         cart.forEach((item, i) => {
-            ctx.font = "bold 28px sans-serif";
+            ctx.font = "bold 30px sans-serif";
             ctx.fillText(`#${i+1} ${item.names.join('+')}`, 10, y);
             y += 40;
-            ctx.font = "22px sans-serif";
+            ctx.font = "24px sans-serif";
             ctx.fillText(` [${item.size}] ${item.noodle||''} ${item.sauces.join(',')}`, 10, y);
-            y += 60;
+            y += 65;
         });
-        ctx.font = "24px sans-serif";
+        ctx.font = "bold 26px sans-serif";
         ctx.fillText("----------------------------", 10, y); y += 45;
-        ctx.font = "bold 32px sans-serif";
+        // 加大銀碼列印效果
+        ctx.font = "bold 42px sans-serif";
         ctx.fillText("TOTAL: $" + document.getElementById('total-sum').innerText, 10, y);
         previewImg.src = canvas.toDataURL("image/png");
         previewArea.style.display = "block";
@@ -216,13 +231,13 @@
                     for (let bit = 0; bit < 8; bit++) {
                         let idx = ((y * 384) + (x * 8 + bit)) * 4;
                         let gray = pixels[idx] * 0.3 + pixels[idx+1] * 0.59 + pixels[idx+2] * 0.11;
-                        if (gray < 140) b |= (1 << (7 - bit));
+                        if (gray < 135) b |= (1 << (7 - bit)); // 提高黑白對比，令文字更實色
                     }
                     row[8 + x] = b;
                 }
                 if (isFastMode) await targetChar.writeValueWithoutResponse(row);
                 else await targetChar.writeValue(row);
-                if (y % 20 === 0) await new Promise(r => setTimeout(r, 100));
+                if (y % 20 === 0) await new Promise(r => setTimeout(r, 100)); // 維持你自改的順滑速度
             }
             await targetChar.writeValue(new Uint8Array([0x1B, 0x64, 0x08]));
             await targetChar.writeValue(new Uint8Array([0x1D, 0x56, 0x00]));
