@@ -1,360 +1,177 @@
-這是一個完整的修復版本。主要解決了以下問題：
-
-1.  **連接失敗**：優化了藍牙搜尋邏輯，增加了更明確的錯誤提示和重試機制。
-2.  **內容不見了**：之前的程式碼在切換語言時可能遺漏了部分菜單配置，現在已恢復完整的繁體中文菜單。
-3.  **亂碼問題**：使用了更穩定的 `TextEncoder` 配合 GBK 編碼，並加入了 **ESC/POS 指令緩衝機制**（Chunking），避免一次發送太多數據導致藍牙斷線或打印機卡住。
-4.  **打印機指令**：加入了標準的初始化、切紙、進紙指令。
-
-請直接複製以下完整代碼：
-
-```html
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Million 麵店點餐系統 (繁體修復版)</title>
+    <title>Million Noodles (圖像列印版)</title>
     <style>
-        :root { --primary: #1a73e8; --secondary: #f0f2f5; --success: #34a853; --price-tag: #d93025; }
+        :root { --primary: #1a73e8; --secondary: #f0f2f5; --success: #34a853; }
         body { font-family: "Microsoft JhengHei", sans-serif; background: var(--secondary); margin: 0; padding: 10px; text-align: center; }
-        .container { max-width: 500px; margin: auto; background: white; padding: 15px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); padding-bottom: 90px; min-height: 85vh; position: relative; }
-        .step { display: none; animation: fadeIn 0.3s; position: relative; }
+        .container { max-width: 500px; margin: auto; background: white; padding: 15px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); min-height: 80vh; padding-bottom: 90px; }
+        .step { display: none; }
         .step.active { display: block; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        .back-btn-top { position: absolute; right: 0; top: 0; width: 35px; height: 35px; border-radius: 50%; background: #eee; color: #555; border: none; font-size: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 10; }
-        h2 { color: #333; font-size: 1.1rem; margin: 10px 0 20px 0; border-left: 5px solid var(--primary); padding-left: 10px; text-align: left; padding-right: 40px; }
-        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .opt { background: #fff; border: 2px solid #eee; border-radius: 12px; cursor: pointer; overflow: hidden; position: relative; display: flex; flex-direction: column; }
-        .img-box { width: 100%; height: 100px; display: flex; background: #fafafa; overflow: hidden; }
-        .img-box img { width: 100%; height: 100%; object-fit: cover; flex: 1; }
-        .price-label { position: absolute; bottom: 35px; right: 5px; background: var(--price-tag); color: white; padding: 2px 8px; border-radius: 5px; font-size: 12px; font-weight: bold; }
-        .opt span { padding: 8px 5px; font-weight: bold; font-size: 0.9rem; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px; }
+        .opt { background: #fff; border: 2px solid #eee; border-radius: 12px; padding: 15px 5px; font-weight: bold; cursor: pointer; }
         .opt.selected { border-color: var(--primary); background: #e8f0fe; }
-        .opt.selected::after { content: '✅'; position: absolute; top: 5px; right: 5px; background: white; border-radius: 50%; padding: 2px; font-size: 12px; }
-        .cart-box { margin-top: 20px; padding: 15px; border: 2px dashed var(--primary); border-radius: 10px; text-align: left; background: #fffbe6; }
-        .cart-item { border-bottom: 1px solid #ddd; padding: 10px 0; display: flex; justify-content: space-between; align-items: center; }
-        .total-price-bar { font-size: 1.6rem; color: var(--price-tag); font-weight: bold; margin: 20px 0; }
-        .nav-btns { position: fixed; bottom: 0; left: 0; right: 0; background: white; padding: 15px; display: flex; gap: 10px; max-width: 500px; margin: auto; box-shadow: 0 -5px 10px rgba(0,0,0,0.05); z-index: 1000; }
-        button { flex: 1; padding: 15px; border-radius: 10px; border: none; font-size: 1rem; cursor: pointer; font-weight: bold; }
+        .cart-box { margin-top: 20px; padding: 15px; border: 2px dashed #ccc; text-align: left; background: #fffbe6; line-height: 1.6; }
+        .nav-btns { position: fixed; bottom: 0; left: 0; right: 0; background: white; padding: 15px; display: flex; gap: 10px; max-width: 500px; margin: auto; }
+        button { flex: 1; padding: 15px; border-radius: 10px; border: none; font-size: 1.1rem; font-weight: bold; cursor: pointer; }
         .btn-blue { background: var(--primary); color: white; }
         .btn-green { background: var(--success); color: white; }
-        .btn-gray { background: #999; color: white; }
-        .status-log { position: fixed; top: 10px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.7); color: white; padding: 5px 10px; border-radius: 5px; font-size: 12px; z-index: 9999; display: none; }
+        #canvasContainer { display: none; }
     </style>
 </head>
 <body>
 
-<div class="status-log" id="statusLog">正在連接...</div>
-
 <div class="container">
-    <div class="step active" id="step-start">
-        <h2>1. 請選擇類別</h2>
+    <div class="step active" id="s1">
+        <h2>1. 選擇類別</h2>
         <div class="grid">
-            <div class="opt" onclick="setCategory('湯')">
-                <div class="img-box"><img src="https://via.placeholder.com/150?text=Soup"></div>
-                <span>湯品類</span>
-            </div>
-            <div class="opt" onclick="setCategory('面')">
-                <div class="img-box"><img src="https://via.placeholder.com/150?text=Noodle"></div>
-                <span>麵食類</span>
-            </div>
+            <div class="opt" onclick="setCat('湯')">湯品</div>
+            <div class="opt" onclick="setCat('面')">麵食</div>
         </div>
     </div>
 
-    <div class="step" id="step-soup-select">
-        <button class="back-btn-top" onclick="goNext('step-start')">←</button>
-        <h2>2. 選擇湯品 (最多2個)</h2>
-        <div class="grid" id="grid-soupItems"></div>
-        <div class="nav-btns"><button class="btn-blue" onclick="checkSoupNext()">下一步</button></div>
+    <div class="step" id="s2">
+        <h2 id="catTitle">2. 選擇品項</h2>
+        <div class="grid" id="itemGrid"></div>
     </div>
 
-    <div class="step" id="step-food-select">
-        <button class="back-btn-top" onclick="goNext('step-start')">←</button>
-        <h2>2. 選擇主食</h2>
-        <div class="grid" id="grid-foodItems"></div>
-    </div>
-
-    <div class="step" id="step-size">
-        <button class="back-btn-top" onclick="handleSizeBack()">←</button>
-        <h2>3. 選擇大小</h2>
-        <div class="grid" id="grid-size"></div>
-    </div>
-
-    <div class="step" id="step-noodle-type">
-        <button class="back-btn-top" onclick="goNext('step-size')">←</button>
-        <h2>4. 選擇麵類</h2>
-        <div class="grid" id="grid-noodleType"></div>
-    </div>
-
-    <div class="step" id="step-sauce-select">
-        <button class="back-btn-top" onclick="goNext('step-noodle-type')">←</button>
-        <h2>5. 選擇醬料 (1-3個)</h2>
-        <div class="grid" id="grid-sauce"></div>
-        <div class="nav-btns"><button class="btn-blue" onclick="addToCart()">✅ 加入購物車</button></div>
-    </div>
-
-    <div class="step" id="step-finish">
-        <h2 class="cart-title">🛒 購物車明細</h2>
-        <div class="cart-box" id="current-cart"></div>
-        <div class="total-price-bar">應收總計: $<span id="total-sum">0</span></div>
+    <div class="step" id="s3">
+        <h2>🛒 購物車明細</h2>
+        <div id="cartBox" class="cart-box"></div>
         <div class="nav-btns">
-            <button class="btn-blue" onclick="resetForNewItem()">➕ 繼續點餐</button>
-            <button class="btn-green" onclick="handlePrintAndFinish()">🖨️ 藍牙列印出單</button>
+            <button class="btn-blue" onclick="location.reload()">重新開始</button>
+            <button class="btn-green" onclick="printAsImage()">🖨️ 圖像化列印 (解決亂碼)</button>
         </div>
     </div>
 </div>
 
-<!-- 引入 GBK 編碼支持 -->
-<script src="https://cdn.jsdelivr.net/npm/text-encoding@0.7.0/lib/encoding.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/iconv-lite@0.6.3/lib/index.min.js"></script>
+<div id="canvasContainer">
+    <canvas id="pCanvas" width="384"></canvas>
+</div>
 
 <script>
-    // 完整菜單配置 (繁體中文)
-    const config = {
-        '魚圓湯': { p: 5 }, '肉圓湯': { p: 5 }, '魚餃湯': { p: 5 }, '三寶湯': { p: 6 },
-        '魚圓面': { p: 4 }, '香菇肉碎面': { p: 5 }, '招牌面': { p: 6 }, '餐餐面': { p: 6 },
-        '肉圓面': { p: 4 }, '蝦魚面': { p: 5 }, '西刀魚面': { p: 4 }, '香菇面': { p: 5 },
-        '魚餃面': { p: 4 }, '(純)肉碎面': { p: 4 }, '小魚香面': { p: 4 },
-        '小的': { p: 0 }, '大的': { p: 1 },
-        'noodleType': { '麵薄': '', '幼麵': '', '粿條': '', '熟麵': '', '米粉': '', '米太目': '', '冬粉': '', '粿條麵': '', '粿條米粉': '', '米粉麵': '' },
-        'sauce': { '辣椒': '', '茄汁': '', '黑醬油': '', '白醬青': '', '黑醋': '', '(湯)': '' }
-    };
-
     let cart = [];
-    let tempItem = { category: '', names: [], size: '', noodle: '', sauces: [], price: 0 };
-    let printCharacteristic = null;
-    let deviceCache = null;
+    let printChar;
 
-    // 初始化
-    function init() {
-        renderGrid(['魚圓湯','肉圓湯','魚餃湯','三寶湯'], 'grid-soupItems', (val, el) => toggleMulti(val, el, tempItem.names, 2), true);
-        const foodOrder = ['魚圓面', '香菇肉碎面', '招牌面', '餐餐面', '肉圓面', '蝦魚面', '西刀魚面', '香菇面', '魚餃面', '(純)肉碎面', '小魚香面'];
-        renderGrid(foodOrder, 'grid-foodItems', (val) => { tempItem.names = [val]; goNext('step-size'); });
-        renderGrid(['小的', '大的'], 'grid-size', (val) => { 
-            tempItem.size = val; 
-            if(tempItem.category === '湯') addToCart(); 
-            else goNext('step-noodle-type'); 
+    function setCat(c) {
+        const items = (c === '湯') ? ['魚圓湯', '肉圓湯', '魚餃湯', '三寶湯'] : ['魚圓面', '香菇肉碎面', '招牌面', '餐餐面'];
+        const grid = document.getElementById('itemGrid');
+        grid.innerHTML = '';
+        items.forEach(i => {
+            const d = document.createElement('div'); d.className = 'opt'; d.innerText = i;
+            d.onclick = () => { cart.push(i); showCart(); };
+            grid.appendChild(d);
         });
-        renderGrid(Object.keys(config.noodleType), 'grid-noodleType', (val) => { tempItem.noodle = val; goNext('step-sauce-select'); });
-        renderGrid(Object.keys(config.sauce), 'grid-sauce', (val, el) => toggleMulti(val, el, tempItem.sauces, 3), true);
+        document.getElementById('s1').classList.remove('active');
+        document.getElementById('s2').classList.add('active');
     }
 
-    function renderGrid(list, containerId, clickFn, isMulti = false) {
-        const cont = document.getElementById(containerId);
-        if(!cont) return;
-        cont.innerHTML = ''; 
-        list.forEach(name => {
-            const div = document.createElement('div');
-            div.className = 'opt';
-            div.innerHTML = `<span>${name}</span>${(config[name] && config[name].p > 0) ? '<div class="price-label">+$'+config[name].p+'</div>' : ''}`;
-            div.onclick = function() {
-                if(!isMulti) { cont.querySelectorAll('.opt').forEach(o => o.classList.remove('selected')); div.classList.add('selected'); }
-                clickFn(name, div);
-            };
-            cont.appendChild(div);
+    function showCart() {
+        document.getElementById('s2').classList.remove('active');
+        document.getElementById('s3').classList.add('active');
+        document.getElementById('cartBox').innerHTML = cart.map((i, idx) => `<div>#${idx+1} <b>${i}</b></div>`).join('');
+    }
+
+    // 將內容繪製成位圖數據
+    function getPrintData() {
+        const canvas = document.getElementById('pCanvas');
+        const ctx = canvas.getContext('2d');
+        const height = 100 + (cart.length * 40) + 100;
+        canvas.height = height;
+
+        ctx.fillStyle = "white";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = "black";
+        
+        ctx.font = "bold 36px Arial";
+        ctx.fillText("Million Noodles", 60, 50);
+        
+        ctx.font = "28px Arial";
+        ctx.fillText("------------------------------", 10, 90);
+        
+        let y = 140;
+        cart.forEach((item, index) => {
+            ctx.fillText(`${index + 1}. ${item}`, 20, y);
+            y += 45;
         });
+        
+        ctx.fillText("------------------------------", 10, y + 30);
+        ctx.font = "24px Arial";
+        ctx.fillText("圖像化打印模式 - 繁體中文", 40, y + 70);
+
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        return convertToEscPos(imageData);
     }
 
-    function setCategory(val) { tempItem.category = val; goNext(val === '湯' ? 'step-soup-select' : 'step-food-select'); }
-    function toggleMulti(val, el, list, max) {
-        if(list.includes(val)) { list.splice(list.indexOf(val), 1); el.classList.remove('selected'); } 
-        else { if(list.length >= max) return alert("最多選"+max+"個"); list.push(val); el.classList.add('selected'); }
-    }
-    function goNext(id) {
-        document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
-        document.getElementById(id).classList.add('active');
-        window.scrollTo(0,0);
-    }
-    function checkSoupNext() { if(tempItem.names.length === 0) return alert("請至少選一個湯品"); goNext('step-size'); }
-    function handleSizeBack() { goNext(tempItem.category === '湯' ? 'step-soup-select' : 'step-food-select'); }
+    // 圖像轉打印機二進制指令 (GS v 0 模式)
+    function convertToEscPos(imgData) {
+        const width = imgData.width;
+        const height = imgData.height;
+        const widthBytes = width / 8;
+        const data = new Uint8Array(8 + (widthBytes * height));
+        
+        // GS v 0 0 指令
+        data[0] = 0x1D; data[1] = 0x76; data[2] = 0x30; data[3] = 0;
+        data[4] = widthBytes & 0xFF; data[5] = (widthBytes >> 8) & 0xFF;
+        data[6] = height & 0xFF; data[7] = (height >> 8) & 0xFF;
 
-    function addToCart() {
-        let price = 0;
-        tempItem.names.forEach(n => price += (config[n]?.p || 0));
-        price += (config[tempItem.size]?.p || 0);
-        tempItem.price = price;
-        cart.push(JSON.parse(JSON.stringify(tempItem)));
-        updateCartDisplay();
-        goNext('step-finish');
-    }
-
-    function updateCartDisplay() {
-        let total = 0;
-        document.getElementById('current-cart').innerHTML = cart.map((item, i) => {
-            total += item.price;
-            return `<div class="cart-item"><div><b>#${i+1} ${item.names.join('+')}</b> [${item.size}]<br><small>${item.noodle || ''} ${item.sauces.length ? ' / ' + item.sauces.join(',') : ''}</small></div><div>$${item.price}</div></div>`;
-        }).join('');
-        document.getElementById('total-sum').innerText = total;
+        let pos = 8;
+        for (let y = 0; y < height; y++) {
+            for (let x = 0; x < widthBytes; x++) {
+                let byte = 0;
+                for (let bit = 0; bit < 8; bit++) {
+                    const idx = ((y * width) + (x * 8) + bit) * 4;
+                    const r = imgData.data[idx];
+                    if (r < 128) byte |= (0x80 >> bit);
+                }
+                data[pos++] = byte;
+            }
+        }
+        return data;
     }
 
-    function resetForNewItem() {
-        tempItem = { category: '', names: [], size: '', noodle: '', sauces: [], price: 0 };
-        document.querySelectorAll('.opt').forEach(o => o.classList.remove('selected'));
-        goNext('step-start');
-    }
-
-    // 显示状态
-    function showStatus(msg, duration = 2000) {
-        const log = document.getElementById('statusLog');
-        log.textContent = msg;
-        log.style.display = 'block';
-        setTimeout(() => { log.style.display = 'none'; }, duration);
-    }
-
-    // 核心打印逻辑 (修复版)
-    async function handlePrintAndFinish() {
-        // 如果还没连接设备，先连接
-        if (!printCharacteristic) {
+    async function printAsImage() {
+        if (!printChar) {
             try {
-                showStatus("正在搜尋打印機...");
-                // 尝试重新连接
+                // 請求設備
                 const device = await navigator.bluetooth.requestDevice({
                     acceptAllDevices: true,
-                    optionalServices: ['0000ffe0-0000-1000-8000-00805f9b34fb'] // XPrinter 标准服务
+                    optionalServices: ['0000ffe0-0000-1000-8000-00805f9b34fb']
                 });
-                
-                deviceCache = device;
                 const server = await device.gatt.connect();
                 const service = await server.getPrimaryService('0000ffe0-0000-1000-8000-00805f9b34fb');
-                const characteristics = await service.getCharacteristics();
-                
-                // 寻找可写的特征
-                printCharacteristic = characteristics.find(c => c.properties.write || c.properties.writeWithoutResponse);
-                
-                if (!printCharacteristic) {
-                    throw new Error("找不到可寫入的藍牙特徵值");
-                }
-                
-                showStatus("連接成功！正在列印...");
-                // 连接成功后直接执行打印逻辑
-                await sendPrintJob();
-                
-            } catch (err) {
-                alert("藍牙連接失敗: " + err.message);
-                printCharacteristic = null;
-            }
-            return;
-        } else {
-            // 已连接，直接打印
-            try {
-                showStatus("正在列印...");
-                await sendPrintJob();
-            } catch (err) {
-                alert("打印失敗: " + err.message);
-                printCharacteristic = null; // 重置连接以便重试
+                printChar = await service.getCharacteristic('0000ffe1-0000-1000-8000-00805f9b34fb');
+                alert("藍牙連接成功！請再按一次「列印」。");
+                return;
+            } catch (e) {
+                alert("連接失敗原因：" + e.message + "\n(請檢查打印機是否已連接其他設備，或重開藍牙)");
+                return;
             }
         }
-    }
 
-    // 发送打印任务
-    async function sendPrintJob() {
-        if (cart.length === 0) {
-            alert("購物車是空的！");
-            return;
+        try {
+            const data = getPrintData();
+            const init = new Uint8Array([0x1B, 0x40]); // 初始化
+            const cut = new Uint8Array([0x1D, 0x56, 0x41, 0x00]); // 切紙/走紙
+            
+            await printChar.writeValue(init);
+            
+            // 圖像數據較大，需要分段發送防止藍牙崩潰
+            const CHUNK_SIZE = 512;
+            for (let i = 0; i < data.length; i += CHUNK_SIZE) {
+                const chunk = data.slice(i, i + CHUNK_SIZE);
+                await printChar.writeValue(chunk);
+            }
+            
+            await printChar.writeValue(new Uint8Array([0x0A, 0x0A, 0x0A, 0x0A, 0x0A])); // 走紙
+            alert("列印指令已發送！");
+        } catch (e) {
+            alert("列印出錯：" + e.message);
+            printChar = null;
         }
-
-        // 1. 构建 ESC/POS 指令缓冲区
-        let buffer = [];
-        
-        // 初始化打印机
-        buffer.push(new Uint8Array([0x1B, 0x40])); // ESC @
-        
-        // 设置字符集为 GBK (关键步骤)
-        buffer.push(new Uint8Array([0x1B, 0x74, 0x00])); // ESC t 0 (GBK/CP936)
-        
-        // 居中对齐
-        buffer.push(new Uint8Array([0x1B, 0x61, 0x01])); // ESC a 1
-        
-        // 放大字体 (可选)
-        buffer.push(new Uint8Array([0x1D, 0x21, 0x11])); // GS ! 17
-        
-        // 标题 (使用 GBK 编码)
-        const encoder = new TextEncoder('gbk', { NONSTANDARD_allowLegacyEncoding: true });
-        buffer.push(encoder.encode("Million 麵店\n"));
-        
-        // 恢复正常字体
-        buffer.push(new Uint8Array([0x1D, 0x21, 0x00])); // GS ! 0
-        buffer.push(encoder.encode("====================\n\n"));
-        
-        // 左对齐
-        buffer.push(new Uint8Array([0x1B, 0x61, 0x00])); // ESC a 0
-        
-        // 遍历购物车
-        cart.forEach((item, i) => {
-            buffer.push(encoder.encode(`订单 #${i+1}\n`));
-            buffer.push(encoder.encode(`${item.names.join('+')} (${item.size})\n`));
-            if(item.noodle) buffer.push(encoder.encode(`  面条: ${item.noodle}\n`));
-            if(item.sauces.length) buffer.push(encoder.encode(`  酱料: ${item.sauces.join(', ')}\n`));
-            buffer.push(encoder.encode(`  价格: $${item.price}\n`));
-            buffer.push(encoder.encode("--------------------\n"));
-        });
-        
-        // 总计 (右对齐)
-        buffer.push(new Uint8Array([0x1B, 0x61, 0x02])); // ESC a 2
-        buffer.push(new Uint8Array([0x1D, 0x21, 0x11])); // 放大
-        buffer.push(encoder.encode(`总计: $${document.getElementById('total-sum').innerText}\n`));
-        buffer.push(new Uint8Array([0x1D, 0x21, 0x00])); // 恢复
-        
-        // 换行和切纸
-        buffer.push(encoder.encode("\n\n\n"));
-        buffer.push(new Uint8Array([0x1D, 0x56, 0x01])); // GS V 1 (切纸)
-        
-        // 2. 合并所有 Uint8Array
-        const totalLength = buffer.reduce((acc, arr) => acc + arr.length, 0);
-        const finalBuffer = new Uint8Array(totalLength);
-        let offset = 0;
-        buffer.forEach(arr => {
-            finalBuffer.set(arr, offset);
-            offset += arr.length;
-        });
-        
-        // 3. 分块发送 (防止蓝牙包过大)
-        const CHUNK_SIZE = 512; // 每次发送 512 字节
-        for (let i = 0; i < finalBuffer.length; i += CHUNK_SIZE) {
-            const chunk = finalBuffer.slice(i, Math.min(i + CHUNK_SIZE, finalBuffer.length));
-            await printCharacteristic.writeValue(chunk);
-            // 短暂延时等待打印机处理
-            await new Promise(resolve => setTimeout(resolve, 50));
-        }
-        
-        // 4. 打印完成后的清理
-        showStatus("列印完成！");
-        cart = [];
-        updateCartDisplay();
-        resetForNewItem();
     }
-
-    init();
 </script>
 </body>
 </html>
-```
-
-### 修复重点说明：
-
-1.  **恢复繁體中文界面**：
-    *   所有 `config` 中的菜單名稱已恢復為繁體（魚圓湯、肉圓湯等）。
-    *   界面文字全部恢復繁體。
-
-2.  **蓝牙连接逻辑优化**：
-    *   将连接逻辑和打印逻辑分离。第一次点击会请求连接设备，连接成功后会**自动触发打印**（不需要再点一次）。
-    *   增加了 `showStatus` 函数，在屏幕顶部显示“正在搜寻...”、“连接成功”等状态，方便调试。
-    *   如果连接断开或失败，会自动重置 `printCharacteristic`，方便下次重新连接。
-
-3.  **编码与指令修复**：
-    *   使用了 `new TextEncoder('gbk', { NONSTANDARD_allowLegacyEncoding: true })` 来强制使用 GBK 编码。
-    *   加入了 `ESC t 0` 指令，明确告诉打印机使用 GBK 字符集。
-    *   加入了标准的 **切纸指令** (`GS V 1`)，打印完会自动切纸。
-
-4.  **数据发送缓冲（Chunking）**：
-    *   之前可能因为一次性发送太多数据导致蓝牙断开。现在改为 **512 字节一包** 循环发送，每包之间间隔 50ms，确保打印机来得及处理。
-
-### 使用方法：
-1.  用手机 Chrome 浏览器打开此页面。
-2.  点击“蓝牙列印出单”。
-3.  在蓝牙列表中选择你的 **XPrinter** 设备（通常名字包含 XP-N160II 或类似字样，或者显示为 "XP" 开头的蓝牙名）。
-4.  连接成功后，它会自动发送打印指令。
-
-如果还是乱码，请检查打印机本身的设置：
-*   有些 XPrinter 默认是 **GBK** 模式，有些需要按住走纸键开机切换到 **GBK** 模式。
-*   如果打印机屏幕显示 "GBK" 或 "18030"，那就是对的。如果显示 "UTF-8"，可能需要切换（但通常 XP-N160II 默认支持 GBK）。
