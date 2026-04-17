@@ -1,124 +1,62 @@
-<!DOCTYPE html>
+// ====== 只給列印用：中文 -> 英文對照（畫面不變） ======
+const printNameMap = {
+  // Soup
+  '魚圓湯': 'Fish Ball Soup',
+  '肉圓湯': 'Meatball Soup',
+  '魚餃湯': 'Fish Dumpling Soup',
+  '三寶湯': '3-Delight Soup',
 
-<html lang="zh-Hant">
+  // Noodles
+  '魚圓面': 'Fish Ball Noodles',
+  '香菇肉碎面': 'Mushroom Minced Pork Noodles',
+  '招牌面': 'Signature Noodles',
+  '餐餐面': 'House Noodles',
+  '肉圓面': 'Meatball Noodles',
+  '蝦魚面': 'Shrimp Fish Noodles',
+  '西刀魚面': 'Xidao Fish Noodles',
+  '香菇面': 'Mushroom Noodles',
+  '魚餃面': 'Fish Dumpling Noodles',
+  '(純)肉碎面': 'Plain Minced Pork Noodles',
+  '小魚香面': 'Small Fish Noodles',
 
-<head>
+  // Size
+  '小的': 'Small',
+  '大的': 'Large',
 
-<meta charset="UTF-8">
+  // Noodle type
+  '面薄': 'Thin Noodles',
+  '幼面': 'Fine Noodles',
+  '粿條': 'Kway Teow',
+  '熟面': 'Yellow Noodles',
+  '米粉': 'Rice Vermicelli',
+  '米太目': 'Mee Tai Mak',
+  '冬粉': 'Glass Noodles',
+  '粿條面': 'Kway Teow + Noodles',
+  '粿條米粉': 'Kway Teow + Rice Vermicelli',
+  '米粉面': 'Rice Vermicelli + Noodles',
 
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  // Sauce
+  '辣椒': 'Chili',
+  '茄汁': 'Ketchup',
+  '黑醬油': 'Dark Soy',
+  '白醬青': 'Light Soy',
+  '黑醋': 'Black Vinegar',
+  '(湯)': 'Soup'
+};
 
-<title>Million 麵店點餐系統 (最強兼容版)</title>
+function toPrintName(zh) {
+  return printNameMap[zh] || 'Unknown';
+}
 
-<style>
+// 保證只輸出 ASCII（避免印表機遇到繁中就亂碼）
+function asciiOnly(str) {
+  return String(str).replace(/[^\x0A\x0D\x20-\x7E]/g, '');
+}
 
-:root { --primary: #1a73e8; --secondary: #f0f2f5; --success: #34a853; --price-tag: #d93025; }
-
-body { font-family: "Microsoft JhengHei", sans-serif; background: var(--secondary); margin: 0; padding: 10px; text-align: center; }
-
-.container { max-width: 500px; margin: auto; background: white; padding: 15px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); padding-bottom: 90px; min-height: 85vh; position: relative; }
-
-.step { display: none; animation: fadeIn 0.3s; position: relative; }
-
-.step.active { display: block; }
-
-@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-
-.back-btn-top { position: absolute; right: 0; top: 0; width: 35px; height: 35px; border-radius: 50%; background: #eee; color: #555; border: none; font-size: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 10; }
-
-h2 { color: #333; font-size: 1.1rem; margin: 10px 0 20px 0; border-left: 5px solid var(--primary); padding-left: 10px; text-align: left; padding-right: 40px; }
-
-.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-
-.opt { background: #fff; border: 2px solid #eee; border-radius: 12px; cursor: pointer; overflow: hidden; position: relative; display: flex; flex-direction: column; }
-
-.img-box { width: 100%; height: 100px; display: flex; background: #fafafa; overflow: hidden; }
-
-.img-box img { width: 100%; height: 100%; object-fit: cover; flex: 1; }
-
-.price-label { position: absolute; bottom: 35px; right: 5px; background: var(--price-tag); color: white; padding: 2px 8px; border-radius: 5px; font-size: 12px; font-weight: bold; }
-
-.opt span { padding: 8px 5px; font-weight: bold; font-size: 0.9rem; }
-
-.opt.selected { border-color: var(--primary); background: #e8f0fe; }
-
-.opt.selected::after { content: '✅'; position: absolute; top: 5px; right: 5px; background: white; border-radius: 50%; padding: 2px; font-size: 12px; }
-
-.cart-box { margin-top: 20px; padding: 15px; border: 2px dashed var(--primary); border-radius: 10px; text-align: left; background: #fffbe6; }
-
-.cart-item { border-bottom: 1px solid #ddd; padding: 10px 0; display: flex; justify-content: space-between; align-items: center; }
-
-.total-price-bar { font-size: 1.6rem; color: var(--price-tag); font-weight: bold; margin: 20px 0; }
-
-.nav-btns { position: fixed; bottom: 0; left: 0; right: 0; background: white; padding: 15px; display: flex; gap: 10px; max-width: 500px; margin: auto; box-shadow: 0 -5px 10px rgba(0,0,0,0.05); z-index: 1000; }
-
-button { flex: 1; padding: 15px; border-radius: 10px; border: none; font-size: 1rem; cursor: pointer; font-weight: bold; }
-
-.btn-blue { background: var(--primary); color: white; }
-
-.btn-green { background: var(--success); color: white; }
-
-</style>
-
-</head>
-
-<body>
-
-<div class="container">
-
-<div class="step active" id="step-start">
-
-<h2>1.请选择类别</h2>
- <div类=“网格”>
- <div class="opt" onclick="setCategory('汤')">
- <div class="img-box"><img src="https://via.placeholder.com/150?text=Soup"></div>
- <span>汤品类</span>
- </div>
- <div class="opt" onclick="setCategory('面')">
- <div class="img-box"><img src="https://via.placeholder.com/150?text=Noodle"></div>
- <span>面食类</span>
- </div>
- </div>
- </div>
-
- <div class="step" id="step-soup-select">
- <button class="back-btn-top" onclick="goNext('step-start')">←</button>
- <h2>2。 选择汤品（最多2个）</h2>
- <div class="grid" id="grid-soupItems"></div>
- <div class="nav-btns"><button class="btn-blue" onclick="checkSoupNext()">下一步</button></div>
- </div>
-
- <div class="step" id="step-food-select">
- <button class="back-btn-top" onclick="goNext('step-start')">←</button>
- <h2>2。 选择主食</h2>
- <div class="grid" id="grid-foodItems"></div>
- </div>
-
- <div class="step" id="step-size">
- <button class="back-btn-top" onclick="handleSizeBack()">←</button>
- <h2>3。 选择大小</h2>
-
-<div class="grid" id="grid-size"></div>
-
-</div>
-
-<div class="step" id="step-noodle-type">
-
-<button class="back-btn-top" onclick="goNext('step-size')">←</button>
-
-<h2>4. 选择面类</h2>
-
-<div class="grid" id="grid-noodleType"></div>
-
-</div>
-
-<div class="step" id="step-sauce-select">
-
-<button class="back-btn-top" onclick="goNext('step-noodle-type')">←</button>
-
-<h2>5.选择酱料 (1-3个)</h2>
- <div class="grid" id="grid-sauce"></div>
- <div class="nav-btns"><button class="btn-blue" onclick="addToCart()">✅ 加入购物车</button></div>
- </div>
-
- <div类
+// BLE 寫入常需要分段送（更穩定）
+async function writeInChunks(characteristic, uint8, chunkSize = 180) {
+  for (let i = 0; i < uint8.length; i += chunkSize) {
+    const chunk = uint8.slice(i, i + chunkSize);
+    await characteristic.writeValue(chunk);
+  }
+}
