@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Million 麵店點餐系統 (最強兼容版)</title>
+    <title>Million 麵店點餐系統 (印表機兼容版)</title>
     <style>
         :root { --primary: #1a73e8; --secondary: #f0f2f5; --success: #34a853; --price-tag: #d93025; }
         body { font-family: "Microsoft JhengHei", sans-serif; background: var(--secondary); margin: 0; padding: 10px; text-align: center; }
@@ -91,8 +91,9 @@
 </div>
 
 <script>
+    // 這裡保留繁體介面，但增加 en 屬性供列印使用
     const config = {
-        '魚圓湯': { p: 5, en: '鱼圆汤' }, '肉圓湯': { p: 5, en: 'Meatball Soup' }, 
+        '魚圓湯': { p: 5, en: 'Fishball Soup' }, '肉圓湯': { p: 5, en: 'Meatball Soup' }, 
         '魚餃湯': { p: 5, en: 'Fish Dumpling Soup' }, '三寶湯': { p: 6, en: '3 Treasure Soup' },
         '魚圓面': { p: 4, en: 'Fishball Noodle' }, '香菇肉碎面': { p: 5, en: 'Mushroom Minced Meat Noodle' }, 
         '招牌面': { p: 6, en: 'Signature Noodle' }, '餐餐面': { p: 6, en: 'Meal Meal Noodle' },
@@ -192,10 +193,8 @@
                 });
                 const server = await device.gatt.connect();
                 const services = await server.getPrimaryServices();
-                if (services.length === 0) throw new Error("找不到打印服務");
                 const characteristics = await services[0].getCharacteristics();
                 printCharacteristic = characteristics.find(c => c.properties.write || c.properties.writeWithoutResponse);
-                if (!printCharacteristic) throw new Error("找不到寫入特徵值");
                 alert("連接成功！請再次點擊「藍牙列印」出單。");
                 return;
             } catch (err) {
@@ -205,36 +204,33 @@
         }
 
         try {
-            // --- 核心修改：列印內容翻譯邏輯 ---
-            let receipt = "\x1B\x40"; // 重置列印機
+            // ESC/POS 指令
+            let receipt = "\x1B\x40"; // 重置
             receipt += "\x1B\x61\x01Million Noodles\n\n"; // 居中
             receipt += "\x1B\x61\x00"; // 左對齊
             
             cart.forEach((item, i) => {
-                // 翻譯名稱 (names)
-                const enNames = item.names.map(n => config[n]?.en || n).join(' + ');
-                // 翻譯大小 (size)
+                // 自動將繁體轉為預設的英文配對
+                const enNames = item.names.map(n => config[n]?.en || n).join('+');
                 const enSize = config[item.size]?.en || item.size;
-                // 翻譯麵類 (noodle)
                 const enNoodle = config.noodleType[item.noodle] || item.noodle;
-                // 翻譯醬料 (sauces)
-                const enSauces = item.sauces.map(s => config.sauce[s] || s).join(', ');
+                const enSauces = item.sauces.map(s => config.sauce[s] || s).join(',');
 
                 receipt += `ORDER #${i+1}\n`;
                 receipt += `${enNames} (${enSize})\n`;
-                if(item.noodle) receipt += ` - Noodle: ${enNoodle}\n`;
-                if(item.sauces.length) receipt += ` - Sauce: ${enSauces}\n`;
+                if(item.noodle) receipt += ` - ${enNoodle}\n`;
+                if(item.sauces.length) receipt += ` - ${enSauces}\n`;
                 receipt += `Price: $${item.price}\n`;
                 receipt += "--------------------------------\n";
             });
 
             receipt += `TOTAL: $${document.getElementById('total-sum').innerText}\n`;
-            receipt += "\n\n\n\n\n"; // 留白
+            receipt += "\n\n\n\n\n"; // 留白撕紙
 
             const encoder = new TextEncoder();
             await printCharacteristic.writeValue(encoder.encode(receipt));
             
-            alert("已送往廚房！");
+            alert("已成功送往印表機！");
             cart = [];
             updateCartDisplay();
             resetForNewItem();
