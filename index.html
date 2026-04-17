@@ -3,111 +3,355 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Xprinter 中文列印測試</title>
-    <!-- 引入轉碼庫 -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/encoding-japanese/2.0.0/encoding.min.js"></script>
+    <title>XPrinter 藍牙診斷工具</title>
+    <script src="https://cdn.jsdelivr.net/npm/encoding-japanese@2.0.0/encoding.min.js"></script>
     <style>
-        body { font-family: sans-serif; text-align: center; padding: 20px; background: #f4f4f9; }
-        .card { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); max-width: 400px; margin: auto; }
-        button { 
-            width: 100%; padding: 15px; margin: 10px 0; border: none; border-radius: 8px; 
-            font-size: 16px; font-weight: bold; cursor: pointer; color: white;
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: "Microsoft JhengHei", Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
         }
-        .btn-primary { background-color: #007bff; }
-        .btn-secondary { background-color: #28a745; }
-        #status { color: #666; font-size: 14px; margin-top: 10px; border: 1px solid #ddd; padding: 10px; border-radius: 5px; min-height: 40px; }
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 25px;
+            max-width: 450px;
+            margin: 0 auto;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        h1 {
+            color: #333;
+            font-size: 22px;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        .status {
+            background: #f0f0f0;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 15px 0;
+            text-align: center;
+            font-size: 14px;
+            color: #666;
+            font-weight: bold;
+        }
+        .status.success { background: #d4edda; color: #155724; }
+        .status.error { background: #f8d7da; color: #721c24; }
+        .status.info { background: #d1ecf1; color: #0c5460; }
+        
+        button {
+            width: 100%;
+            padding: 16px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-bottom: 12px;
+            transition: all 0.3s;
+        }
+        .btn-scan {
+            background: #667eea;
+            color: white;
+        }
+        .btn-scan:active {
+            background: #5568d3;
+            transform: scale(0.98);
+        }
+        .btn-print {
+            background: #48bb78;
+            color: white;
+        }
+        .btn-print:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        
+        .log-container {
+            background: #1e1e1e;
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 20px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .log-item {
+            color: #00ff00;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            margin: 5px 0;
+            padding: 5px;
+            border-left: 3px solid #00ff00;
+            padding-left: 10px;
+        }
+        .log-item.error {
+            color: #ff6b6b;
+            border-left-color: #ff6b6b;
+        }
+        .log-item.warn {
+            color: #ffd93d;
+            border-left-color: #ffd93d;
+        }
+        .log-item.info {
+            color: #6bcfff;
+            border-left-color: #6bcfff;
+        }
+        
+        .info-box {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 12px;
+            margin: 15px 0;
+            border-radius: 5px;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+        
+        .preview {
+            background: #f9f9f9;
+            border: 2px dashed #ccc;
+            border-radius: 10px;
+            padding: 15px;
+            margin: 15px 0;
+            font-family: monospace;
+            font-size: 12px;
+            line-height: 1.5;
+            white-space: pre-wrap;
+            display: none;
+        }
+        .preview.show { display: block; }
     </style>
 </head>
 <body>
 
-<div class="card">
-    <h2>Xprinter 測試工具</h2>
-    <p>請輸入要列印的文字：</p>
-    <textarea id="printText" style="width:100%; height:80px; padding:5px; box-sizing:border-box;">
-測試成功！
-1234567890
-繁體中文測試
-Million 麵店點單
-    </textarea>
-
-    <div id="status">狀態：等待操作...</div>
-
-    <button class="btn-primary" onclick="startPrint('BIG5')">1. 連接並列印 (Big5 繁體)</button>
-    <button class="btn-secondary" onclick="startPrint('GB18030')">2. 備用模式 (GB18030 簡繁)</button>
+<div class="container">
+    <h1>🔧 XPrinter 診斷工具</h1>
     
-    <p style="font-size: 12px; color: #999; text-align: left;">
-        * 如果方案 1 是亂碼，請嘗試方案 2。<br>
-        * 確保手機藍牙已開啟。<br>
-        * 必須在 HTTPS 環境下執行。
-    </p>
+    <div class="status" id="status">準備就緒</div>
+    
+    <div class="info-box">
+        ⚠️ <b>請確認：</b><br>
+        1️⃣ iPhone 設定 → 藍牙 已開啟<br>
+        2️⃣ XPrinter 電源已開啟<br>
+        3️⃣ 使用 <b>Safari 瀏覽器</b>
+    </div>
+    
+    <button class="btn-scan" onclick="scanAndConnect()">🔍 搜尋並連接印表機</button>
+    <button class="btn-print" id="btnPrint" onclick="testPrint()" disabled>📄 測試列印</button>
+    
+    <div class="preview" id="preview">================================
+   XPrinter 測試單
+================================
+【繁體中文】
+魚圓麵 $45
+香菇肉碎面 $50
+三寶湯 $60
+--------------------------------
+總計: $155
+================================
+    Thank You!
+================================</div>
+    
+    <div class="log-container" id="logContainer">
+        <div class="log-item info">>>> 系統啟動完成</div>
+    </div>
 </div>
 
 <script>
-    let device, server, characteristic;
+let device = null;
+let printCharacteristic = null;
 
-    async function startPrint(encodingMode) {
-        const statusEl = document.getElementById('status');
-        const textToPrint = document.getElementById('printText').value;
+function log(msg, type = 'log') {
+    const container = document.getElementById('logContainer');
+    const item = document.createElement('div');
+    item.className = `log-item ${type}`;
+    const time = new Date().toLocaleTimeString('zh-TW', { hour12: false });
+    item.textContent = `[${time}] ${msg}`;
+    container.appendChild(item);
+    container.scrollTop = container.scrollHeight;
+    console.log(`[${type}] ${msg}`);
+}
 
-        try {
-            if (!characteristic) {
-                statusEl.innerText = "正在搜尋藍牙設備...";
-                device = await navigator.bluetooth.requestDevice({
-                    acceptAllDevices: true,
-                    optionalServices: [
-                        '0000ffe0-0000-1000-8000-00805f9b34fb', 
-                        '000018f0-0000-1000-8000-00805f9b34fb',
-                        'e7e11000-49f1-b3a2-991d-7199629b8e36'
-                    ]
-                });
+function setStatus(msg, type = '') {
+    const status = document.getElementById('status');
+    status.textContent = msg;
+    status.className = 'status ' + type;
+}
 
-                statusEl.innerText = "正在連接...";
-                server = await device.gatt.connect();
-                const services = await server.getPrimaryServices();
+async function scanAndConnect() {
+    try {
+        setStatus('🔍 請選擇印表機...', 'info');
+        log('開始掃描藍牙裝置', 'info');
+        
+        // 方法1: 不限制裝置名稱，允許所有裝置
+        device = await navigator.bluetooth.requestDevice({
+            acceptAllDevices: true,
+            optionalServices: [
+                '0000ffe0-0000-1000-8000-00805f9b34fb', // 常見熱感印表機
+                '000018f0-0000-1000-8000-00805f9b34fb', // ESC/POS 標準
+                '49535343-fe7d-4ae5-8fa9-9fafd205e455', // iOS 通用
+                'e7810a71-73ae-499d-8c15-faa9aef0c3f2'  // Xprinter 專用
+            ]
+        });
+        
+        log(`✓ 已選擇裝置: ${device.name || '未命名裝置'}`, 'info');
+        log(`  裝置 ID: ${device.id}`, 'info');
+        
+        setStatus('🔌 正在連接 GATT...', 'info');
+        const server = await device.gatt.connect();
+        log('✓ GATT 伺服器已連接', 'info');
+        
+        setStatus('🔎 正在掃描所有服務...', 'info');
+        const services = await server.getPrimaryServices();
+        log(`✓ 找到 ${services.length} 個服務`, 'info');
+        
+        // 掃描所有服務和特徵值
+        let foundChar = null;
+        for (let i = 0; i < services.length; i++) {
+            const service = services[i];
+            log(`--- 服務 ${i+1}: ${service.uuid}`, 'warn');
+            
+            try {
+                const chars = await service.getCharacteristics();
+                log(`    包含 ${chars.length} 個特徵值`, 'info');
                 
-                for (const service of services) {
-                    const chars = await service.getCharacteristics();
-                    characteristic = chars.find(c => c.properties.write || c.properties.writeWithoutResponse);
-                    if (characteristic) break;
+                for (const char of chars) {
+                    const props = [];
+                    if (char.properties.read) props.push('READ');
+                    if (char.properties.write) props.push('WRITE');
+                    if (char.properties.writeWithoutResponse) props.push('WRITE_NO_RESP');
+                    if (char.properties.notify) props.push('NOTIFY');
+                    
+                    log(`    • ${char.uuid} [${props.join(', ')}]`, 'info');
+                    
+                    // 尋找可寫入的特徵值
+                    if ((char.properties.write || char.properties.writeWithoutResponse) && !foundChar) {
+                        foundChar = char;
+                        log(`    ★ 選定此特徵值用於列印`, 'success');
+                    }
                 }
+            } catch (e) {
+                log(`    ⚠️ 無法讀取特徵值: ${e.message}`, 'warn');
             }
-
-            if (!characteristic) throw new Error("找不到可寫入的列印特徵值");
-
-            statusEl.innerText = `正在使用 ${encodingMode} 編碼...`;
-
-            // --- 1. ESC/POS 初始化指令 ---
-            // [0x1B, 0x40] 初始化
-            // [0x1C, 0x26] 進入漢字模式 (FS &)
-            const initCmd = new Uint8Array([0x1B, 0x40, 0x1C, 0x26]);
-            await characteristic.writeValue(initCmd);
-
-            // --- 2. 轉碼內容 ---
-            const fullContent = textToPrint + "\n\n\n\n"; // 多留幾行出紙
-            const charArray = Array.from(fullContent).map(c => c.charCodeAt(0));
-            const encodedArray = Encoding.convert(charArray, {
-                to: encodingMode,
-                from: 'UNICODE'
-            });
-            const data = new Uint8Array(encodedArray);
-
-            // --- 3. 分段發送 (重要：解決 iPhone 亂碼或漏字) ---
-            const CHUNK_SIZE = 20;
-            for (let i = 0; i < data.length; i += CHUNK_SIZE) {
-                const chunk = data.slice(i, i + CHUNK_SIZE);
-                await characteristic.writeValue(chunk);
-                // 停頓 50 毫秒讓印表機處理緩衝
-                await new Promise(r => setTimeout(r, 50));
-            }
-
-            statusEl.innerText = "✅ 列印指令已發送！";
-
-        } catch (error) {
-            console.error(error);
-            statusEl.innerText = "❌ 錯誤: " + error.message;
-            characteristic = null; // 出錯時重置連線
+        }
+        
+        if (!foundChar) {
+            throw new Error('找不到可用的寫入特徵值');
+        }
+        
+        printCharacteristic = foundChar;
+        setStatus(`✅ 連接成功: ${device.name || '印表機'}`, 'success');
+        document.getElementById('btnPrint').disabled = false;
+        document.getElementById('preview').classList.add('show');
+        log('========== 可以開始列印 ==========', 'success');
+        
+    } catch (error) {
+        setStatus('❌ 連接失敗', 'error');
+        log(`錯誤: ${error.message}`, 'error');
+        log(`錯誤堆疊: ${error.stack}`, 'error');
+        
+        // 提供詳細的錯誤說明
+        if (error.message.includes('User cancelled')) {
+            alert('❌ 您取消了選擇\n\n請重新點擊「搜尋並連接印表機」');
+        } else if (error.message.includes('Bluetooth adapter not available')) {
+            alert('❌ 藍牙不可用\n\n請到 iPhone 設定 → 藍牙 → 開啟');
+        } else if (error.message.includes('GATT')) {
+            alert('❌ GATT 連接失敗\n\n請確認：\n1. 印表機已開機\n2. 距離在 1 公尺內\n3. 印表機未被其他裝置連接');
+        } else {
+            alert(`❌ 連接失敗\n\n${error.message}\n\n請查看下方 Log 紀錄`);
         }
     }
+}
+
+async function testPrint() {
+    if (!printCharacteristic) {
+        alert('請先連接印表機！');
+        return;
+    }
+    
+    try {
+        setStatus('📄 正在列印...', 'info');
+        log('========== 開始列印 ==========', 'info');
+        
+        const ESC = 0x1B;
+        
+        // 1. 初始化
+        log('發送初始化指令...', 'info');
+        const initCmd = new Uint8Array([
+            ESC, 0x40,          // 重置
+            ESC, 0x74, 0x0F,    // GB2312
+            0x1C, 0x26,         // 中文模式
+            ESC, 0x61, 0x01     // 置中
+        ]);
+        await printCharacteristic.writeValue(initCmd);
+        await sleep(150);
+        log('✓ 初始化完成', 'info');
+        
+        // 2. 轉碼
+        const text = document.getElementById('preview').textContent;
+        const simplified = traditionalToSimplified(text);
+        const encoded = Encoding.convert(
+            Encoding.stringToCode(simplified),
+            { to: 'GB2312', from: 'UNICODE' }
+        );
+        log(`✓ 編碼完成: ${encoded.length} bytes`, 'info');
+        
+        // 3. 分段傳輸
+        const CHUNK = 40; // iPhone 保守值
+        for (let i = 0; i < encoded.length; i += CHUNK) {
+            const chunk = new Uint8Array(encoded.slice(i, i + CHUNK));
+            await printCharacteristic.writeValue(chunk);
+            await sleep(60);
+            
+            if (i % 200 === 0) {
+                log(`傳輸中... ${i}/${encoded.length}`, 'info');
+            }
+        }
+        log('✓ 資料傳輸完成', 'info');
+        
+        // 4. 走紙切紙
+        log('執行走紙切紙...', 'info');
+        const endCmd = new Uint8Array([
+            0x0A, 0x0A, 0x0A,
+            ESC, 0x64, 0x03,
+            0x1D, 0x56, 0x00
+        ]);
+        await printCharacteristic.writeValue(endCmd);
+        
+        setStatus('✅ 列印完成！', 'success');
+        log('========== 列印完成 ==========', 'success');
+        alert('✅ 列印指令已發送！\n\n請檢查印表機出紙');
+        
+    } catch (error) {
+        setStatus('❌ 列印失敗', 'error');
+        log(`列印錯誤: ${error.message}`, 'error');
+        alert(`❌ 列印錯誤\n\n${error.message}`);
+    }
+}
+
+function traditionalToSimplified(text) {
+    const map = {
+        '繁':'繁','體':'体','測':'测','試':'试','魚':'鱼','圓':'圆',
+        '麵':'面','面':'面','餃':'饺','湯':'汤','碎':'碎','蝦':'虾',
+        '寶':'宝','醬':'酱','總':'总','計':'计'
+    };
+    return text.replace(/./g, c => map[c] || c);
+}
+
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+// 檢查瀏覽器支援
+if (!navigator.bluetooth) {
+    setStatus('❌ 瀏覽器不支援藍牙', 'error');
+    log('請使用 iPhone Safari 瀏覽器', 'error');
+    alert('⚠️ 請使用 iPhone Safari 瀏覽器打開此頁面');
+} else {
+    log('瀏覽器支援 Web Bluetooth API', 'info');
+}
 </script>
 
 </body>
