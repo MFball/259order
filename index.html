@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Million 麵店 - 湯品自動跳轉版</title>
+    <title>Million 麵店 - 醬料邏輯修正版</title>
     <style>
         :root { --primary: #1a73e8; --secondary: #f0f2f5; --success: #34a853; --price-tag: #d93025; --cancel: #666; }
         body { font-family: sans-serif; background: var(--secondary); margin: 0; padding: 10px; text-align: center; }
@@ -84,7 +84,7 @@
     <div class="step" id="step-sauce-select">
         <button class="back-btn-top" onclick="goNext('step-noodle-type')">←</button>
         <h2>5. 請選擇醬料</h2>
-        <div class="limit-hint">最少 1 個，最多 3 個</div>
+        <div class="limit-hint">乾撈選 1-3 個；選湯則不能加其他醬</div>
         <div class="grid" id="grid-sauce"></div>
         <div class="nav-btns"><button class="btn-blue" onclick="checkSauceAndFinish()">✅ 加入購物車</button></div>
     </div>
@@ -144,19 +144,31 @@
     let savedDevice = null, savedCharacteristic = null, isFastMode = false;
 
     function init() {
-        // 湯品類改為點擊即跳轉
         renderGrid(['魚圓湯','肉圓湯','魚餃湯','三寶湯'], 'grid-soupItems', (val) => {
-            if(tempItem.names.length > 0 && !tempItem.names.includes(val)) {
-                alert("湯不能選其他味道");
-                return;
-            }
-            tempItem.names = [val];
-            goNext('step-size');
+            if(tempItem.names.length > 0 && !tempItem.names.includes(val)) { alert("湯不能選其他味道"); return; }
+            tempItem.names = [val]; goNext('step-size');
         });
         renderGrid(['魚圓面', '香菇肉碎面', '招牌面', '餐餐面', '肉圓面', '蝦魚面', '西刀魚面', '香菇面', '魚餃面', '(純)肉碎面', '小魚香面'], 'grid-foodItems', (val) => { tempItem.names = [val]; goNext('step-size'); });
         renderGrid(['小的', '大的'], 'grid-size', (val) => { tempItem.size = val; if(tempItem.category === '湯') generatePreviewAndGo(); else goNext('step-noodle-type'); });
         renderGrid(Object.keys(config.noodleType), 'grid-noodleType', (val) => { tempItem.noodle = val; });
-        renderGrid(Object.keys(config.sauce), 'grid-sauce', (val, el) => toggleMulti(val, el, tempItem.sauces, 3), true);
+        
+        // 醬料邏輯修正
+        renderGrid(Object.keys(config.sauce), 'grid-sauce', (val, el) => {
+            if (val === '湯') {
+                if (tempItem.sauces.length > 0) {
+                    alert("湯麵不能選其他醬料");
+                    return;
+                }
+                tempItem.sauces = ['湯'];
+                generatePreviewAndGo(); // 選湯即入購物車
+            } else {
+                if (tempItem.sauces.includes('湯')) {
+                    alert("湯麵不能選其他醬料");
+                    return;
+                }
+                toggleMulti(val, el, tempItem.sauces, 3);
+            }
+        }, true);
     }
 
     function renderGrid(list, id, clickFn, multi = false) {
@@ -172,11 +184,7 @@
             const priceTag = (price > 0) ? `<div class="price-circle">$${price}</div>` : '';
             let imgHTML = Array.isArray(imgSrc) ? imgSrc.map(url => `<img src="${url}">`).join('') : `<img src="${imgSrc || ''}">`;
             div.innerHTML = `<div class="img-box">${priceTag}${imgHTML}</div><span>${name}</span>`;
-            div.onclick = () => { 
-                if(!multi) Array.from(cont.children).forEach(c=>c.classList.remove('selected')); 
-                div.classList.add('selected'); 
-                clickFn(name, div); 
-            };
+            div.onclick = () => { if(!multi) Array.from(cont.children).forEach(c=>c.classList.remove('selected')); div.classList.add('selected'); clickFn(name, div); };
             cont.appendChild(div);
         });
     }
