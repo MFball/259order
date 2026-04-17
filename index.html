@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Million 麵店 - 衝刺穩定版</title>
+    <title>Million 麵店 - 自動記憶版</title>
     <style>
         :root { --primary: #1a73e8; --secondary: #f0f2f5; --success: #34a853; --price-tag: #d93025; }
         body { font-family: sans-serif; background: var(--secondary); margin: 0; padding: 10px; text-align: center; }
@@ -86,6 +86,11 @@
 
     let cart = [];
     let tempItem = { category: '', names: [], size: '', noodle: '', sauces: [], price: 0 };
+    
+    // --- 藍牙記憶變數 ---
+    let savedDevice = null;
+    let savedCharacteristic = null;
+    let isFastMode = false;
 
     function init() {
         renderGrid(['魚圓湯','肉圓湯','魚餃湯','三寶湯'], 'grid-soupItems', (val, el) => toggleMulti(val, el, tempItem.names, 2), true);
@@ -132,15 +137,12 @@
         const ctx = canvas.getContext('2d');
         const previewImg = document.getElementById('printPreviewImg');
         const previewArea = document.getElementById('preview-area');
-
         canvas.height = 300 + (cart.length * 110);
         ctx.fillStyle = "white"; ctx.fillRect(0, 0, 384, canvas.height);
         ctx.textBaseline = "top"; ctx.fillStyle = "black";
-        
         ctx.textAlign = "center";
         ctx.font = "bold 34px sans-serif";
         ctx.fillText("Million Noodles", 192, 40);
-
         ctx.textAlign = "left";
         let y = 110;
         cart.forEach((item, i) => {
@@ -151,17 +153,47 @@
             ctx.fillText(` [${item.size}] ${item.noodle||''} ${item.sauces.join(',')}`, 10, y);
             y += 60;
         });
-
         ctx.font = "24px sans-serif";
         ctx.fillText("----------------------------", 10, y); y += 45;
         ctx.font = "bold 32px sans-serif";
         ctx.fillText("TOTAL: $" + document.getElementById('total-sum').innerText, 10, y);
-
         previewImg.src = canvas.toDataURL("image/png");
         previewArea.style.display = "block";
     }
 
     function resetForNewItem() { tempItem = { category: '', names: [], size: '', noodle: '', sauces: [], price: 0 }; document.querySelectorAll('.opt').forEach(o => o.classList.remove('selected')); goNext('step-start'); }
+
+    // --- 核心改動：自動連線邏輯 ---
+    async function getPrinter() {
+        // 如果已經連咗，直接返傳
+        if (savedDevice && savedDevice.gatt.connected && savedCharacteristic) {
+            return savedCharacteristic;
+        }
+
+        const status = document.getElementById('status');
+        status.innerText = "🔍 搜尋印表機...";
+        
+        // 請求新設備 (第一次或斷線後)
+        savedDevice = await navigator.bluetooth.requestDevice({ 
+            acceptAllDevices: true, 
+            optionalServices: ['0000ffe0-0000-1000-8000-00805f9b34fb'] 
+        });
+
+        const server = await savedDevice.gatt.connect();
+        const services = await server.getPrimaryServices();
+        
+        savedCharacteristic = null;
+        for (const s of services) {
+            const chars = await s.getCharacteristics();
+            savedCharacteristic = chars.find(c => c.properties.writeWithoutResponse);
+            if (savedCharacteristic) { isFastMode = true; break; }
+            savedCharacteristic = chars.find(c => c.properties.write);
+            if (savedCharacteristic) { isFastMode = false; break; }
+        }
+
+        if (!savedCharacteristic) throw new Error("找不到列印通道");
+        return savedCharacteristic;
+    }
 
     async function handleImagePrint() {
         const status = document.getElementById('status');
@@ -171,22 +203,7 @@
         
         try {
             btn.disabled = true;
-            status.innerText = "🔍 搜尋印表機...";
-            const device = await navigator.bluetooth.requestDevice({ acceptAllDevices: true, optionalServices: ['0000ffe0-0000-1000-8000-00805f9b34fb'] });
-            const server = await device.gatt.connect();
-            const services = await server.getPrimaryServices();
-            
-            let targetChar = null;
-            let canFast = false;
-            for (const s of services) {
-                const chars = await s.getCharacteristics();
-                targetChar = chars.find(c => c.properties.writeWithoutResponse);
-                if (targetChar) { canFast = true; break; }
-                targetChar = chars.find(c => c.properties.write);
-                if (targetChar) break;
-            }
-
-            if (!targetChar) throw new Error("找不到通道");
+            const targetChar = await getPrinter();
 
             status.innerText = "📤 衝刺列印中...";
             const imgData = ctx.getImageData(0, 0, 384, canvas.height);
@@ -208,28 +225,27 @@
                     row[8 + x] = b;
                 }
                 
-                if (canFast) {
+                if (isFastMode) {
                     await targetChar.writeValueWithoutResponse(row);
                 } else {
                     await targetChar.writeValue(row);
                 }
                 
-                // --- 速度倍增優化 ---
-                // 每 30 行休息 10ms (由 20行/25ms 提升)
+                // 維持你自訂的速度
                 if (y % 20 === 0) { await new Promise(r => setTimeout(r, 100)); }
             }
 
             await targetChar.writeValue(new Uint8Array([0x1B, 0x64, 0x08]));
             await targetChar.writeValue(new Uint8Array([0x1D, 0x56, 0x00]));
 
-            status.innerText = "✅ 列印完成！";
+            status.innerText = "✅ 列印成功 (已記住設備)";
             cart = []; updateCartDisplay(); btn.disabled = false; resetForNewItem();
-            await server.disconnect();
 
         } catch (e) {
             alert("錯誤: " + e.message);
             status.innerText = "❌ 連線失敗";
             btn.disabled = false;
+            savedDevice = null; // 出錯就清除記憶，下次重新選
         }
     }
     init();
