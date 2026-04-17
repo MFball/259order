@@ -92,24 +92,13 @@
 
 <script>
     const config = {
-        '魚圓湯': { p: 5, en: 'Fishball Soup' }, '肉圓湯': { p: 5, en: 'Meatball Soup' }, 
-        '魚餃湯': { p: 5, en: 'Fish Dumpling Soup' }, '三寶湯': { p: 6, en: '3 Treasure Soup' },
-        '魚圓面': { p: 4, en: 'Fishball Noodle' }, '香菇肉碎面': { p: 5, en: 'Mushroom Minced Meat Noodle' }, 
-        '招牌面': { p: 6, en: 'Signature Noodle' }, '餐餐面': { p: 6, en: 'Meal Meal Noodle' },
-        '肉圓面': { p: 4, en: 'Meatball Noodle' }, '蝦魚面': { p: 5, en: 'Prawn Fish Noodle' }, 
-        '西刀魚面': { p: 4, en: 'Ikan Parang Noodle' }, '香菇面': { p: 5, en: 'Mushroom Noodle' },
-        '魚餃面': { p: 4, en: 'Fish Dumpling Noodle' }, '(純)肉碎面': { p: 4, en: 'Pure Minced Meat Noodle' }, 
-        '小魚香面': { p: 4, en: 'Small Fish Fragrant Noodle' },
-        '小的': { p: 0, en: 'Small' }, '大的': { p: 1, en: 'Large' },
-        'noodleType': { 
-            '面薄': 'Mee Pok', '幼面': 'Mee Kia', '粿條': 'Kway Teow', '熟面': 'Yellow Noodle', 
-            '米粉': 'Bee Hoon', '米太目': 'Mee Tai Mak', '冬粉': 'Tang Hoon', 
-            '粿條面': 'Kway Teow Mee', '粿條米粉': 'Kway Teow Bee Hoon', '米粉面': 'Bee Hoon Mee' 
-        },
-        'sauce': { 
-            '辣椒': 'Chilli', '茄汁': 'Tomato', '黑醬油': 'Black Sauce', 
-            '白醬青': 'Light Soy Sauce', '黑醋': 'Black Vinegar', '(湯)': 'Soup' 
-        }
+        '魚圓湯': { p: 5 }, '肉圓湯': { p: 5 }, '魚餃湯': { p: 5 }, '三寶湯': { p: 6 },
+        '魚圓面': { p: 4 }, '香菇肉碎面': { p: 5 }, '招牌面': { p: 6 }, '餐餐面': { p: 6 },
+        '肉圓面': { p: 4 }, '蝦魚面': { p: 5 }, '西刀魚面': { p: 4 }, '香菇面': { p: 5 },
+        '魚餃面': { p: 4 }, '(純)肉碎面': { p: 4 }, '小魚香面': { p: 4 },
+        '小的': { p: 0 }, '大的': { p: 1 },
+        'noodleType': { '面薄': '', '幼面': '', '粿條': '', '熟面': '', '米粉': '', '米太目': '', '冬粉': '', '粿條面': '', '粿條米粉': '', '米粉面': '' },
+        'sauce': { '辣椒': '', '茄汁': '', '黑醬油': '', '白醬青': '', '黑醋': '', '(湯)': '' }
     };
 
     let cart = [];
@@ -183,19 +172,31 @@
         goNext('step-start');
     }
 
+    // --- 修改後的藍牙邏輯：自動搜尋並連接服務 ---
     async function handlePrintAndFinish() {
         if (!printCharacteristic) {
             try {
+                // 放寬搜尋條件，接受所有裝置，但指定芯燁常見的服務 UUID
                 const device = await navigator.bluetooth.requestDevice({
                     acceptAllDevices: true,
-                    optionalServices: ['0000ffe0-0000-1000-8000-00805f9b34fb', '000018f0-0000-1000-8000-00805f9b34fb', '49535343-fe7d-4ae5-8fa9-9fafd205e455']
+                    optionalServices: [
+                        '0000ffe0-0000-1000-8000-00805f9b34fb', 
+                        '000018f0-0000-1000-8000-00805f9b34fb',
+                        '49535343-fe7d-4ae5-8fa9-9fafd205e455'
+                    ]
                 });
+                
                 const server = await device.gatt.connect();
+                // 嘗試抓取第一個可用的 Primary Service
                 const services = await server.getPrimaryServices();
                 if (services.length === 0) throw new Error("找不到打印服務");
+                
+                // 在服務中抓取特徵值
                 const characteristics = await services[0].getCharacteristics();
                 printCharacteristic = characteristics.find(c => c.properties.write || c.properties.writeWithoutResponse);
+                
                 if (!printCharacteristic) throw new Error("找不到寫入特徵值");
+
                 alert("連接成功！請再次點擊「藍牙列印」出單。");
                 return;
             } catch (err) {
@@ -205,31 +206,22 @@
         }
 
         try {
-            // --- 核心修改：列印內容翻譯邏輯 ---
-            let receipt = "\x1B\x40"; // 重置列印機
-            receipt += "\x1B\x61\x01Million Noodles\n\n"; // 居中
+            // ESC/POS 指令製作收據
+            let receipt = "\x1B\x40"; // 重置
+            receipt += "\x1B\x61\x01Million Noodles\n\n"; // 居中標題
             receipt += "\x1B\x61\x00"; // 左對齊
             
             cart.forEach((item, i) => {
-                // 翻譯名稱 (names)
-                const enNames = item.names.map(n => config[n]?.en || n).join(' + ');
-                // 翻譯大小 (size)
-                const enSize = config[item.size]?.en || item.size;
-                // 翻譯麵類 (noodle)
-                const enNoodle = config.noodleType[item.noodle] || item.noodle;
-                // 翻譯醬料 (sauces)
-                const enSauces = item.sauces.map(s => config.sauce[s] || s).join(', ');
-
                 receipt += `ORDER #${i+1}\n`;
-                receipt += `${enNames} (${enSize})\n`;
-                if(item.noodle) receipt += ` - Noodle: ${enNoodle}\n`;
-                if(item.sauces.length) receipt += ` - Sauce: ${enSauces}\n`;
+                receipt += `${item.names.join('+')} (${item.size})\n`;
+                if(item.noodle) receipt += ` - ${item.noodle}\n`;
+                if(item.sauces.length) receipt += ` - ${item.sauces.join(',')}\n`;
                 receipt += `Price: $${item.price}\n`;
                 receipt += "--------------------------------\n";
             });
 
             receipt += `TOTAL: $${document.getElementById('total-sum').innerText}\n`;
-            receipt += "\n\n\n\n\n"; // 留白
+            receipt += "\n\n\n\n\n"; // 留白撕紙
 
             const encoder = new TextEncoder();
             await printCharacteristic.writeValue(encoder.encode(receipt));
@@ -240,6 +232,7 @@
             resetForNewItem();
         } catch (err) {
             alert("打印出錯：" + err.message);
+            // 出錯時重置特徵值，方便重新連接
             printCharacteristic = null;
         }
     }
