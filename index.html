@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Million 麵店 - 極速排版優化版</title>
+    <title>Million 麵店 - 極速高清版</title>
     <style>
         :root { --primary: #1a73e8; --secondary: #f0f2f5; --success: #34a853; --price-tag: #d93025; }
         body { font-family: sans-serif; background: var(--secondary); margin: 0; padding: 10px; text-align: center; }
@@ -38,14 +38,8 @@
     <div class="step active" id="step-start">
         <h2>1. 請選擇類別</h2>
         <div class="grid">
-            <div class="opt" onclick="setCategory('湯')">
-                <div class="img-box"><img src="https://lh3.googleusercontent.com/pw/AP1GczOoXizYOs7TlJVh_ikXpPT_8uSFOyH2mnDMFvu2CIFXpJVYqNssfvAbgkwksOqIi89J0NAktQdtJStc5KB6YPkxqk0ccWLkjKAGWKILKERYMt_PYsI=w2400?source=screenshot.guru"></div>
-                <span>湯品類</span>
-            </div>
-            <div class="opt" onclick="setCategory('面')">
-                <div class="img-box"><img src="https://lh3.googleusercontent.com/pw/AP1GczM1EgErnLz57PZ0ckyDapaXUx27rggwr5VvU49Yo1vpygNeiLiTCVK6nGMT7UewX9jWyWN7Q04y5g8QeGtKBFBtYod8YZd1L42sFsRuRCpY2EvidrI=w2400?source=screenshot.guru"></div>
-                <span>麵食類</span>
-            </div>
+            <div class="opt" onclick="setCategory('湯')"><div class="img-box"><img src="https://lh3.googleusercontent.com/pw/AP1GczOoXizYOs7TlJVh_ikXpPT_8uSFOyH2mnDMFvu2CIFXpJVYqNssfvAbgkwksOqIi89J0NAktQdtJStc5KB6YPkxqk0ccWLkjKAGWKILKERYMt_PYsI=w2400?source=screenshot.guru"></div><span>湯品類</span></div>
+            <div class="opt" onclick="setCategory('面')"><div class="img-box"><img src="https://lh3.googleusercontent.com/pw/AP1GczM1EgErnLz57PZ0ckyDapaXUx27rggwr5VvU49Yo1vpygNeiLiTCVK6nGMT7UewX9jWyWN7Q04y5g8QeGtKBFBtYod8YZd1L42sFsRuRCpY2EvidrI=w2400?source=screenshot.guru"></div><span>麵食類</span></div>
         </div>
     </div>
 
@@ -130,42 +124,40 @@
         
         try {
             btn.disabled = true;
-            status.innerText = "🚀 極速傳輸模式...";
-            // 增加畫布基礎高度，避免底部太迫
+            status.innerText = "🚀 準備高清排版...";
             canvas.height = 350 + (cart.length * 110);
+            
+            // --- 高清優化：停用抗鋸齒 ---
+            ctx.imageSmoothingEnabled = false;
             ctx.fillStyle = "white"; ctx.fillRect(0, 0, 384, canvas.height);
             ctx.fillStyle = "black"; ctx.textAlign = "center";
             
-            // 標題
-            ctx.font = "bold 34px sans-serif"; ctx.fillText("Million Noodles", 192, 60);
+            // 標題：使用極粗黑體
+            ctx.font = "900 36px Arial, sans-serif"; ctx.fillText("Million Noodles", 192, 60);
             
             ctx.textAlign = "left"; 
             let y = 120;
             
             cart.forEach((item, i) => {
-                // 主菜行距拉闊
-                ctx.font = "bold 30px sans-serif"; 
+                ctx.font = "900 32px Arial, sans-serif"; 
                 ctx.fillText(`#${i+1} ${item.names.join('+')} (${item.size})`, 10, y); 
-                y += 50; // 原本 35 太密，改 50
+                y += 55;
                 
-                // 配料行距
-                ctx.font = "24px sans-serif"; 
+                ctx.font = "bold 26px Arial, sans-serif"; 
                 ctx.fillText(`  ${item.noodle||''} ${item.sauces.join(',')}`, 10, y); 
-                y += 65; // 下一項開始前空多啲位，原本 45 改 65
+                y += 70;
             });
 
-            ctx.font = "26px sans-serif";
+            ctx.font = "900 28px Arial, sans-serif";
             ctx.fillText("----------------------------", 10, y); y += 50;
-            ctx.font = "bold 34px sans-serif"; ctx.fillText("TOTAL: $" + document.getElementById('total-sum').innerText, 10, y);
+            ctx.font = "900 36px Arial, sans-serif"; ctx.fillText("TOTAL: $" + document.getElementById('total-sum').innerText, 10, y);
 
             status.innerText = "🔍 搜尋印表機...";
             const device = await navigator.bluetooth.requestDevice({ acceptAllDevices: true, optionalServices: ['0000ffe0-0000-1000-8000-00805f9b34fb'] });
             const server = await device.gatt.connect();
-            
             const services = await server.getPrimaryServices();
             let targetChar = null;
             let canFast = false;
-
             for (const s of services) {
                 const chars = await s.getCharacteristics();
                 targetChar = chars.find(c => c.properties.writeWithoutResponse);
@@ -176,7 +168,7 @@
 
             if (!targetChar) throw new Error("找不到列印通道");
 
-            status.innerText = "📤 衝刺中...";
+            status.innerText = "📤 傳輸中...";
             const imgData = ctx.getImageData(0, 0, 384, canvas.height);
             const pixels = imgData.data;
 
@@ -190,7 +182,9 @@
                     let b = 0;
                     for (let bit = 0; bit < 8; bit++) {
                         let idx = ((y * 384) + (x * 8 + bit)) * 4;
-                        if (pixels[idx] < 128) b |= (1 << (7 - bit));
+                        // 優化二值化門檻：180 讓字體邊緣更硬，印出嚟更清晰
+                        let gray = pixels[idx] * 0.3 + pixels[idx+1] * 0.59 + pixels[idx+2] * 0.11;
+                        if (gray < 180) b |= (1 << (7 - bit));
                     }
                     row[8 + x] = b;
                 }
@@ -201,13 +195,11 @@
                     await targetChar.writeValue(row);
                 }
                 
-                // 維持極速版 50行抖10ms
-                if (y % 50 === 0) { 
-                    await new Promise(r => setTimeout(r, 10)); 
-                }
+                // 維持師傅最滿意嘅速度邏輯
+                if (y % 50 === 0) { await new Promise(r => setTimeout(r, 10)); }
             }
 
-            // 走紙並切紙
+            // 走紙切紙
             await targetChar.writeValue(new Uint8Array([0x1B, 0x64, 0x06]));
             await targetChar.writeValue(new Uint8Array([0x1D, 0x56, 0x00]));
 
@@ -216,7 +208,7 @@
             await server.disconnect();
 
         } catch (e) {
-            alert("連線出錯: " + e.message);
+            alert("錯誤: " + e.message);
             status.innerText = "❌ 連線失敗";
             btn.disabled = false;
         }
