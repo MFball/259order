@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Million 麵店 - 強效連線版</title>
+    <title>Million 麵店 - 強效切紙版</title>
     <style>
         :root { --primary: #1a73e8; --secondary: #f0f2f5; --success: #34a853; --price-tag: #d93025; }
         body { font-family: sans-serif; background: var(--secondary); margin: 0; padding: 10px; text-align: center; }
@@ -65,7 +65,7 @@
         <div class="total-price-bar">總計: $<span id="total-sum">0</span></div>
         <div class="nav-btns">
             <button class="btn-blue" onclick="resetForNewItem()">➕ 繼續點餐</button>
-            <button class="btn-green" id="printBtn" onclick="handleImagePrint()">🖨️ 圖片化列印</button>
+            <button class="btn-green" id="printBtn" onclick="handleImagePrint()">🖨️ 打印並切紙</button>
         </div>
     </div>
 </div>
@@ -85,7 +85,6 @@
 
     let cart = [];
     let tempItem = { category: '', names: [], size: '', noodle: '', sauces: [], price: 0 };
-    let bleDevice = null;
 
     function init() {
         renderGrid(['魚圓湯','肉圓湯','魚餃湯','三寶湯'], 'grid-soupItems', (val, el) => toggleMulti(val, el, tempItem.names, 2), true);
@@ -123,7 +122,7 @@
     }
     function resetForNewItem() { tempItem = { category: '', names: [], size: '', noodle: '', sauces: [], price: 0 }; document.querySelectorAll('.opt').forEach(o => o.classList.remove('selected')); goNext('step-start'); }
 
-    // --- 強效列印邏輯 ---
+    // --- 強效列印 + 修正切紙指令 ---
     async function handleImagePrint() {
         const status = document.getElementById('status');
         const btn = document.getElementById('printBtn');
@@ -133,7 +132,8 @@
         try {
             btn.disabled = true;
             status.innerText = "⏳ 正在生成影像...";
-            canvas.height = 180 + (cart.length * 90);
+            // 加高少少底部，方便切紙
+            canvas.height = 250 + (cart.length * 90);
             ctx.fillStyle = "white"; ctx.fillRect(0, 0, 384, canvas.height);
             ctx.fillStyle = "black"; ctx.textAlign = "center";
             ctx.font = "bold 34px sans-serif"; ctx.fillText("Million Noodles", 192, 50);
@@ -148,11 +148,9 @@
             ctx.font = "bold 30px sans-serif"; ctx.fillText("TOTAL: $" + document.getElementById('total-sum').innerText, 10, y);
 
             status.innerText = "🔍 搜尋印表機...";
-            // 每次重新獲取 device，解決 undefined 問題
             const device = await navigator.bluetooth.requestDevice({ acceptAllDevices: true, optionalServices: ['0000ffe0-0000-1000-8000-00805f9b34fb'] });
             const server = await device.gatt.connect();
             
-            // 獲取所有 Service 並尋找可用的寫入通道
             const services = await server.getPrimaryServices();
             let targetChar = null;
             for (const s of services) {
@@ -167,7 +165,7 @@
             const imgData = ctx.getImageData(0, 0, 384, canvas.height);
             const pixels = imgData.data;
 
-            await targetChar.writeValue(new Uint8Array([0x1B, 0x40])); // Reset
+            await targetChar.writeValue(new Uint8Array([0x1B, 0x40])); 
             const widthBytes = 384 / 8;
 
             for (let y = 0; y < canvas.height; y++) {
@@ -181,16 +179,23 @@
                     }
                     row[8 + x] = b;
                 }
+                // 師傅，呢度維持你最穩陣嘅原版傳輸方式
                 await targetChar.writeValue(row);
-                if (y % 15 === 0) await new Promise(r => setTimeout(r, 60)); // 適度延遲，防 iPhone 斷線
+                if (y % 15 === 0) await new Promise(r => setTimeout(r, 60)); 
             }
 
-            await targetChar.writeValue(new Uint8Array([0x1B, 0x64, 0x05]));
-            status.innerText = "✅ 列印成功！";
+            // --- 這裡是切紙關鍵 ---
+            // 1. 先走紙幾行 (Feed 6 lines)，確保文字已經離開刀口
+            await targetChar.writeValue(new Uint8Array([0x1B, 0x64, 0x06]));
+            // 2. 傳送切紙指令 (GS V 0)
+            await targetChar.writeValue(new Uint8Array([0x1D, 0x56, 0x00]));
+
+            status.innerText = "✅ 列印完成！";
             cart = []; updateCartDisplay(); btn.disabled = false; resetForNewItem();
+            await server.disconnect();
 
         } catch (e) {
-            alert("連線出錯: " + e.message + "\n請重試或重開藍牙");
+            alert("連線出錯: " + e.message);
             status.innerText = "❌ 連線失敗";
             btn.disabled = false;
         }
