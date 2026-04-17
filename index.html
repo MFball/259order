@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Million 麵店 - 邏輯嚴謹版</title>
+    <title>Million 麵店 - 湯品自動跳轉版</title>
     <style>
         :root { --primary: #1a73e8; --secondary: #f0f2f5; --success: #34a853; --price-tag: #d93025; --cancel: #666; }
         body { font-family: sans-serif; background: var(--secondary); margin: 0; padding: 10px; text-align: center; }
@@ -15,25 +15,17 @@
         h2 { color: #333; font-size: 1.1rem; margin: 10px 0 5px 0; border-left: 5px solid var(--primary); padding-left: 10px; text-align: left; }
         .limit-hint { color: #d93025; font-size: 0.85rem; text-align: left; margin-bottom: 15px; font-weight: bold; }
         .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        
         .opt { background: #fff; border: 2px solid #eee; border-radius: 12px; cursor: pointer; overflow: hidden; position: relative; display: flex; flex-direction: column; min-height: 140px; }
         .img-box { width: 100%; height: 100px; display: flex; background: #fafafa; overflow: hidden; position: relative; }
         .img-box img { width: 100%; height: 100%; object-fit: cover; flex: 1; border-right: 1px solid #eee; }
-        .img-box img:last-child { border-right: none; }
-        
         .price-circle { position: absolute; top: 5px; right: 5px; background: var(--price-tag); color: white; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.85rem; font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.2); z-index: 5; border: 2px solid white; }
-
         .opt span { padding: 8px 5px; font-weight: bold; font-size: 0.9rem; flex-grow: 1; display: flex; align-items: center; justify-content: center; }
         .opt.selected { border-color: var(--primary); background: #e8f0fe; }
-        
         .cart-box { margin-top: 20px; padding: 10px; border: 1px solid #ddd; border-radius: 10px; text-align: left; background: #fff; }
         .cart-item { border-bottom: 1px solid #eee; padding: 8px 0; display: flex; justify-content: space-between; align-items: center; }
         .total-price-bar { font-size: 1.6rem; color: var(--price-tag); font-weight: bold; margin: 15px 0; }
-        
         #preview-area { margin-top: 15px; border: 2px solid #333; padding: 5px; background: #666; display: none; }
-        #preview-area p { margin: 2px; font-size: 12px; color: white; font-weight: bold; }
         #printPreviewImg { background: white; width: 100%; height: auto; display: block; image-rendering: pixelated; border: 1px solid #000; }
-
         .nav-btns { position: fixed; bottom: 0; left: 0; right: 0; background: white; padding: 15px; display: flex; gap: 8px; max-width: 500px; margin: auto; box-shadow: 0 -5px 10px rgba(0,0,0,0.05); z-index: 1000; }
         button { flex: 1; padding: 12px 5px; border-radius: 10px; border: none; font-size: 0.95rem; cursor: pointer; font-weight: bold; }
         .btn-blue { background: var(--primary); color: white; }
@@ -65,9 +57,8 @@
     <div class="step" id="step-soup-select">
         <button class="back-btn-top" onclick="goNext('step-start')">←</button>
         <h2>2. 請選擇湯品</h2>
-        <div class="limit-hint">請最少選擇 1 項</div>
+        <div class="limit-hint">湯品只限選 1 款</div>
         <div class="grid" id="grid-soupItems"></div>
-        <div class="nav-btns"><button class="btn-blue" onclick="checkSoupNext()">下一步</button></div>
     </div>
 
     <div class="step" id="step-food-select">
@@ -102,10 +93,7 @@
         <h2>🛒 購物車明細</h2>
         <div class="cart-box" id="current-cart"></div>
         <div class="total-price-bar">總金額: $<span id="total-sum">0</span></div>
-        <div id="preview-area">
-            <p>【列印預覽】</p>
-            <img id="printPreviewImg" src="" alt="列印預覽">
-        </div>
+        <div id="preview-area"><p>【列印預覽】</p><img id="printPreviewImg" src=""></div>
         <div class="nav-btns">
             <button class="btn-red" onclick="cancelAndClear()">❌ 取消重選</button>
             <button class="btn-blue" onclick="resetForNewItem()">➕ 繼續點餐</button>
@@ -136,35 +124,35 @@
         '小的': { p: 0, img: 'https://lh3.googleusercontent.com/pw/AP1GczPVUDzaSjsxGM5SLTH5vQ1L3q_kYvg-rODSuyuaMc7cvzy7mE6J444Su11jn8BcNozPnU1HugjPWT7yrwmi32UXTzLVKmnU8UxmXgChQwef44QHmks=w2400?source=screenshot.guru' }, 
         '大的': { p: 1, img: 'https://lh3.googleusercontent.com/pw/AP1GczMvZGsBT3O0_nf6xlgiB6CabiQfww_9AMqN0gtyoo7SQtrWKBMnV73nMe6xLathms5gRBnv-nGEs6sK0kT6SHvbjlnbmd40MmVv1R9m7xLD3eoBYZg=w2400?source=screenshot.guru' },
         'noodleType': { 
-            '面薄': 'https://lh3.googleusercontent.com/pw/AP1GczPTdYtkKQVVtu2xC4GqatBEs58tYr0xrU6-P08JGLPXNa9URyrd85OABGJvhRRywZqI_6ILtjozkyDCPJWyfo34-z3KP5EPG56bOb6S73_130W3J00=w2400?source=screenshot.guru',
-            '幼面': 'https://lh3.googleusercontent.com/pw/AP1GczNzHJopdj33Emt-5K2nGrlY8AQRwcGxsmIGUyy2dzSKyFYLHxqH-tz7bIRoqlVFfxfetpW7bKNjWvenQuHQ1oPEWLa8r0Zv98IXzUaIhJlRpdNaMJU=w2400?source=screenshot.guru',
-            '粿條': 'https://lh3.googleusercontent.com/pw/AP1GczPwzNH0_FdwO99aeaxK8kWR64JXsBGwj4s5HB13lSvp-sZwggbp8XT8yfDkbp7Cz_ZB-jynkrLK7FFpIQSTf_t4Umd8Eje8i_nWWxFshmGTKkrzCn4=w2400?source=screenshot.guru',
-            '熟面': 'https://lh3.googleusercontent.com/pw/AP1GczO5hHYBkxDeOygQ1hWxWYtPlMOGUWWImLcvrXSe9dYeWIPukbqHY5O9qq6IrM9Q88jSG6EE8HmeIM9jOg081VP1KcW7uXlnaMCsWb56wt3dRd9WJJw=w2400?source=screenshot.guru',
-            '米粉': 'https://lh3.googleusercontent.com/pw/AP1GczMCq_h1GaefE-Kpouj1xUx_GoEhsa6BHL7giIsCTbZqtOKJG_8AJIpYSsqpPEiR5Ao00oYTYixHE7KxdZjWSv2LTg-CQ_xWVBv8OfAB98J7Z1wPYG0=w2400?source=screenshot.guru',
-            '米太目': 'https://lh3.googleusercontent.com/pw/AP1GczNPdhdHay7KR_IB303jyQY9PkJv14r8_ctsIwsnIGVdX5m0e4mAQjGoW6kMCuWfZEzoGn0PfIS4YbYsam7ncI1eDn9rYAbQ53qUsbpt4BHxE2Gur3k=w600-h315-p-k',
+            '面薄': 'https://lh3.googleusercontent.com/pw/AP1GczPTdYtkKQVVtu2xC4GqatBEs58tYr0xrU6-P08JGLPXNa9URyrd85OABGJvhRRywZqI_6ILtjozkyDCPJWyfo34-z3KP5EPG56bOb6S73_130W3J00=w2400?source=screenshot.guru', '幼面': 'https://lh3.googleusercontent.com/pw/AP1GczNzHJopdj33Emt-5K2nGrlY8AQRwcGxsmIGUyy2dzSKyFYLHxqH-tz7bIRoqlVFfxfetpW7bKNjWvenQuHQ1oPEWLa8r0Zv98IXzUaIhJlRpdNaMJU=w2400?source=screenshot.guru',
+            '粿條': 'https://lh3.googleusercontent.com/pw/AP1GczPwzNH0_FdwO99aeaxK8kWR64JXsBGwj4s5HB13lSvp-sZwggbp8XT8yfDkbp7Cz_ZB-jynkrLK7FFpIQSTf_t4Umd8Eje8i_nWWxFshmGTKkrzCn4=w2400?source=screenshot.guru', '熟面': 'https://lh3.googleusercontent.com/pw/AP1GczO5hHYBkxDeOygQ1hWxWYtPlMOGUWWImLcvrXSe9dYeWIPukbqHY5O9qq6IrM9Q88jSG6EE8HmeIM9jOg081VP1KcW7uXlnaMCsWb56wt3dRd9WJJw=w2400?source=screenshot.guru',
+            '米粉': 'https://lh3.googleusercontent.com/pw/AP1GczMCq_h1GaefE-Kpouj1xUx_GoEhsa6BHL7giIsCTbZqtOKJG_8AJIpYSsqpPEiR5Ao00oYTYixHE7KxdZjWSv2LTg-CQ_xWVBv8OfAB98J7Z1wPYG0=w2400?source=screenshot.guru', '米太目': 'https://lh3.googleusercontent.com/pw/AP1GczNPdhdHay7KR_IB303jyQY9PkJv14r8_ctsIwsnIGVdX5m0e4mAQjGoW6kMCuWfZEzoGn0PfIS4YbYsam7ncI1eDn9rYAbQ53qUsbpt4BHxE2Gur3k=w600-h315-p-k',
             '冬粉': 'https://lh3.googleusercontent.com/pw/AP1GczMjjBg1W6WSV-nXO1fI3_rZXHO1u53fhIyPuY8F5PfDsGsSNuMqbrcoNbcIYTISpCvg-YzHA3xOyUmD1SUOQQvXXoAsXW9wTiEt9IswwswNBTCsoCc=w2400?source=screenshot.guru',
             '粿條面': ['https://lh3.googleusercontent.com/pw/AP1GczPwzNH0_FdwO99aeaxK8kWR64JXsBGwj4s5HB13lSvp-sZwggbp8XT8yfDkbp7Cz_ZB-jynkrLK7FFpIQSTf_t4Umd8Eje8i_nWWxFshmGTKkrzCn4=w2400?source=screenshot.guru', 'https://lh3.googleusercontent.com/pw/AP1GczO5hHYBkxDeOygQ1hWxWYtPlMOGUWWImLcvrXSe9dYeWIPukbqHY5O9qq6IrM9Q88jSG6EE8HmeIM9jOg081VP1KcW7uXlnaMCsWb56wt3dRd9WJJw=w2400?source=screenshot.guru'],
             '粿條米粉': ['https://lh3.googleusercontent.com/pw/AP1GczPwzNH0_FdwO99aeaxK8kWR64JXsBGwj4s5HB13lSvp-sZwggbp8XT8yfDkbp7Cz_ZB-jynkrLK7FFpIQSTf_t4Umd8Eje8i_nWWxFshmGTKkrzCn4=w2400?source=screenshot.guru', 'https://lh3.googleusercontent.com/pw/AP1GczMCq_h1GaefE-Kpouj1xUx_GoEhsa6BHL7giIsCTbZqtOKJG_8AJIpYSsqpPEiR5Ao00oYTYixHE7KxdZjWSv2LTg-CQ_xWVBv8OfAB98J7Z1wPYG0=w2400?source=screenshot.guru'],
             '米粉面': ['https://lh3.googleusercontent.com/pw/AP1GczMCq_h1GaefE-Kpouj1xUx_GoEhsa6BHL7giIsCTbZqtOKJG_8AJIpYSsqpPEiR5Ao00oYTYixHE7KxdZjWSv2LTg-CQ_xWVBv8OfAB98J7Z1wPYG0=w2400?source=screenshot.guru', 'https://lh3.googleusercontent.com/pw/AP1GczO5hHYBkxDeOygQ1hWxWYtPlMOGUWWImLcvrXSe9dYeWIPukbqHY5O9qq6IrM9Q88jSG6EE8HmeIM9jOg081VP1KcW7uXlnaMCsWb56wt3dRd9WJJw=w2400?source=screenshot.guru']
         },
         'sauce': { 
-            '辣椒': 'https://lh3.googleusercontent.com/pw/AP1GczNBNIkcqcHrGu9RGmYKVLG473IryGY_cMr8txZuvSUl7_F3EdvsjOzGSk56yEoy3btyHQ1L5c3FC7gHvchhgxPREi99F5m5c6Si9_RDp3mkM2crK9A=w2400?source=screenshot.guru',
-            '茄汁': 'https://lh3.googleusercontent.com/pw/AP1GczPMo2OG1kFt1C_OFN_tugGiJoOS2J2g30EydgqVl_rVueJJaUWq_0MLR2CRkdIXzgpXLSPoBdufuMmMv_YdFrew1-Qfi_KZDwo6iXd9BJK1E-jdPp4=w2400?source=screenshot.guru',
-            '黑醬油': 'https://lh3.googleusercontent.com/pw/AP1GczM_Ogtz5euEqtTluhoqtEIKJyfVts2a-grnZ-INkM8jWyXh9mH13SlBrlvN6ccWl5PNecn1xnPOkNY3IuFZh3gQ8FKhbtBVFtIOfsKCVwlDVcg_WEM=w2400?source=screenshot.guru',
-            '白醬青': 'https://lh3.googleusercontent.com/pw/AP1GczM0Y5r1CNFN7i_N0xRl3dGh55awsKnRrUnvb-xeZVVQK_8k_1drXDQXq77P9eSpaewdn8zQN8_Yq1LELzh2GZgK08Bm2h1mK-AUPq6Kaoqcj_tvvAU=w2400?source=screenshot.guru',
-            '黑醋': 'https://lh3.googleusercontent.com/pw/AP1GczP78L4yujnIpxn3K004iS-q6Vm-A6Vp4UpTY6lKmyWVCrSsMU4XOLG6Em-03KJsMHT1YK94ae2-7QQ5bkhtbZNKo0mexj960hV9hUo0Q2-kLK1SZvo=w2400?source=screenshot.guru',
-            '湯': 'https://lh3.googleusercontent.com/pw/AP1GczO41yvP4P-hmNWhW-kkM1iDfiDE0_-ugwWzhVxfF70z_xsDJE1VhyFZxt8PnlqS5J4VTcjIHwp7qIpF0wrBZnN73nM8zMLpnfN1MQaeuk9lNzU1RwE=w2400?source=screenshot.guru'
+            '辣椒': 'https://lh3.googleusercontent.com/pw/AP1GczNBNIkcqcHrGu9RGmYKVLG473IryGY_cMr8txZuvSUl7_F3EdvsjOzGSk56yEoy3btyHQ1L5c3FC7gHvchhgxPREi99F5m5c6Si9_RDp3mkM2crK9A=w2400?source=screenshot.guru', '茄汁': 'https://lh3.googleusercontent.com/pw/AP1GczPMo2OG1kFt1C_OFN_tugGiJoOS2J2g30EydgqVl_rVueJJaUWq_0MLR2CRkdIXzgpXLSPoBdufuMmMv_YdFrew1-Qfi_KZDwo6iXd9BJK1E-jdPp4=w2400?source=screenshot.guru',
+            '黑醬油': 'https://lh3.googleusercontent.com/pw/AP1GczM_Ogtz5euEqtTluhoqtEIKJyfVts2a-grnZ-INkM8jWyXh9mH13SlBrlvN6ccWl5PNecn1xnPOkNY3IuFZh3gQ8FKhbtBVFtIOfsKCVwlDVcg_WEM=w2400?source=screenshot.guru', '白醬青': 'https://lh3.googleusercontent.com/pw/AP1GczM0Y5r1CNFN7i_N0xRl3dGh55awsKnRrUnvb-xeZVVQK_8k_1drXDQXq77P9eSpaewdn8zQN8_Yq1LELzh2GZgK08Bm2h1mK-AUPq6Kaoqcj_tvvAU=w2400?source=screenshot.guru',
+            '黑醋': 'https://lh3.googleusercontent.com/pw/AP1GczP78L4yujnIpxn3K004iS-q6Vm-A6Vp4UpTY6lKmyWVCrSsMU4XOLG6Em-03KJsMHT1YK94ae2-7QQ5bkhtbZNKo0mexj960hV9hUo0Q2-kLK1SZvo=w2400?source=screenshot.guru', '湯': 'https://lh3.googleusercontent.com/pw/AP1GczO41yvP4P-hmNWhW-kkM1iDfiDE0_-ugwWzhVxfF70z_xsDJE1VhyFZxt8PnlqS5J4VTcjIHwp7qIpF0wrBZnN73nM8zMLpnfN1MQaeuk9lNzU1RwE=w2400?source=screenshot.guru'
         }
     };
 
     let cart = [];
     let tempItem = { category: '', names: [], size: '', noodle: '', sauces: [], price: 0 };
-    let savedDevice = null;
-    let savedCharacteristic = null;
-    let isFastMode = false;
+    let savedDevice = null, savedCharacteristic = null, isFastMode = false;
 
     function init() {
-        renderGrid(['魚圓湯','肉圓湯','魚餃湯','三寶湯'], 'grid-soupItems', (val, el) => toggleMulti(val, el, tempItem.names, 2), true);
+        // 湯品類改為點擊即跳轉
+        renderGrid(['魚圓湯','肉圓湯','魚餃湯','三寶湯'], 'grid-soupItems', (val) => {
+            if(tempItem.names.length > 0 && !tempItem.names.includes(val)) {
+                alert("湯不能選其他味道");
+                return;
+            }
+            tempItem.names = [val];
+            goNext('step-size');
+        });
         renderGrid(['魚圓面', '香菇肉碎面', '招牌面', '餐餐面', '肉圓面', '蝦魚面', '西刀魚面', '香菇面', '魚餃面', '(純)肉碎面', '小魚香面'], 'grid-foodItems', (val) => { tempItem.names = [val]; goNext('step-size'); });
         renderGrid(['小的', '大的'], 'grid-size', (val) => { tempItem.size = val; if(tempItem.category === '湯') generatePreviewAndGo(); else goNext('step-noodle-type'); });
         renderGrid(Object.keys(config.noodleType), 'grid-noodleType', (val) => { tempItem.noodle = val; });
@@ -177,27 +165,30 @@
         list.forEach(name => {
             const div = document.createElement('div');
             div.className = 'opt';
-            let imgSrc; let price = 0;
+            let imgSrc, price = 0;
             if (id === 'grid-noodleType') imgSrc = config.noodleType[name];
             else if (id === 'grid-sauce') imgSrc = config.sauce[name];
             else { imgSrc = config[name]?.img; price = config[name]?.p || 0; }
             const priceTag = (price > 0) ? `<div class="price-circle">$${price}</div>` : '';
             let imgHTML = Array.isArray(imgSrc) ? imgSrc.map(url => `<img src="${url}">`).join('') : `<img src="${imgSrc || ''}">`;
             div.innerHTML = `<div class="img-box">${priceTag}${imgHTML}</div><span>${name}</span>`;
-            div.onclick = () => { if(!multi) Array.from(cont.children).forEach(c=>c.classList.remove('selected')); div.classList.add('selected'); clickFn(name, div); };
+            div.onclick = () => { 
+                if(!multi) Array.from(cont.children).forEach(c=>c.classList.remove('selected')); 
+                div.classList.add('selected'); 
+                clickFn(name, div); 
+            };
             cont.appendChild(div);
         });
     }
 
     function setCategory(v) { tempItem.category = v; goNext(v === '湯' ? 'step-soup-select' : 'step-food-select'); }
-    function toggleMulti(v, el, list, max) { if(list.includes(v)) { list.splice(list.indexOf(v), 1); el.classList.remove('selected'); } else { if(list.length >= max) { alert("最多只能選 " + max + " 項！"); return; } list.push(v); el.classList.add('selected'); } }
+    function toggleMulti(v, el, list, max) { 
+        if(list.includes(v)) { list.splice(list.indexOf(v), 1); el.classList.remove('selected'); } 
+        else { if(list.length >= max) { alert("最多只能選 " + max + " 項！"); return; } list.push(v); el.classList.add('selected'); } 
+    }
     function goNext(id) { document.querySelectorAll('.step').forEach(s => s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
-    
-    // 強制檢查函數
-    function checkSoupNext() { if(tempItem.names.length > 0) goNext('step-size'); else alert("請最少選擇一款湯！"); }
     function checkNoodleNext() { if(tempItem.noodle) goNext('step-sauce-select'); else alert("請選擇一款麵種！"); }
     function checkSauceAndFinish() { if(tempItem.sauces.length >= 1) generatePreviewAndGo(); else alert("請最少選擇一個醬料！"); }
-
     function handleSizeBack() { goNext(tempItem.category === '湯' ? 'step-soup-select' : 'step-food-select'); }
 
     function generatePreviewAndGo() {
@@ -214,10 +205,8 @@
     function cancelAndClear() { if(confirm("確定要清空所有點餐嗎？")) { cart = []; updateCartDisplay(); resetForNewItem(); } }
 
     function drawPrintCanvas() {
-        const canvas = document.getElementById('printCanvas');
-        const ctx = canvas.getContext('2d');
-        const previewImg = document.getElementById('printPreviewImg');
-        const previewArea = document.getElementById('preview-area');
+        const canvas = document.getElementById('printCanvas'), ctx = canvas.getContext('2d');
+        const previewImg = document.getElementById('printPreviewImg'), previewArea = document.getElementById('preview-area');
         canvas.height = 350 + (cart.length * 110);
         ctx.fillStyle = "white"; ctx.fillRect(0, 0, 384, canvas.height);
         ctx.textBaseline = "top"; ctx.fillStyle = "black";
@@ -241,15 +230,12 @@
         goNext('step-start'); 
     }
 
-    // 藍牙列印邏輯維持不變...
     async function getPrinter() {
         if (savedDevice && savedDevice.gatt.connected && savedCharacteristic) return savedCharacteristic;
-        const status = document.getElementById('status');
-        status.innerText = "🔍 搜尋印表機...";
+        document.getElementById('status').innerText = "🔍 搜尋印表機...";
         savedDevice = await navigator.bluetooth.requestDevice({ acceptAllDevices: true, optionalServices: ['0000ffe0-0000-1000-8000-00805f9b34fb'] });
         const server = await savedDevice.gatt.connect();
         const services = await server.getPrimaryServices();
-        savedCharacteristic = null;
         for (const s of services) {
             const chars = await s.getCharacteristics();
             savedCharacteristic = chars.find(c => c.properties.writeWithoutResponse);
@@ -261,18 +247,14 @@
     }
 
     async function handleImagePrint() {
-        const status = document.getElementById('status');
-        const btn = document.getElementById('printBtn');
-        const canvas = document.getElementById('printCanvas');
-        const ctx = canvas.getContext('2d');
+        const btn = document.getElementById('printBtn'), canvas = document.getElementById('printCanvas'), ctx = canvas.getContext('2d');
         try {
             btn.disabled = true;
             const targetChar = await getPrinter();
-            status.innerText = "📤 衝刺列印中...";
-            const imgData = ctx.getImageData(0, 0, 384, canvas.height);
-            const pixels = imgData.data;
+            document.getElementById('status').innerText = "📤 衝刺列印中...";
+            const pixels = ctx.getImageData(0, 0, 384, canvas.height).data;
             await targetChar.writeValue(new Uint8Array([0x1B, 0x40])); 
-            const widthBytes = 384 / 8;
+            const widthBytes = 48;
             for (let y = 0; y < canvas.height; y++) {
                 let row = new Uint8Array(8 + widthBytes);
                 row.set([0x1D, 0x76, 0x30, 0, widthBytes, 0, 1, 0]);
@@ -280,22 +262,17 @@
                     let b = 0;
                     for (let bit = 0; bit < 8; bit++) {
                         let idx = ((y * 384) + (x * 8 + bit)) * 4;
-                        let gray = pixels[idx] * 0.3 + pixels[idx+1] * 0.59 + pixels[idx+2] * 0.11;
-                        if (gray < 135) b |= (1 << (7 - bit));
+                        if (pixels[idx] * 0.3 + pixels[idx+1] * 0.59 + pixels[idx+2] * 0.11 < 135) b |= (1 << (7 - bit));
                     }
                     row[8 + x] = b;
                 }
-                if (isFastMode) await targetChar.writeValueWithoutResponse(row);
-                else await targetChar.writeValue(row);
+                if (isFastMode) await targetChar.writeValueWithoutResponse(row); else await targetChar.writeValue(row);
                 if (y % 20 === 0) await new Promise(r => setTimeout(r, 100));
             }
-            await targetChar.writeValue(new Uint8Array([0x1B, 0x64, 0x08]));
-            await targetChar.writeValue(new Uint8Array([0x1D, 0x56, 0x00]));
-            status.innerText = "✅ 列印完成";
+            await targetChar.writeValue(new Uint8Array([0x1B, 0x64, 0x08, 0x1D, 0x56, 0x00]));
+            document.getElementById('status').innerText = "✅ 完成";
             cart = []; updateCartDisplay(); btn.disabled = false; resetForNewItem();
-        } catch (e) {
-            alert("錯誤: " + e.message); status.innerText = "❌ 失敗"; btn.disabled = false; savedDevice = null;
-        }
+        } catch (e) { alert(e.message); btn.disabled = false; }
     }
     init();
 </script>
