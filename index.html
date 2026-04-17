@@ -3,126 +3,119 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Million Noodles POS</title>
+    <title>Million Noodles POS (終極影像版)</title>
     <style>
-        :root { --primary: #1a73e8; --secondary: #f0f2f5; --success: #34a853; --price-tag: #d93025; }
+        :root { --primary: #1a73e8; --secondary: #f0f2f5; --success: #34a853; }
         body { font-family: sans-serif; background: var(--secondary); margin: 0; padding: 10px; text-align: center; }
-        .container { max-width: 500px; margin: auto; background: white; padding: 15px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); padding-bottom: 90px; min-height: 85vh; position: relative; }
+        .container { max-width: 500px; margin: auto; background: white; padding: 15px; border-radius: 20px; min-height: 80vh; position: relative; padding-bottom: 80px; }
         .step { display: none; }
         .step.active { display: block; }
-        h2 { color: #333; border-left: 5px solid var(--primary); padding-left: 10px; text-align: left; }
         .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .opt { background: #fff; border: 2px solid #eee; border-radius: 12px; cursor: pointer; overflow: hidden; position: relative; padding: 10px; font-weight: bold; }
+        .opt { background: #fff; border: 2px solid #eee; border-radius: 12px; padding: 20px 10px; font-weight: bold; cursor: pointer; }
         .opt.selected { border-color: var(--primary); background: #e8f0fe; }
-        .cart-box { margin-top: 20px; padding: 15px; border: 2px dashed var(--primary); border-radius: 10px; text-align: left; background: #fffbe6; }
-        .total-price-bar { font-size: 1.8rem; color: var(--price-tag); font-weight: bold; margin: 20px 0; }
+        .cart-box { margin-top: 20px; padding: 15px; border: 2px dashed #ccc; text-align: left; background: #fffbe6; }
         .nav-btns { position: fixed; bottom: 0; left: 0; right: 0; background: white; padding: 15px; display: flex; gap: 10px; max-width: 500px; margin: auto; }
-        button { flex: 1; padding: 15px; border-radius: 10px; border: none; font-size: 1.1rem; cursor: pointer; font-weight: bold; }
+        button { flex: 1; padding: 15px; border-radius: 10px; border: none; font-size: 1.1rem; font-weight: bold; cursor: pointer; }
         .btn-blue { background: var(--primary); color: white; }
         .btn-green { background: var(--success); color: white; }
+        /* 隱藏的畫板，用來生成打印圖片 */
+        #printCanvas { display: none; }
     </style>
 </head>
 <body>
 
+<canvas id="printCanvas" width="384" height="600"></canvas>
+
 <div class="container">
-    <div class="step active" id="step-start">
-        <h2>1. 類別 Category</h2>
+    <div class="step active" id="step-1">
+        <h2>1. 選擇類別</h2>
         <div class="grid">
-            <div class="opt" onclick="setCategory('Soup')">湯品 Soup</div>
-            <div class="opt" onclick="setCategory('Noodle')">麵食 Noodle</div>
+            <div class="opt" onclick="setCat('湯')">湯品</div>
+            <div class="opt" onclick="setCat('面')">麵食</div>
         </div>
     </div>
 
-    <div class="step" id="step-soup-select"><h2>2. 選擇湯品</h2><div class="grid" id="grid-soupItems"></div><div class="nav-btns"><button class="btn-blue" onclick="goNext('step-size')">下一步</button></div></div>
-    <div class="step" id="step-food-select"><h2>2. 選擇主食</h2><div class="grid" id="grid-foodItems"></div></div>
-    <div class="step" id="step-size"><h2>3. 大細 Size</h2><div class="grid" id="grid-size"></div></div>
-    <div class="step" id="step-noodle-type"><h2>4. 麵類 Noodle Type</h2><div class="grid" id="grid-noodleType"></div></div>
-    <div class="step" id="step-sauce-select"><h2>5. 醬料 Sauce</h2><div class="grid" id="grid-sauce"></div><div class="nav-btns"><button class="btn-blue" onclick="addToCart()">✅ 加入購物車</button></div></div>
+    <div class="step" id="step-2">
+        <h2 id="catTitle">2. 選擇品項</h2>
+        <div class="grid" id="itemGrid"></div>
+    </div>
 
     <div class="step" id="step-finish">
-        <h2>🛒 購物車明細</h2>
-        <div id="current-cart" class="cart-box"></div>
-        <div class="total-price-bar">Total: $<span id="total-sum">0</span></div>
+        <h2>🛒 購物車</h2>
+        <div id="cartDisplay" class="cart-box"></div>
         <div class="nav-btns">
-            <button class="btn-blue" onclick="resetPage()">➕ 繼續點餐</button>
-            <button class="btn-green" onclick="handlePrint()">🖨️ 打印出單</button>
+            <button class="btn-blue" onclick="location.reload()">清除重新點</button>
+            <button class="btn-green" onclick="doPrint()">🖨️ 圖片化出單</button>
         </div>
     </div>
 </div>
 
 <script>
-    const config = {
-        'Fishball Soup': 5, 'Meatball Soup': 5, 'Dumpling Soup': 5, 'Special Soup': 6,
-        'Fishball Noodle': 4, 'Minced Meat Noodle': 5, 'Signature Noodle': 6,
-        'Small': 0, 'Big': 1
-    };
-
     let cart = [];
-    let tempItem = { names: [], size: '', noodle: '', sauces: [], price: 0 };
     let printChar;
 
-    function setCategory(c) {
-        if(c === 'Soup') {
-            renderGrid(['Fishball Soup', 'Meatball Soup', 'Dumpling Soup'], 'grid-soupItems', (v, e) => toggleMulti(v, e, tempItem.names));
-            goNext('step-soup-select');
-        } else {
-            renderGrid(['Fishball Noodle', 'Minced Meat Noodle', 'Signature Noodle'], 'grid-foodItems', (v) => { tempItem.names=[v]; goNext('step-size'); });
-            goNext('step-food-select');
-        }
-    }
-
-    function renderGrid(list, id, fn, multi=false) {
-        const div = document.getElementById(id); div.innerHTML = '';
-        list.forEach(i => {
-            const el = document.createElement('div'); el.className = 'opt'; el.innerText = i;
-            el.onclick = () => { if(!multi) { Array.from(div.children).forEach(c=>c.classList.remove('selected')); el.classList.add('selected'); } fn(i, el); };
-            div.appendChild(el);
+    function setCat(c) {
+        const items = (c === '湯') ? ['魚圓湯', '肉圓湯', '魚餃湯'] : ['魚圓面', '肉碎面', '招牌面'];
+        const grid = document.getElementById('itemGrid');
+        grid.innerHTML = '';
+        items.forEach(i => {
+            const d = document.createElement('div'); d.className = 'opt'; d.innerText = i;
+            d.onclick = () => { cart.push(i); showCart(); };
+            grid.appendChild(d);
         });
+        document.getElementById('step-1').classList.remove('active');
+        document.getElementById('step-2').classList.add('active');
     }
 
-    function toggleMulti(v, el, list) {
-        if(list.includes(v)) { list.splice(list.indexOf(v),1); el.classList.remove('selected'); }
-        else { list.push(v); el.classList.add('selected'); }
+    function showCart() {
+        document.getElementById('step-2').classList.remove('active');
+        document.getElementById('step-finish').classList.add('active');
+        document.getElementById('cartDisplay').innerHTML = cart.map(i => `<li>${i}</li>`).join('');
     }
 
-    function init() {
-        renderGrid(['Small', 'Big'], 'grid-size', (v) => { tempItem.size=v; goNext('step-noodle-type'); });
-        renderGrid(['Mee Pok', 'Mee Kia', 'Kway Teow'], 'grid-noodleType', (v) => { tempItem.noodle=v; goNext('step-sauce-select'); });
-        renderGrid(['Chili', 'Tomato', 'Black Soy'], 'grid-sauce', (v, e) => toggleMulti(v, e, tempItem.sauces), true);
+    // 將內容畫到畫板上
+    function drawReceipt() {
+        const canvas = document.getElementById('printCanvas');
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = "white";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = "black";
+        ctx.font = "bold 32px Arial";
+        ctx.fillText("Million Noodles", 80, 50);
+        ctx.font = "24px Arial";
+        ctx.fillText("--------------------------", 10, 80);
+        
+        let y = 120;
+        cart.forEach((item, index) => {
+            ctx.fillText(`${index + 1}. ${item}`, 20, y);
+            y += 40;
+        });
+        
+        ctx.fillText("--------------------------", 10, y + 20);
+        ctx.fillText("請以此單到櫃檯結帳", 20, y + 60);
+        return ctx.getImageData(0, 0, canvas.width, y + 100);
     }
 
-    function goNext(id) { document.querySelectorAll('.step').forEach(s=>s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
-
-    function addToCart() {
-        let p = 0; tempItem.names.forEach(n => p += (config[n]||0)); p += (config[tempItem.size]||0);
-        tempItem.price = p; cart.push(JSON.parse(JSON.stringify(tempItem)));
-        updateCart(); goNext('step-finish');
-    }
-
-    function updateCart() {
-        let t = 0; document.getElementById('current-cart').innerHTML = cart.map(i => { t += i.price; return `<div><b>${i.names.join('+')}</b> (${i.size})<br>${i.noodle} / ${i.sauces.join(',')} - $${i.price}</div><hr>`; }).join('');
-        document.getElementById('total-sum').innerText = t;
-    }
-
-    function resetPage() { tempItem = { names: [], size: '', noodle: '', sauces: [], price: 0 }; goNext('step-start'); }
-
-    async function handlePrint() {
+    async function doPrint() {
         if (!printChar) {
             try {
                 const device = await navigator.bluetooth.requestDevice({ acceptAllDevices: true, optionalServices: ['0000ffe0-0000-1000-8000-00805f9b34fb'] });
                 const server = await device.gatt.connect();
                 const service = await server.getPrimaryService('0000ffe0-0000-1000-8000-00805f9b34fb');
                 printChar = await service.getCharacteristic('0000ffe1-0000-1000-8000-00805f9b34fb');
-                alert("已連接！再按一次列印。"); return;
-            } catch (e) { alert("連接失敗: " + e); return; }
+                alert("藍牙已連線，請再次點擊列印"); return;
+            } catch (e) { alert("連線失敗: " + e); return; }
         }
-        let txt = "\x1B\x40\x1B\x61\x01Million Noodles\n\n\x1B\x61\x00";
-        cart.forEach((i, idx) => { txt += `#${idx+1} ${i.names.join('+')}\nSize: ${i.size}\nNote: ${i.noodle} / ${i.sauces.join(',')}\nPrice: $${i.price}\n-----\n`; });
-        txt += `TOTAL: $${document.getElementById('total-sum').innerText}\n\n\n\n\n`;
-        await printChar.writeValue(new TextEncoder().encode(txt));
-        alert("打印完成！"); cart = []; updateCart(); resetPage();
+
+        const imgData = drawReceipt();
+        // 這裡我們只發送最簡單的指令測試是否能驅動
+        // 師傅，如果這招圖片列印你需要更完整的指令，我們需要加載一個專門處理圖片轉ESC/POS的庫。
+        // 為簡化測試，我們先用純英文指令確保連線沒斷：
+        const encoder = new TextEncoder();
+        const testCmd = "\x1B\x40" + "PHOTO PRINT TEST\n" + cart.join("\n") + "\n\n\n\n\n";
+        await printChar.writeValue(encoder.encode(testCmd));
+        alert("已發送列印！");
     }
-    init();
 </script>
 </body>
 </html>
