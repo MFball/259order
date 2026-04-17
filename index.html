@@ -163,8 +163,8 @@
                 }
                 
                 // --- 加速關鍵：每一包傳送 100 字節，延遲減低 ---
-                for (let i = 0; i < row.length; i += 100) {
-                    await characteristic.writeValue(new Uint8Array(row.slice(i, i + 100)));
+                for (let i = 0; i < row.length; i += 50) {
+                    await characteristic.writeValue(new Uint8Array(row.slice(i, i + 50)));
                 }
                 
                 // 每 10 行停一次，防止緩衝溢出，但時間縮短
