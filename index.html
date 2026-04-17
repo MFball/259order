@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Million 麵店 - 最終圖片修正版</title>
+    <title>Million 麵店 - 價錢顯示版</title>
     <style>
         :root { --primary: #1a73e8; --secondary: #f0f2f5; --success: #34a853; --price-tag: #d93025; --cancel: #666; }
         body { font-family: sans-serif; background: var(--secondary); margin: 0; padding: 10px; text-align: center; }
@@ -14,12 +14,35 @@
         .back-btn-top { position: absolute; right: 0; top: 0; width: 35px; height: 35px; border-radius: 50%; background: #eee; color: #555; border: none; font-size: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 10; }
         h2 { color: #333; font-size: 1.1rem; margin: 10px 0 20px 0; border-left: 5px solid var(--primary); padding-left: 10px; text-align: left; }
         .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        
         .opt { background: #fff; border: 2px solid #eee; border-radius: 12px; cursor: pointer; overflow: hidden; position: relative; display: flex; flex-direction: column; min-height: 140px; }
-        .img-box { width: 100%; height: 100px; display: flex; background: #fafafa; overflow: hidden; }
+        .img-box { width: 100%; height: 100px; display: flex; background: #fafafa; overflow: hidden; position: relative; }
         .img-box img { width: 100%; height: 100%; object-fit: cover; flex: 1; border-right: 1px solid #eee; }
         .img-box img:last-child { border-right: none; }
+        
+        /* 師傅，呢度就係你要嘅紅色小圓圈價錢顯示 */
+        .price-circle {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: var(--price-tag);
+            color: white;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.85rem;
+            font-weight: bold;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            z-index: 5;
+            border: 2px solid white;
+        }
+
         .opt span { padding: 8px 5px; font-weight: bold; font-size: 0.9rem; flex-grow: 1; display: flex; align-items: center; justify-content: center; }
         .opt.selected { border-color: var(--primary); background: #e8f0fe; }
+        
         .cart-box { margin-top: 20px; padding: 10px; border: 1px solid #ddd; border-radius: 10px; text-align: left; background: #fff; }
         .cart-item { border-bottom: 1px solid #eee; padding: 8px 0; display: flex; justify-content: space-between; align-items: center; }
         .total-price-bar { font-size: 1.6rem; color: var(--price-tag); font-weight: bold; margin: 15px 0; }
@@ -81,7 +104,6 @@
 <canvas id="printCanvas" width="384"></canvas>
 
 <script>
-    // --- 師傅，圖片網址已經全部整合喺呢度 ---
     const config = {
         '魚圓湯': { p: 5, img: 'https://lh3.googleusercontent.com/pw/AP1GczOoXizYOs7TlJVh_ikXpPT_8uSFOyH2mnDMFvu2CIFXpJVYqNssfvAbgkwksOqIi89J0NAktQdtJStc5KB6YPkxqk0ccWLkjKAGWKILKERYMt_PYsI=w2400?source=screenshot.guru' }, 
         '肉圓湯': { p: 5, img: 'https://lh3.googleusercontent.com/pw/AP1GczO53IM8P6okuoqH4lpXGLStyLy4PSLp2LEAXBolANcUA0dm0WBHCGxJ965cGrMP9F72cF24Uln8JbdwG9pt910rs1pG-dnU-CrwKWKcOhZoPnNbR6Q=w2400?source=screenshot.guru' }, 
@@ -143,11 +165,18 @@
             const div = document.createElement('div');
             div.className = 'opt';
             let imgSrc;
+            let price = 0;
+            
             if (id === 'grid-noodleType') imgSrc = config.noodleType[name];
             else if (id === 'grid-sauce') imgSrc = config.sauce[name];
-            else imgSrc = config[name]?.img;
+            else {
+                imgSrc = config[name]?.img;
+                price = config[name]?.p || 0;
+            }
             
-            // 處理並排圖片邏輯
+            // 價錢紅圈：如果有價錢（大過0）就顯示
+            const priceTag = (price > 0) ? `<div class="price-circle">$${price}</div>` : '';
+
             let imgHTML = '';
             if (Array.isArray(imgSrc)) {
                 imgHTML = imgSrc.map(url => `<img src="${url}" onerror="this.src='https://via.placeholder.com/100?text=Food'">`).join('');
@@ -155,7 +184,7 @@
                 imgHTML = `<img src="${imgSrc || 'https://via.placeholder.com/100?text=Food'}" onerror="this.src='https://via.placeholder.com/100?text=Food'">`;
             }
 
-            div.innerHTML = `<div class="img-box">${imgHTML}</div><span>${name}</span>`;
+            div.innerHTML = `<div class="img-box">${priceTag}${imgHTML}</div><span>${name}</span>`;
             div.onclick = () => { if(!multi) Array.from(cont.children).forEach(c=>c.classList.remove('selected')); div.classList.add('selected'); clickFn(name, div); };
             cont.appendChild(div);
         });
