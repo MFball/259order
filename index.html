@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Million 麵店 (自動連線預覽版)</title>
+    <title>Million 麵店 - 專業出單版</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/encoding-japanese/2.0.0/encoding.min.js"></script>
     <style>
         :root { --primary: #1a73e8; --secondary: #f0f2f5; --success: #34a853; --price-tag: #d93025; }
         body { font-family: "Microsoft JhengHei", sans-serif; background: var(--secondary); margin: 0; padding: 10px; text-align: center; }
@@ -28,18 +29,16 @@
         button { flex: 1; padding: 15px; border-radius: 10px; border: none; font-size: 1rem; cursor: pointer; font-weight: bold; }
         .btn-blue { background: var(--primary); color: white; }
         .btn-green { background: var(--success); color: white; }
-
-        /* 預覽視窗樣式 */
         #preview-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 2000; justify-content: center; align-items: center; }
-        .preview-content { background: #fff; width: 300px; padding: 20px; border-radius: 10px; font-family: monospace; text-align: left; max-height: 80vh; overflow-y: auto; box-shadow: 0 0 20px rgba(0,0,0,0.5); }
-        .preview-paper { border: 1px solid #ddd; padding: 10px; background: #fff; line-height: 1.2; white-space: pre-wrap; word-break: break-all; font-size: 14px; color: #000; }
+        .preview-content { background: #fff; width: 300px; padding: 20px; border-radius: 10px; font-family: monospace; text-align: left; max-height: 80vh; overflow-y: auto; }
+        .preview-paper { border: 1px solid #ddd; padding: 10px; background: #fff; line-height: 1.2; white-space: pre-wrap; font-size: 14px; color: #000; }
         .preview-btns { margin-top: 15px; display: flex; gap: 10px; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <div id="status" style="font-size: 10px; color: #888; margin-bottom: 5px;">機台狀態：未連接</div>
+    <div id="status" style="font-size: 10px; color: #888; margin-bottom: 5px;">藍牙狀態：未連接</div>
     
     <div class="step active" id="step-start">
         <h2>1. 請選擇類別</h2>
@@ -56,33 +55,33 @@
     </div>
 
     <div class="step" id="step-soup-select">
-        <button class="back-btn-top" onclick="goNext('step-start')">←</button>
+        <button class="back-btn-top" onclick="goNext('step-start')">×</button>
         <h2>2. 選擇湯品 (最多2個)</h2>
         <div class="grid" id="grid-soupItems"></div>
         <div class="nav-btns"><button class="btn-blue" onclick="checkSoupNext()">下一步</button></div>
     </div>
 
     <div class="step" id="step-food-select">
-        <button class="back-btn-top" onclick="goNext('step-start')">←</button>
+        <button class="back-btn-top" onclick="goNext('step-start')">×</button>
         <h2>2. 選擇主食</h2>
         <div class="grid" id="grid-foodItems"></div>
     </div>
 
     <div class="step" id="step-size">
-        <button class="back-btn-top" onclick="handleSizeBack()">←</button>
-        <h2>3. 選擇大小</h2>
+        <button class="back-btn-top" onclick="handleSizeBack()">×</button>
+        <h2>3. 選擇大小碼</h2>
         <div class="grid" id="grid-size"></div>
     </div>
 
     <div class="step" id="step-noodle-type">
-        <button class="back-btn-top" onclick="goNext('step-size')">←</button>
+        <button class="back-btn-top" onclick="goNext('step-size')">×</button>
         <h2>4. 選擇麵類</h2>
         <div class="grid" id="grid-noodleType"></div>
     </div>
 
     <div class="step" id="step-sauce-select">
-        <button class="back-btn-top" onclick="goNext('step-noodle-type')">←</button>
-        <h2>5. 選擇醬料 (1-3個)</h2>
+        <button class="back-btn-top" onclick="goNext('step-noodle-type')">×</button>
+        <h2>5. 選擇醬料 (最多3個)</h2>
         <div class="grid" id="grid-sauce"></div>
         <div class="nav-btns"><button class="btn-blue" onclick="addToCart()">✅ 加入購物車</button></div>
     </div>
@@ -100,7 +99,7 @@
 
 <div id="preview-modal">
     <div class="preview-content">
-        <h3 style="margin-top:0">出單預覽</h3>
+        <h3 style="margin-top:0">出單預覽 (省紙模式)</h3>
         <div class="preview-paper" id="paper-content"></div>
         <div class="preview-btns">
             <button style="background:#eee" onclick="closePreview()">取消</button>
@@ -126,8 +125,8 @@
 
     function init() {
         renderGrid(['魚圓湯','肉圓湯','魚餃湯','三寶湯'], 'grid-soupItems', (val, el) => toggleMulti(val, el, tempItem.names, 2), true);
-        const foodOrder = ['魚圓面', '香菇肉碎面', '招牌面', '餐餐面', '肉圓面', '蝦魚面', '西刀魚面', '香菇面', '魚餃面', '(純)肉碎面', '小魚香面'];
-        renderGrid(foodOrder, 'grid-foodItems', (val) => { tempItem.names = [val]; goNext('step-size'); });
+        const foodList = ['魚圓面', '香菇肉碎面', '招牌面', '餐餐面', '肉圓面', '蝦魚面', '西刀魚面', '香菇面', '魚餃面', '(純)肉碎面', '小魚香面'];
+        renderGrid(foodList, 'grid-foodItems', (val) => { tempItem.names = [val]; goNext('step-size'); });
         renderGrid(['小的', '大的'], 'grid-size', (val) => { tempItem.size = val; if(tempItem.category === '湯') addToCart(); else goNext('step-noodle-type'); });
         renderGrid(Object.keys(config.noodleType), 'grid-noodleType', (val) => { tempItem.noodle = val; goNext('step-sauce-select'); });
         renderGrid(Object.keys(config.sauce), 'grid-sauce', (val, el) => toggleMulti(val, el, tempItem.sauces, 3), true);
@@ -206,28 +205,24 @@
 
     function closePreview() { document.getElementById('preview-modal').style.display = 'none'; }
 
-    // --- 強化版連線與列印 (整合全自動搜尋與分段傳送) ---
+    // --- 核心：iPhone / Big5 優化列印邏輯 ---
     async function handleActualPrint() {
         closePreview();
         const statusEl = document.getElementById('status');
         
         if (!printCharacteristic) {
             try {
-                statusEl.innerText = "正在搜尋裝置...";
+                statusEl.innerText = "正在連線 Printer001...";
                 const device = await navigator.bluetooth.requestDevice({
                     acceptAllDevices: true,
                     optionalServices: [
                         '0000ffe0-0000-1000-8000-00805f9b34fb', 
                         '000018f0-0000-1000-8000-00805f9b34fb',
-                        '49535343-fe7d-4ae5-8fa9-9fafd205e455',
-                        '00001101-0000-1000-8000-00805f9b34fb'
+                        'e7e11000-49f1-b3a2-991d-7199629b8e36'
                     ]
                 });
                 
-                statusEl.innerText = "正在連線 GATT...";
                 const server = await device.gatt.connect();
-                
-                statusEl.innerText = "搜尋服務中...";
                 const services = await server.getPrimaryServices();
                 
                 for (const service of services) {
@@ -238,9 +233,8 @@
                     if (printCharacteristic) break;
                 }
 
-                if (!printCharacteristic) throw new Error("找不到列印通道");
+                if (!printCharacteristic) throw new Error("找不到列印特徵值");
                 statusEl.innerText = "✅ 已連線";
-                await new Promise(r => setTimeout(r, 500));
             } catch (err) {
                 statusEl.innerText = "❌ 連線失敗";
                 alert("連線錯誤：" + err.message);
@@ -249,31 +243,38 @@
         }
 
         try {
-            statusEl.innerText = "正在傳送數據...";
-            const encoder = new TextEncoder();
+            statusEl.innerText = "正在轉碼並傳送...";
             
-            // 初始化指令 (ESC @ + 指定中文)
+            // 1. 初始化印表機 (ESC/POS)
             const initCmd = new Uint8Array([0x1B, 0x40, 0x1C, 0x26]); 
             await printCharacteristic.writeValue(initCmd);
 
+            // 2. 繁體字轉碼 (UTF-16 -> BIG5)
             const content = generateReceiptText();
-            const data = encoder.encode(content);
+            const charArray = Array.from(content).map(c => c.charCodeAt(0));
+            const big5Array = Encoding.convert(charArray, {
+                to: 'BIG5',
+                from: 'UNICODE'
+            });
+            const data = new Uint8Array(big5Array);
 
-            // 分段傳送解決 undefined 報錯
-            const CHUNK = 20;
-            for (let i = 0; i < data.length; i += CHUNK) {
-                await printCharacteristic.writeValue(data.slice(i, i + CHUNK));
-                await new Promise(r => setTimeout(r, 50)); 
+            // 3. 分段傳輸 (iPhone 穩定版)
+            const CHUNK_SIZE = 20;
+            for (let i = 0; i < data.length; i += CHUNK_SIZE) {
+                const chunk = data.slice(i, i + CHUNK_SIZE);
+                await printCharacteristic.writeValue(chunk);
+                // iPhone 需要較長的停頓來處理藍牙數據包
+                await new Promise(r => setTimeout(r, 70)); 
             }
             
-            statusEl.innerText = "✅ 列印成功";
-            alert("已送往廚房！");
+            statusEl.innerText = "✅ 列印完成";
+            alert("成功！請查看列印機");
             cart = [];
             updateCartDisplay();
             resetForNewItem();
         } catch (err) {
-            statusEl.innerText = "❌ 傳輸錯誤";
-            alert("列印失敗：" + err.message);
+            statusEl.innerText = "❌ 傳送出錯";
+            alert("列印出錯：" + err.message);
             printCharacteristic = null;
         }
     }
