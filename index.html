@@ -3,79 +3,334 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Million Noodles 終極測試</title>
+    <title>XPrinter 中文測試頁</title>
     <style>
-        body { font-family: sans-serif; text-align: center; padding: 30px; background: #f4f7f9; }
-        .btn { 
-            padding: 25px 40px; font-size: 1.4rem; background: #d93025; 
-            color: white; border: none; border-radius: 50px; cursor: pointer;
-            box-shadow: 0 6px 15px rgba(0,0,0,0.2); font-weight: bold;
+        body { 
+            font-family: "Microsoft JhengHei", sans-serif; 
+            display: flex; 
+            flex-direction: column;
+            justify-content: center; 
+            align-items: center; 
+            height: 100vh; 
+            margin: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         }
-        .status { margin-top: 25px; padding: 15px; border-radius: 10px; background: #fff; display: inline-block; }
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            text-align: center;
+            max-width: 400px;
+        }
+        h1 { color: #333; margin-bottom: 30px; }
+        button {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 20px 40px;
+            font-size: 18px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: bold;
+            box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+            transition: all 0.3s;
+        }
+        button:hover {
+            background: #218838;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(40, 167, 69, 0.4);
+        }
+        button:active {
+            transform: translateY(0);
+        }
+        .status {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            font-size: 14px;
+            display: none;
+        }
+        .status.show {
+            display: block;
+        }
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .status.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        .test-options {
+            margin-top: 20px;
+            display: flex;
+            gap: 10px;
+            flex-direction: column;
+        }
+        .test-btn {
+            background: #007bff;
+            padding: 12px 20px;
+            font-size: 14px;
+        }
+        .test-btn:hover {
+            background: #0056b3;
+        }
     </style>
 </head>
 <body>
 
-    <h2>中文字庫強制測試</h2>
-    <p>請確保打印機已開機，且未連接其他手機 App</p>
+<div class="container">
+    <h1>🖨️ XPrinter 測試工具</h1>
+    <button onclick="connectAndTest()">🔵 連接並測試列印</button>
     
-    <button class="btn" onclick="runTest()">開始測試連接與列印</button>
+    <div class="test-options">
+        <button class="test-btn" onclick="testEncoding('gbk')">測試 GBK 編碼</button>
+        <button class="test-btn" onclick="testEncoding('gb18030')">測試 GB18030 編碼</button>
+        <button class="test-btn" onclick="testEncoding('big5')">測試 BIG5 編碼</button>
+        <button class="test-btn" onclick="testSimplified()">測試簡體中文</button>
+        <button class="test-btn" onclick="testEnglish()">測試英文+數字</button>
+    </div>
+    
+    <div class="status" id="status"></div>
+</div>
 
-    <div id="log" class="status">狀態：待機中...</div>
-
+<script src="https://cdn.jsdelivr.net/npm/text-encoding@0.7.0/lib/encoding.min.js"></script>
 <script>
-    let char;
+    let printCharacteristic = null;
+    let deviceCache = null;
 
-    async function runTest() {
-        const log = document.getElementById('log');
-        
-        if (!char) {
-            log.innerText = "正在搜尋打印機...";
-            try {
-                const device = await navigator.bluetooth.requestDevice({
-                    acceptAllDevices: true,
-                    optionalServices: ['0000ffe0-0000-1000-8000-00805f9b34fb']
-                });
-                const server = await device.gatt.connect();
-                const service = await server.getPrimaryService('0000ffe0-0000-1000-8000-00805f9b34fb');
-                char = await service.getCharacteristic('0000ffe1-0000-1000-8000-00805f9b34fb');
-                log.innerText = "✅ 已連上！請再按一次進行測試。";
-                return;
-            } catch (e) {
-                log.innerText = "❌ 失敗：" + e.message;
-                return;
-            }
+    function showStatus(msg, type = 'info') {
+        const status = document.getElementById('status');
+        status.textContent = msg;
+        status.className = 'status show ' + type;
+    }
+
+    async function connectDevice() {
+        if (printCharacteristic) {
+            showStatus('已連接設備', 'success');
+            return true;
         }
 
         try {
-            log.innerText = "正在發送測試指令...";
+            showStatus('正在搜尋藍牙設備...', 'info');
             
-            // 組合多種編碼模式一次過發送
-            const testData = new Uint8Array([
-                0x1B, 0x40,              // 初始化
-                
-                // --- 測試 1: 強制開啟漢字模式 (GBK/GB2312) ---
-                0x1C, 0x26,              // FS & (進入漢字模式)
-                0x1B, 0x33, 0x30,        // 設定行距
-                0x0A, 0x4D, 0x6F, 0x64, 0x65, 0x31, 0x20, 0x28, 0x47, 0x42, 0x4B, 0x29, 0x3A, 0x0A,
-                0xD6, 0xD0, 0xCE, 0xC4, 0xB3, 0x11, 0xB9, 0xA6, // "中文成功" (GBK 簡體編碼)
-                0x0A, 
-                
-                // --- 測試 2: Big5 編碼 (部分港版打印機) ---
-                0x0A, 0x4D, 0x6F, 0x64, 0x65, 0x32, 0x20, 0x28, 0x42, 0x69, 0x67, 0x35, 0x29, 0x3A, 0x0A,
-                0xA4, 0xA4, 0xA4, 0xE5, 0xA6, 0xA8, 0xA5, 0x5C, // "中文成功" (Big5 繁體編碼)
-                0x0A,
-
-                0x0A, 0x0A, 0x0A, 0x0A, 0x0A // 走紙
-            ]);
-
-            await char.writeValue(testData);
-            log.innerText = "✅ 指令已送出！請看紙上有哪一行是中文。";
-        } catch (e) {
-            log.innerText = "❌ 列印出錯：" + e.message;
-            char = null;
+            const device = await navigator.bluetooth.requestDevice({
+                acceptAllDevices: true,
+                optionalServices: [
+                    '0000ffe0-0000-1000-8000-00805f9b34fb',
+                    '000018f0-0000-1000-8000-00805f9b34fb',
+                    '49535343-fe7d-4ae5-8fa9-9fafd205e455'
+                ]
+            });
+            
+            deviceCache = device;
+            showStatus('正在連接 ' + device.name + '...', 'info');
+            
+            const server = await device.gatt.connect();
+            const services = await server.getPrimaryServices();
+            
+            if (services.length === 0) {
+                throw new Error("找不到藍牙服務");
+            }
+            
+            // 嘗試第一個服務
+            const characteristics = await services[0].getCharacteristics();
+            printCharacteristic = characteristics.find(c => 
+                c.properties.write || c.properties.writeWithoutResponse
+            );
+            
+            if (!printCharacteristic) {
+                throw new Error("找不到可寫入特徵值");
+            }
+            
+            showStatus('✅ 連接成功！設備：' + device.name, 'success');
+            return true;
+            
+        } catch (err) {
+            showStatus('❌ 連接失敗：' + err.message, 'error');
+            printCharacteristic = null;
+            return false;
         }
     }
+
+    async function sendData(data) {
+        if (!printCharacteristic) {
+            showStatus('請先連接設備', 'error');
+            return;
+        }
+
+        try {
+            const CHUNK_SIZE = 512;
+            for (let i = 0; i < data.length; i += CHUNK_SIZE) {
+                const chunk = data.slice(i, Math.min(i + CHUNK_SIZE, data.length));
+                await printCharacteristic.writeValue(chunk);
+                await new Promise(resolve => setTimeout(resolve, 50));
+            }
+            showStatus('✅ 列印成功！', 'success');
+        } catch (err) {
+            showStatus('❌ 列印失敗：' + err.message, 'error');
+            printCharacteristic = null;
+        }
+    }
+
+    async function connectAndTest() {
+        const connected = await connectDevice();
+        if (connected) {
+            // 預設用 GBK 測試
+            await testEncoding('gbk');
+        }
+    }
+
+    async function testEncoding(encoding) {
+        if (!printCharacteristic) {
+            const connected = await connectDevice();
+            if (!connected) return;
+        }
+
+        showStatus(`正在使用 ${encoding.toUpperCase()} 編碼列印...`, 'info');
+
+        let buffer = [];
+        
+        // 初始化
+        buffer.push(new Uint8Array([0x1B, 0x40])); // ESC @
+        
+        // 設置編碼
+        if (encoding === 'gbk' || encoding === 'gb18030') {
+            buffer.push(new Uint8Array([0x1B, 0x74, 0x00])); // GBK
+        } else if (encoding === 'big5') {
+            buffer.push(new Uint8Array([0x1B, 0x74, 0x03])); // BIG5
+        }
+        
+        // 居中
+        buffer.push(new Uint8Array([0x1B, 0x61, 0x01]));
+        
+        // 使用對應編碼器
+        const encoder = new TextEncoder(encoding, { NONSTANDARD_allowLegacyEncoding: true });
+        
+        // 測試文字
+        buffer.push(new Uint8Array([0x1D, 0x21, 0x11])); // 放大
+        buffer.push(encoder.encode("中文列印測試\n"));
+        buffer.push(new Uint8Array([0x1D, 0x21, 0x00])); // 恢復
+        
+        buffer.push(encoder.encode("==================\n\n"));
+        
+        // 左對齊
+        buffer.push(new Uint8Array([0x1B, 0x61, 0x00]));
+        
+        buffer.push(encoder.encode(`編碼方式: ${encoding.toUpperCase()}\n`));
+        buffer.push(encoder.encode("繁體中文: 魚圓麵\n"));
+        buffer.push(encoder.encode("繁體中文: 香菇肉碎麵\n"));
+        buffer.push(encoder.encode("數字測試: 12345\n"));
+        buffer.push(encoder.encode("符號測試: $+-*/\n"));
+        buffer.push(encoder.encode("\n如果看到亂碼\n"));
+        buffer.push(encoder.encode("請嘗試其他編碼\n"));
+        
+        buffer.push(encoder.encode("\n\n\n"));
+        
+        // 切紙
+        buffer.push(new Uint8Array([0x1D, 0x56, 0x01]));
+        
+        // 合併
+        const totalLength = buffer.reduce((acc, arr) => acc + arr.length, 0);
+        const finalBuffer = new Uint8Array(totalLength);
+        let offset = 0;
+        buffer.forEach(arr => {
+            finalBuffer.set(arr, offset);
+            offset += arr.length;
+        });
+        
+        await sendData(finalBuffer);
+    }
+
+    async function testSimplified() {
+        if (!printCharacteristic) {
+            const connected = await connectDevice();
+            if (!connected) return;
+        }
+
+        showStatus('正在列印簡體中文...', 'info');
+
+        let buffer = [];
+        buffer.push(new Uint8Array([0x1B, 0x40])); // 初始化
+        buffer.push(new Uint8Array([0x1B, 0x74, 0x00])); // GBK
+        buffer.push(new Uint8Array([0x1B, 0x61, 0x01])); // 居中
+        
+        const encoder = new TextEncoder('gbk', { NONSTANDARD_allowLegacyEncoding: true });
+        
+        buffer.push(new Uint8Array([0x1D, 0x21, 0x11]));
+        buffer.push(encoder.encode("简体中文测试\n"));
+        buffer.push(new Uint8Array([0x1D, 0x21, 0x00]));
+        
+        buffer.push(encoder.encode("==================\n\n"));
+        buffer.push(new Uint8Array([0x1B, 0x61, 0x00]));
+        
+        buffer.push(encoder.encode("鱼圆面\n"));
+        buffer.push(encoder.encode("香菇肉碎面\n"));
+        buffer.push(encoder.encode("招牌面\n"));
+        buffer.push(encoder.encode("价格: $5\n"));
+        
+        buffer.push(encoder.encode("\n\n\n"));
+        buffer.push(new Uint8Array([0x1D, 0x56, 0x01]));
+        
+        const totalLength = buffer.reduce((acc, arr) => acc + arr.length, 0);
+        const finalBuffer = new Uint8Array(totalLength);
+        let offset = 0;
+        buffer.forEach(arr => {
+            finalBuffer.set(arr, offset);
+            offset += arr.length;
+        });
+        
+        await sendData(finalBuffer);
+    }
+
+    async function testEnglish() {
+        if (!printCharacteristic) {
+            const connected = await connectDevice();
+            if (!connected) return;
+        }
+
+        showStatus('正在列印英文...', 'info');
+
+        let buffer = [];
+        buffer.push(new Uint8Array([0x1B, 0x40]));
+        buffer.push(new Uint8Array([0x1B, 0x61, 0x01]));
+        
+        const encoder = new TextEncoder();
+        
+        buffer.push(new Uint8Array([0x1D, 0x21, 0x11]));
+        buffer.push(encoder.encode("PRINT TEST\n"));
+        buffer.push(new Uint8Array([0x1D, 0x21, 0x00]));
+        
+        buffer.push(encoder.encode("==================\n\n"));
+        buffer.push(new Uint8Array([0x1B, 0x61, 0x00]));
+        
+        buffer.push(encoder.encode("English Test\n"));
+        buffer.push(encoder.encode("Numbers: 1234567890\n"));
+        buffer.push(encoder.encode("Symbols: !@#$%^&*()\n"));
+        buffer.push(encoder.encode("Price: $5.00\n"));
+        
+        buffer.push(encoder.encode("\n\n\n"));
+        buffer.push(new Uint8Array([0x1D, 0x56, 0x01]));
+        
+        const totalLength = buffer.reduce((acc, arr) => acc + arr.length, 0);
+        const finalBuffer = new Uint8Array(totalLength);
+        let offset = 0;
+        buffer.forEach(arr => {
+            finalBuffer.set(arr, offset);
+            offset += arr.length;
+        });
+        
+        await sendData(finalBuffer);
+    }
 </script>
+
 </body>
 </html>
