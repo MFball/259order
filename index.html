@@ -1,121 +1,435 @@
 <!DOCTYPE html>
-<html lang="zh-Hant">
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Million Noodles POS (終極影像版)</title>
+    <title>Million 面店点餐系统 (XP-N160II 稳定版)</title>
     <style>
-        :root { --primary: #1a73e8; --secondary: #f0f2f5; --success: #34a853; }
-        body { font-family: sans-serif; background: var(--secondary); margin: 0; padding: 10px; text-align: center; }
-        .container { max-width: 500px; margin: auto; background: white; padding: 15px; border-radius: 20px; min-height: 80vh; position: relative; padding-bottom: 80px; }
-        .step { display: none; }
+        :root { --primary: #1a73e8; --secondary: #f0f2f5; --success: #34a853; --price-tag: #d93025; }
+        body { font-family: "Microsoft YaHei", sans-serif; background: var(--secondary); margin: 0; padding: 10px; text-align: center; }
+        .container { max-width: 500px; margin: auto; background: white; padding: 15px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); padding-bottom: 90px; min-height: 85vh; position: relative; }
+        .step { display: none; animation: fadeIn 0.3s; position: relative; }
         .step.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .back-btn-top { position: absolute; right: 0; top: 0; width: 35px; height: 35px; border-radius: 50%; background: #eee; color: #555; border: none; font-size: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 10; }
+        h2 { color: #333; font-size: 1.1rem; margin: 10px 0 20px 0; border-left: 5px solid var(--primary); padding-left: 10px; text-align: left; padding-right: 40px; }
         .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .opt { background: #fff; border: 2px solid #eee; border-radius: 12px; padding: 20px 10px; font-weight: bold; cursor: pointer; }
+        .opt { background: #fff; border: 2px solid #eee; border-radius: 12px; cursor: pointer; overflow: hidden; position: relative; display: flex; flex-direction: column; }
+        .img-box { width: 100%; height: 100px; display: flex; background: #fafafa; overflow: hidden; }
+        .img-box img { width: 100%; height: 100%; object-fit: cover; flex: 1; }
+        .price-label { position: absolute; bottom: 35px; right: 5px; background: var(--price-tag); color: white; padding: 2px 8px; border-radius: 5px; font-size: 12px; font-weight: bold; }
+        .opt span { padding: 8px 5px; font-weight: bold; font-size: 0.9rem; }
         .opt.selected { border-color: var(--primary); background: #e8f0fe; }
-        .cart-box { margin-top: 20px; padding: 15px; border: 2px dashed #ccc; text-align: left; background: #fffbe6; }
-        .nav-btns { position: fixed; bottom: 0; left: 0; right: 0; background: white; padding: 15px; display: flex; gap: 10px; max-width: 500px; margin: auto; }
-        button { flex: 1; padding: 15px; border-radius: 10px; border: none; font-size: 1.1rem; font-weight: bold; cursor: pointer; }
+        .opt.selected::after { content: '✅'; position: absolute; top: 5px; right: 5px; background: white; border-radius: 50%; padding: 2px; font-size: 12px; }
+        .cart-box { margin-top: 20px; padding: 15px; border: 2px dashed var(--primary); border-radius: 10px; text-align: left; background: #fffbe6; }
+        .cart-item { border-bottom: 1px solid #ddd; padding: 10px 0; display: flex; justify-content: space-between; align-items: center; }
+        .total-price-bar { font-size: 1.6rem; color: var(--price-tag); font-weight: bold; margin: 20px 0; }
+        .nav-btns { position: fixed; bottom: 0; left: 0; right: 0; background: white; padding: 15px; display: flex; gap: 10px; max-width: 500px; margin: auto; box-shadow: 0 -5px 10px rgba(0,0,0,0.05); z-index: 1000; }
+        button { flex: 1; padding: 15px; border-radius: 10px; border: none; font-size: 1rem; cursor: pointer; font-weight: bold; }
         .btn-blue { background: var(--primary); color: white; }
         .btn-green { background: var(--success); color: white; }
-        /* 隱藏的畫板，用來生成打印圖片 */
-        #printCanvas { display: none; }
+        .btn-grey { background: #ccc; color: #333; }
+        .debug { text-align: left; background: #f6f8fa; border: 1px dashed #ccc; padding: 10px; margin-top: 10px; font-family: monospace; font-size: 12px; border-radius: 8px; }
+        .badge { display: inline-block; padding: 3px 8px; border-radius: 999px; font-size: 12px; margin-left: 6px; }
+        .badge-ok { background: #d4edda; color: #155724; }
+        .badge-bad { background: #f8d7da; color: #721c24; }
     </style>
 </head>
 <body>
 
-<canvas id="printCanvas" width="384" height="600"></canvas>
-
 <div class="container">
-    <div class="step active" id="step-1">
-        <h2>1. 選擇類別</h2>
+    <div class="step active" id="step-start">
+        <h2>1. 请选择类别</h2>
         <div class="grid">
-            <div class="opt" onclick="setCat('湯')">湯品</div>
-            <div class="opt" onclick="setCat('面')">麵食</div>
+            <div class="opt" onclick="setCategory('汤')">
+                <div class="img-box"><img src="https://via.placeholder.com/150?text=Soup"></div>
+                <span>汤品类</span>
+            </div>
+            <div class="opt" onclick="setCategory('面')">
+                <div class="img-box"><img src="https://via.placeholder.com/150?text=Noodle"></div>
+                <span>面食类</span>
+            </div>
         </div>
     </div>
 
-    <div class="step" id="step-2">
-        <h2 id="catTitle">2. 選擇品項</h2>
-        <div class="grid" id="itemGrid"></div>
+    <div class="step" id="step-soup-select">
+        <button class="back-btn-top" onclick="goNext('step-start')">←</button>
+        <h2>2. 选择汤品 (最多2个)</h2>
+        <div class="grid" id="grid-soupItems"></div>
+        <div class="nav-btns"><button class="btn-blue" onclick="checkSoupNext()">下一步</button></div>
+    </div>
+
+    <div class="step" id="step-food-select">
+        <button class="back-btn-top" onclick="goNext('step-start')">←</button>
+        <h2>2. 选择主食</h2>
+        <div class="grid" id="grid-foodItems"></div>
+    </div>
+
+    <div class="step" id="step-size">
+        <button class="back-btn-top" onclick="handleSizeBack()">←</button>
+        <h2>3. 选择大小</h2>
+        <div class="grid" id="grid-size"></div>
+    </div>
+
+    <div class="step" id="step-noodle-type">
+        <button class="back-btn-top" onclick="goNext('step-size')">←</button>
+        <h2>4. 选择面类</h2>
+        <div class="grid" id="grid-noodleType"></div>
+    </div>
+
+    <div class="step" id="step-sauce-select">
+        <button class="back-btn-top" onclick="goNext('step-noodle-type')">←</button>
+        <h2>5. 选择酱料 (1-3个)</h2>
+        <div class="grid" id="grid-sauce"></div>
+        <div class="nav-btns"><button class="btn-blue" onclick="addToCart()">✅ 加入购物车</button></div>
     </div>
 
     <div class="step" id="step-finish">
-        <h2>🛒 購物車</h2>
-        <div id="cartDisplay" class="cart-box"></div>
+        <h2 class="cart-title">🛒 购物车明细</h2>
+        <div class="cart-box" id="current-cart"></div>
+        <div class="total-price-bar">应收总计: $<span id="total-sum">0</span></div>
         <div class="nav-btns">
-            <button class="btn-blue" onclick="location.reload()">清除重新點</button>
-            <button class="btn-green" onclick="doPrint()">🖨️ 圖片化出單</button>
+            <button class="btn-blue" onclick="resetForNewItem()">➕ 继续点餐</button>
+            <button class="btn-green" onclick="handlePrintAndFinish()">🖨️ 蓝牙列印出单</button>
+            <button class="btn-grey" onclick="disconnectPrinter()">🔌 断开连接</button>
+        </div>
+
+        <div class="debug">
+            <div><b>蓝牙状态：</b> <span id="bt-status" class="badge badge-bad">未连接</span></div>
+            <div><b>设备：</b> <span id="bt-device">-</span></div>
+            <div><b>服务：</b> <span id="bt-service">-</span></div>
+            <div><b>特征值：</b> <span id="bt-char">-</span></div>
+            <div><b>最后错误：</b> <span id="bt-lasterr">无</span></div>
+            <div><b>调试信息：</b></div>
+            <pre id="bt-log" style="max-height:140px;overflow:auto;background:#fff;padding:6px;border-radius:6px;"></pre>
         </div>
     </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/text-encoding@0.7.0/lib/encoding.min.js"></script>
 <script>
+    const config = {
+        '鱼圆汤': { p: 5 }, '肉圆汤': { p: 5 }, '鱼饺汤': { p: 5 }, '三宝汤': { p: 6 },
+        '鱼圆面': { p: 4 }, '香菇肉碎面': { p: 5 }, '招牌面': { p: 6 }, '餐餐面': { p: 6 },
+        '肉圆面': { p: 4 }, '虾鱼面': { p: 5 }, '西刀鱼面': { p: 4 }, '香菇面': { p: 5 },
+        '鱼饺面': { p: 4 }, '(纯)肉碎面': { p: 4 }, '小鱼香面': { p: 4 },
+        '小的': { p: 0 }, '大的': { p: 1 },
+        'noodleType': { '面薄': '', '幼面': '', '粿条': '', '熟面': '', '米粉': '', '米太目': '', '冬粉': '', '粿条面': '', '粿条米粉': '', '米粉面': '' },
+        'sauce': { '辣椒': '', '茄汁': '', '黑酱油': '', '白酱青': '', '黑醋': '', '(汤)': '' }
+    };
+
     let cart = [];
-    let printChar;
+    let tempItem = { category: '', names: [], size: '', noodle: '', sauces: [], price: 0 };
 
-    function setCat(c) {
-        const items = (c === '湯') ? ['魚圓湯', '肉圓湯', '魚餃湯'] : ['魚圓面', '肉碎面', '招牌面'];
-        const grid = document.getElementById('itemGrid');
-        grid.innerHTML = '';
-        items.forEach(i => {
-            const d = document.createElement('div'); d.className = 'opt'; d.innerText = i;
-            d.onclick = () => { cart.push(i); showCart(); };
-            grid.appendChild(d);
+    // 蓝牙相关
+    let btDevice = null;
+    let btServer = null;
+    let printCharacteristic = null;
+    let printWriteType = null; // 'writeWithoutResponse' | 'write'
+
+    // UI 调试
+    function log(msg) {
+        const el = document.getElementById('bt-log');
+        const t = new Date().toLocaleTimeString();
+        el.textContent += `[${t}] ${msg}\n`;
+        el.scrollTop = el.scrollHeight;
+    }
+    function setLastErr(msg) { document.getElementById('bt-lasterr').textContent = msg; }
+    function setStatus(ok, deviceName, svcId, charId) {
+        const s = document.getElementById('bt-status');
+        s.textContent = ok ? '已连接' : '未连接';
+        s.className = ok ? 'badge badge-ok' : 'badge badge-bad';
+        document.getElementById('bt-device').textContent = deviceName || '-';
+        document.getElementById('bt-service').textContent = svcId || '-';
+        document.getElementById('bt-char').textContent = charId || '-';
+    }
+
+    function init() {
+        renderGrid(['鱼圆汤','肉圆汤','鱼饺汤','三宝汤'], 'grid-soupItems', (val, el) => toggleMulti(val, el, tempItem.names, 2), true);
+        const foodOrder = ['鱼圆面', '香菇肉碎面', '招牌面', '餐餐面', '肉圆面', '虾鱼面', '西刀鱼面', '香菇面', '鱼饺面', '(纯)肉碎面', '小鱼香面'];
+        renderGrid(foodOrder, 'grid-foodItems', (val) => { tempItem.names = [val]; goNext('step-size'); });
+        renderGrid(['小的', '大的'], 'grid-size', (val) => { 
+            tempItem.size = val; 
+            if(tempItem.category === '汤') addToCart(); 
+            else goNext('step-noodle-type'); 
         });
-        document.getElementById('step-1').classList.remove('active');
-        document.getElementById('step-2').classList.add('active');
+        renderGrid(Object.keys(config.noodleType), 'grid-noodleType', (val) => { tempItem.noodle = val; goNext('step-sauce-select'); });
+        renderGrid(Object.keys(config.sauce), 'grid-sauce', (val, el) => toggleMulti(val, el, tempItem.sauces, 3), true);
+
+        if (!navigator.bluetooth) {
+            alert('当前浏览器不支持 Web Bluetooth，请使用 Chrome / Edge / Opera (桌面或 Android) 并开启蓝牙。');
+            log('浏览器不支持 Web Bluetooth');
+            setLastErr('浏览器不支持 Web Bluetooth');
+        } else {
+            log('Web Bluetooth 可用');
+        }
     }
 
-    function showCart() {
-        document.getElementById('step-2').classList.remove('active');
-        document.getElementById('step-finish').classList.add('active');
-        document.getElementById('cartDisplay').innerHTML = cart.map(i => `<li>${i}</li>`).join('');
-    }
-
-    // 將內容畫到畫板上
-    function drawReceipt() {
-        const canvas = document.getElementById('printCanvas');
-        const ctx = canvas.getContext('2d');
-        ctx.fillStyle = "white";
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.fillStyle = "black";
-        ctx.font = "bold 32px Arial";
-        ctx.fillText("Million Noodles", 80, 50);
-        ctx.font = "24px Arial";
-        ctx.fillText("--------------------------", 10, 80);
-        
-        let y = 120;
-        cart.forEach((item, index) => {
-            ctx.fillText(`${index + 1}. ${item}`, 20, y);
-            y += 40;
+    function renderGrid(list, containerId, clickFn, isMulti = false) {
+        const cont = document.getElementById(containerId);
+        if(!cont) return;
+        cont.innerHTML = ''; 
+        list.forEach(name => {
+            const div = document.createElement('div');
+            div.className = 'opt';
+            div.innerHTML = `<span>${name}</span>${(config[name] && config[name].p > 0) ? '<div class="price-label">+$'+config[name].p+'</div>' : ''}`;
+            div.onclick = function() {
+                if(!isMulti) { cont.querySelectorAll('.opt').forEach(o => o.classList.remove('selected')); div.classList.add('selected'); }
+                clickFn(name, div);
+            };
+            cont.appendChild(div);
         });
-        
-        ctx.fillText("--------------------------", 10, y + 20);
-        ctx.fillText("請以此單到櫃檯結帳", 20, y + 60);
-        return ctx.getImageData(0, 0, canvas.width, y + 100);
     }
 
-    async function doPrint() {
-        if (!printChar) {
-            try {
-                const device = await navigator.bluetooth.requestDevice({ acceptAllDevices: true, optionalServices: ['0000ffe0-0000-1000-8000-00805f9b34fb'] });
-                const server = await device.gatt.connect();
-                const service = await server.getPrimaryService('0000ffe0-0000-1000-8000-00805f9b34fb');
-                printChar = await service.getCharacteristic('0000ffe1-0000-1000-8000-00805f9b34fb');
-                alert("藍牙已連線，請再次點擊列印"); return;
-            } catch (e) { alert("連線失敗: " + e); return; }
+    function setCategory(val) { tempItem.category = val; goNext(val === '汤' ? 'step-soup-select' : 'step-food-select'); }
+    function toggleMulti(val, el, list, max) {
+        if(list.includes(val)) { list.splice(list.indexOf(val), 1); el.classList.remove('selected'); } 
+        else { if(list.length >= max) return alert("最多选"+max+"个"); list.push(val); el.classList.add('selected'); }
+    }
+    function goNext(id) {
+        document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+        window.scrollTo(0,0);
+    }
+    function checkSoupNext() { if(tempItem.names.length === 0) return alert("请至少选一个汤品"); goNext('step-size'); }
+    function handleSizeBack() { goNext(tempItem.category === '汤' ? 'step-soup-select' : 'step-food-select'); }
+
+    function addToCart() {
+        let price = 0;
+        tempItem.names.forEach(n => price += (config[n]?.p || 0));
+        price += (config[tempItem.size]?.p || 0);
+        tempItem.price = price;
+        cart.push(JSON.parse(JSON.stringify(tempItem)));
+        updateCartDisplay();
+        goNext('step-finish');
+    }
+
+    function updateCartDisplay() {
+        let total = 0;
+        document.getElementById('current-cart').innerHTML = cart.map((item, i) => {
+            total += item.price;
+            return `<div class="cart-item"><div><b>#${i+1} ${item.names.join('+')}</b> [${item.size}]<br><small>${item.noodle || ''} ${item.sauces.length ? ' / ' + item.sauces.join(',') : ''}</small></div><div>$${item.price}</div></div>`;
+        }).join('');
+        document.getElementById('total-sum').innerText = total;
+    }
+
+    function resetForNewItem() {
+        tempItem = { category: '', names: [], size: '', noodle: '', sauces: [], price: 0 };
+        document.querySelectorAll('.opt').forEach(o => o.classList.remove('selected'));
+        goNext('step-start');
+    }
+
+    async function disconnectPrinter() {
+        try {
+            if (btDevice && btDevice.gatt.connected) {
+                btDevice.gatt.disconnect();
+                log('已主动断开蓝牙连接');
+            }
+        } catch (e) {
+            log('断开失败: ' + e.message);
+        } finally {
+            btDevice = null;
+            btServer = null;
+            printCharacteristic = null;
+            printWriteType = null;
+            setStatus(false);
+        }
+    }
+
+    // ✅ 更稳健的蓝牙连接流程
+    async function handlePrintAndFinish() {
+        // 如果已连接，直接打印
+        if (printCharacteristic) {
+            log('已连接，直接开始打印');
+            return await doPrint();
         }
 
-        const imgData = drawReceipt();
-        // 這裡我們只發送最簡單的指令測試是否能驅動
-        // 師傅，如果這招圖片列印你需要更完整的指令，我們需要加載一個專門處理圖片轉ESC/POS的庫。
-        // 為簡化測試，我們先用純英文指令確保連線沒斷：
-        const encoder = new TextEncoder();
-        const testCmd = "\x1B\x40" + "PHOTO PRINT TEST\n" + cart.join("\n") + "\n\n\n\n\n";
-        await printChar.writeValue(encoder.encode(testCmd));
-        alert("已發送列印！");
+        // 否则先连接
+        try {
+            log('开始蓝牙设备扫描...');
+            setLastErr('扫描中...');
+
+            // 常见 XP/芯燁 蓝牙打印机服务 UUID 列表
+            const optionalServices = [
+                '0000ffe0-0000-1000-8000-00805f9b34fb',  // 常见串口服务 (FFE0)
+                '0000ffe1-0000-1000-8000-00805f9b34fb',  // 常见串口特征 (FFE1)
+                '000018f0-0000-1000-8000-00805f9b34fb',  // 其他芯燁系列
+                '49535343-fe7d-4ae5-8fa9-9fafd205e455',  // iOS/某些适配器
+                '00001101-0000-1000-8000-00805f9b34fb'   // SPP
+            ];
+
+            btDevice = await navigator.bluetooth.requestDevice({
+                acceptAllDevices: true,
+                optionalServices
+            });
+
+            if (!btDevice) throw new Error('未选择蓝牙设备');
+            log(`已选择设备: ${btDevice.name || '未知设备'} (${btDevice.id})`);
+            setStatus(false, btDevice.name || btDevice.id);
+
+            log('正在连接 GATT...');
+            btServer = await btDevice.gatt.connect();
+            log('GATT 已连接');
+
+            // 获取所有 Primary Services
+            const services = await btServer.getPrimaryServices();
+            log(`发现 ${services.length} 个服务`);
+            let foundService = null;
+            let foundChar = null;
+
+            for (const svc of services) {
+                log(`服务: ${svc.uuid} (isPrimary=${svc.isPrimary})`);
+                try {
+                    const chars = await svc.getCharacteristics();
+                    log(`  特征值数量: ${chars.length}`);
+                    for (const ch of chars) {
+                        const props = [];
+                        if (ch.properties.write) props.push('write');
+                        if (ch.properties.writeWithoutResponse) props.push('writeWithoutResponse');
+                        if (ch.properties.notify) props.push('notify');
+                        if (ch.properties.indicate) props.push('indicate');
+                        log(`    - ${ch.uuid} [${props.join(',')}]`);
+                        if ((ch.properties.write || ch.properties.writeWithoutResponse) && !foundChar) {
+                            foundService = svc;
+                            foundChar = ch;
+                            printWriteType = ch.properties.write ? 'write' : 'writeWithoutResponse';
+                        }
+                    }
+                } catch (e) {
+                    log(`  获取特征值失败: ${e.message}`);
+                }
+            }
+
+            if (!foundChar) {
+                const svcList = services.map(s => s.uuid).join(', ');
+                throw new Error(
+                    `未找到可写入特征值。\n已发现服务: ${svcList}\n` +
+                    `请确认设备是否为打印机蓝牙模块，或尝试重新配对。`
+                );
+            }
+
+            printCharacteristic = foundChar;
+            setStatus(true, btDevice.name || btDevice.id, foundService.uuid, foundChar.uuid);
+            log(`连接成功：服务 ${foundService.uuid} / 特征 ${foundChar.uuid} / 模式 ${printWriteType}`);
+            setLastErr('连接成功');
+
+            // 监听断开事件
+            btDevice.addEventListener('gattserverdisconnected', () => {
+                log('蓝牙连接已断开');
+                setStatus(false);
+                printCharacteristic = null;
+                setLastErr('蓝牙连接已断开');
+            });
+
+            // 连接成功后立即打印
+            await doPrint();
+
+        } catch (err) {
+            console.error(err);
+            log('连接失败: ' + err.message);
+            setLastErr(err.message);
+            alert('连接失败：' + err.message + '\n\n请尝试：\n1. 重启打印机蓝牙\n2. 重新配对设备\n3. 切换手机/电脑蓝牙后再试\n4. 查看调试信息');
+            await disconnectPrinter();
+        }
     }
+
+    // ✅ 打印流程：GBK + 明确 ESC/POS 指令 + 安全分段发送
+    async function doPrint() {
+        if (!printCharacteristic) throw new Error('打印特征值未就绪');
+
+        try {
+            const gbkEncoder = new TextEncoder('gbk', { NONSTANDARD_allowLegacyEncoding: true });
+
+            let commands = [];
+
+            // 初始化打印机
+            commands.push(new Uint8Array([0x1B, 0x40])); // ESC @
+
+            // 设置代码页为 GBK (Page 0)
+            commands.push(new Uint8Array([0x1B, 0x74, 0x00])); // ESC t 0
+
+            // 设置字符集 (常见芯燁/XP)
+            commands.push(new Uint8Array([0x1C, 0x43, 0x15])); // FS C 15 (GBK/GB18030 兼容)
+
+            // 居中
+            commands.push(new Uint8Array([0x1B, 0x61, 0x01])); // ESC a 1
+
+            // 标题放大
+            commands.push(new Uint8Array([0x1D, 0x21, 0x11])); // GS ! 17
+            commands.push(gbkEncoder.encode("Million面店\n"));
+
+            // 恢复正常
+            commands.push(new Uint8Array([0x1D, 0x21, 0x00])); // GS ! 0
+            commands.push(gbkEncoder.encode("==================\n\n"));
+
+            // 左对齐
+            commands.push(new Uint8Array([0x1B, 0x61, 0x00])); // ESC a 0
+
+            // 订单内容
+            cart.forEach((item, i) => {
+                commands.push(gbkEncoder.encode(`订单 #${i+1}\n`));
+                commands.push(new Uint8Array([0x1D, 0x21, 0x01])); // 加粗
+                commands.push(gbkEncoder.encode(`${item.names.join('+')}`));
+                commands.push(new Uint8Array([0x1D, 0x21, 0x00]));
+                commands.push(gbkEncoder.encode(` (${item.size})\n`));
+
+                if (item.noodle) commands.push(gbkEncoder.encode(`  ${item.noodle}\n`));
+                if (item.sauces.length) commands.push(gbkEncoder.encode(`  ${item.sauces.join(', ')}\n`));
+                commands.push(gbkEncoder.encode(`  价格: $${item.price}\n`));
+                commands.push(gbkEncoder.encode("---------------------------\n"));
+            });
+
+            // 总计（右对齐 + 放大）
+            commands.push(new Uint8Array([0x1B, 0x61, 0x02])); // ESC a 2
+            commands.push(new Uint8Array([0x1D, 0x21, 0x11])); // GS ! 17
+            commands.push(gbkEncoder.encode(`总计: $${document.getElementById('total-sum').innerText}\n`));
+            commands.push(new Uint8Array([0x1D, 0x21, 0x00]));
+
+            commands.push(gbkEncoder.encode("\n\n\n"));
+
+            // 切纸
+            commands.push(new Uint8Array([0x1D, 0x56, 0x01])); // GS V 1
+
+            // 合并成一个 buffer
+            const totalLength = commands.reduce((sum, cmd) => sum + cmd.length, 0);
+            const finalBuffer = new Uint8Array(totalLength);
+            let offset = 0;
+            commands.forEach(cmd => { finalBuffer.set(cmd, offset); offset += cmd.length; });
+
+            log(`准备发送总字节数: ${finalBuffer.length}`);
+
+            // ✅ 保守分段发送：避免蓝牙缓冲溢出导致内容丢失
+            const chunkSize = 128; // 从 20/512 调整为 128
+            const delayMs = 120;   // 延迟更长
+            for (let i = 0; i < finalBuffer.length; i += chunkSize) {
+                const chunk = finalBuffer.slice(i, Math.min(i + chunkSize, finalBuffer.length));
+                if (printWriteType === 'write') {
+                    await printCharacteristic.writeValue(chunk);
+                } else {
+                    await printCharacteristic.writeValueWithoutResponse(chunk);
+                }
+                await new Promise(r => setTimeout(r, delayMs));
+                log(`已发送 ${Math.min(i + chunkSize, finalBuffer.length)}/${finalBuffer.length} 字节`);
+            }
+
+            alert("已送往厨房！");
+            log('打印完成');
+            setLastErr('打印完成');
+
+            cart = [];
+            updateCartDisplay();
+            resetForNewItem();
+        } catch (err) {
+            console.error(err);
+            log('打印失败: ' + err.message);
+            setLastErr(err.message);
+            alert('打印失败：' + err.message + '\n\n建议：\n1. 重试打印\n2. 断开后重新连接\n3. 检查打印机是否缺纸/蓝牙是否正常');
+            // 打印失败后重置连接，避免后续继续失败
+            await disconnectPrinter();
+        }
+    }
+
+    init();
 </script>
 </body>
 </html>
