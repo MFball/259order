@@ -1,31 +1,23 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Million 面店点餐系统</title>
+    <title>Million Noodles POS</title>
     <style>
         :root { --primary: #1a73e8; --secondary: #f0f2f5; --success: #34a853; --price-tag: #d93025; }
-        body { font-family: "Microsoft YaHei", sans-serif; background: var(--secondary); margin: 0; padding: 10px; text-align: center; }
+        body { font-family: sans-serif; background: var(--secondary); margin: 0; padding: 10px; text-align: center; }
         .container { max-width: 500px; margin: auto; background: white; padding: 15px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); padding-bottom: 90px; min-height: 85vh; position: relative; }
-        .step { display: none; animation: fadeIn 0.3s; position: relative; }
+        .step { display: none; }
         .step.active { display: block; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        .back-btn-top { position: absolute; right: 0; top: 0; width: 35px; height: 35px; border-radius: 50%; background: #eee; color: #555; border: none; font-size: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 10; }
-        h2 { color: #333; font-size: 1.1rem; margin: 10px 0 20px 0; border-left: 5px solid var(--primary); padding-left: 10px; text-align: left; padding-right: 40px; }
+        h2 { color: #333; border-left: 5px solid var(--primary); padding-left: 10px; text-align: left; }
         .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .opt { background: #fff; border: 2px solid #eee; border-radius: 12px; cursor: pointer; overflow: hidden; position: relative; display: flex; flex-direction: column; }
-        .img-box { width: 100%; height: 100px; display: flex; background: #fafafa; overflow: hidden; }
-        .img-box img { width: 100%; height: 100%; object-fit: cover; flex: 1; }
-        .price-label { position: absolute; bottom: 35px; right: 5px; background: var(--price-tag); color: white; padding: 2px 8px; border-radius: 5px; font-size: 12px; font-weight: bold; }
-        .opt span { padding: 8px 5px; font-weight: bold; font-size: 0.9rem; }
+        .opt { background: #fff; border: 2px solid #eee; border-radius: 12px; cursor: pointer; overflow: hidden; position: relative; padding: 10px; font-weight: bold; }
         .opt.selected { border-color: var(--primary); background: #e8f0fe; }
-        .opt.selected::after { content: '✅'; position: absolute; top: 5px; right: 5px; background: white; border-radius: 50%; padding: 2px; font-size: 12px; }
         .cart-box { margin-top: 20px; padding: 15px; border: 2px dashed var(--primary); border-radius: 10px; text-align: left; background: #fffbe6; }
-        .cart-item { border-bottom: 1px solid #ddd; padding: 10px 0; display: flex; justify-content: space-between; align-items: center; }
-        .total-price-bar { font-size: 1.6rem; color: var(--price-tag); font-weight: bold; margin: 20px 0; }
-        .nav-btns { position: fixed; bottom: 0; left: 0; right: 0; background: white; padding: 15px; display: flex; gap: 10px; max-width: 500px; margin: auto; box-shadow: 0 -5px 10px rgba(0,0,0,0.05); z-index: 1000; }
-        button { flex: 1; padding: 15px; border-radius: 10px; border: none; font-size: 1rem; cursor: pointer; font-weight: bold; }
+        .total-price-bar { font-size: 1.8rem; color: var(--price-tag); font-weight: bold; margin: 20px 0; }
+        .nav-btns { position: fixed; bottom: 0; left: 0; right: 0; background: white; padding: 15px; display: flex; gap: 10px; max-width: 500px; margin: auto; }
+        button { flex: 1; padding: 15px; border-radius: 10px; border: none; font-size: 1.1rem; cursor: pointer; font-weight: bold; }
         .btn-blue { background: var(--primary); color: white; }
         .btn-green { background: var(--success); color: white; }
     </style>
@@ -34,253 +26,102 @@
 
 <div class="container">
     <div class="step active" id="step-start">
-        <h2>1. 请选择类别</h2>
+        <h2>1. 類別 Category</h2>
         <div class="grid">
-            <div class="opt" onclick="setCategory('汤')">
-                <div class="img-box"><img src="https://via.placeholder.com/150?text=Soup"></div>
-                <span>汤品类</span>
-            </div>
-            <div class="opt" onclick="setCategory('面')">
-                <div class="img-box"><img src="https://via.placeholder.com/150?text=Noodle"></div>
-                <span>面食类</span>
-            </div>
+            <div class="opt" onclick="setCategory('Soup')">湯品 Soup</div>
+            <div class="opt" onclick="setCategory('Noodle')">麵食 Noodle</div>
         </div>
     </div>
 
-    <div class="step" id="step-soup-select">
-        <button class="back-btn-top" onclick="goNext('step-start')">←</button>
-        <h2>2. 选择汤品 (最多2个)</h2>
-        <div class="grid" id="grid-soupItems"></div>
-        <div class="nav-btns"><button class="btn-blue" onclick="checkSoupNext()">下一步</button></div>
-    </div>
-
-    <div class="step" id="step-food-select">
-        <button class="back-btn-top" onclick="goNext('step-start')">←</button>
-        <h2>2. 选择主食</h2>
-        <div class="grid" id="grid-foodItems"></div>
-    </div>
-
-    <div class="step" id="step-size">
-        <button class="back-btn-top" onclick="handleSizeBack()">←</button>
-        <h2>3. 选择大小</h2>
-        <div class="grid" id="grid-size"></div>
-    </div>
-
-    <div class="step" id="step-noodle-type">
-        <button class="back-btn-top" onclick="goNext('step-size')">←</button>
-        <h2>4. 选择面类</h2>
-        <div class="grid" id="grid-noodleType"></div>
-    </div>
-
-    <div class="step" id="step-sauce-select">
-        <button class="back-btn-top" onclick="goNext('step-noodle-type')">←</button>
-        <h2>5. 选择酱料 (1-3个)</h2>
-        <div class="grid" id="grid-sauce"></div>
-        <div class="nav-btns"><button class="btn-blue" onclick="addToCart()">✅ 加入购物车</button></div>
-    </div>
+    <div class="step" id="step-soup-select"><h2>2. 選擇湯品</h2><div class="grid" id="grid-soupItems"></div><div class="nav-btns"><button class="btn-blue" onclick="goNext('step-size')">下一步</button></div></div>
+    <div class="step" id="step-food-select"><h2>2. 選擇主食</h2><div class="grid" id="grid-foodItems"></div></div>
+    <div class="step" id="step-size"><h2>3. 大細 Size</h2><div class="grid" id="grid-size"></div></div>
+    <div class="step" id="step-noodle-type"><h2>4. 麵類 Noodle Type</h2><div class="grid" id="grid-noodleType"></div></div>
+    <div class="step" id="step-sauce-select"><h2>5. 醬料 Sauce</h2><div class="grid" id="grid-sauce"></div><div class="nav-btns"><button class="btn-blue" onclick="addToCart()">✅ 加入購物車</button></div></div>
 
     <div class="step" id="step-finish">
-        <h2 class="cart-title">🛒 购物车明细</h2>
-        <div class="cart-box" id="current-cart"></div>
-        <div class="total-price-bar">应收总计: $<span id="total-sum">0</span></div>
+        <h2>🛒 購物車明細</h2>
+        <div id="current-cart" class="cart-box"></div>
+        <div class="total-price-bar">Total: $<span id="total-sum">0</span></div>
         <div class="nav-btns">
-            <button class="btn-blue" onclick="resetForNewItem()">➕ 继续点餐</button>
-            <button class="btn-green" onclick="handlePrintAndFinish()">🖨️ 蓝牙列印出单</button>
+            <button class="btn-blue" onclick="resetPage()">➕ 繼續點餐</button>
+            <button class="btn-green" onclick="handlePrint()">🖨️ 打印出單</button>
         </div>
     </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/text-encoding@0.7.0/lib/encoding.min.js"></script>
 <script>
     const config = {
-        '鱼圆汤': { p: 5 }, '肉圆汤': { p: 5 }, '鱼饺汤': { p: 5 }, '三宝汤': { p: 6 },
-        '鱼圆面': { p: 4 }, '香菇肉碎面': { p: 5 }, '招牌面': { p: 6 }, '餐餐面': { p: 6 },
-        '肉圆面': { p: 4 }, '虾鱼面': { p: 5 }, '西刀鱼面': { p: 4 }, '香菇面': { p: 5 },
-        '鱼饺面': { p: 4 }, '(纯)肉碎面': { p: 4 }, '小鱼香面': { p: 4 },
-        '小的': { p: 0 }, '大的': { p: 1 },
-        'noodleType': { '面薄': '', '幼面': '', '粿条': '', '熟面': '', '米粉': '', '米太目': '', '冬粉': '', '粿条面': '', '粿条米粉': '', '米粉面': '' },
-        'sauce': { '辣椒': '', '茄汁': '', '黑酱油': '', '白酱青': '', '黑醋': '', '(汤)': '' }
+        'Fishball Soup': 5, 'Meatball Soup': 5, 'Dumpling Soup': 5, 'Special Soup': 6,
+        'Fishball Noodle': 4, 'Minced Meat Noodle': 5, 'Signature Noodle': 6,
+        'Small': 0, 'Big': 1
     };
 
     let cart = [];
-    let tempItem = { category: '', names: [], size: '', noodle: '', sauces: [], price: 0 };
-    let printCharacteristic;
+    let tempItem = { names: [], size: '', noodle: '', sauces: [], price: 0 };
+    let printChar;
+
+    function setCategory(c) {
+        if(c === 'Soup') {
+            renderGrid(['Fishball Soup', 'Meatball Soup', 'Dumpling Soup'], 'grid-soupItems', (v, e) => toggleMulti(v, e, tempItem.names));
+            goNext('step-soup-select');
+        } else {
+            renderGrid(['Fishball Noodle', 'Minced Meat Noodle', 'Signature Noodle'], 'grid-foodItems', (v) => { tempItem.names=[v]; goNext('step-size'); });
+            goNext('step-food-select');
+        }
+    }
+
+    function renderGrid(list, id, fn, multi=false) {
+        const div = document.getElementById(id); div.innerHTML = '';
+        list.forEach(i => {
+            const el = document.createElement('div'); el.className = 'opt'; el.innerText = i;
+            el.onclick = () => { if(!multi) { Array.from(div.children).forEach(c=>c.classList.remove('selected')); el.classList.add('selected'); } fn(i, el); };
+            div.appendChild(el);
+        });
+    }
+
+    function toggleMulti(v, el, list) {
+        if(list.includes(v)) { list.splice(list.indexOf(v),1); el.classList.remove('selected'); }
+        else { list.push(v); el.classList.add('selected'); }
+    }
 
     function init() {
-        renderGrid(['鱼圆汤','肉圆汤','鱼饺汤','三宝汤'], 'grid-soupItems', (val, el) => toggleMulti(val, el, tempItem.names, 2), true);
-        const foodOrder = ['鱼圆面', '香菇肉碎面', '招牌面', '餐餐面', '肉圆面', '虾鱼面', '西刀鱼面', '香菇面', '鱼饺面', '(纯)肉碎面', '小鱼香面'];
-        renderGrid(foodOrder, 'grid-foodItems', (val) => { tempItem.names = [val]; goNext('step-size'); });
-        renderGrid(['小的', '大的'], 'grid-size', (val) => { 
-            tempItem.size = val; 
-            if(tempItem.category === '汤') addToCart(); 
-            else goNext('step-noodle-type'); 
-        });
-        renderGrid(Object.keys(config.noodleType), 'grid-noodleType', (val) => { tempItem.noodle = val; goNext('step-sauce-select'); });
-        renderGrid(Object.keys(config.sauce), 'grid-sauce', (val, el) => toggleMulti(val, el, tempItem.sauces, 3), true);
+        renderGrid(['Small', 'Big'], 'grid-size', (v) => { tempItem.size=v; goNext('step-noodle-type'); });
+        renderGrid(['Mee Pok', 'Mee Kia', 'Kway Teow'], 'grid-noodleType', (v) => { tempItem.noodle=v; goNext('step-sauce-select'); });
+        renderGrid(['Chili', 'Tomato', 'Black Soy'], 'grid-sauce', (v, e) => toggleMulti(v, e, tempItem.sauces), true);
     }
 
-    function renderGrid(list, containerId, clickFn, isMulti = false) {
-        const cont = document.getElementById(containerId);
-        if(!cont) return;
-        cont.innerHTML = ''; 
-        list.forEach(name => {
-            const div = document.createElement('div');
-            div.className = 'opt';
-            div.innerHTML = `<span>${name}</span>${(config[name] && config[name].p > 0) ? '<div class="price-label">+$'+config[name].p+'</div>' : ''}`;
-            div.onclick = function() {
-                if(!isMulti) { cont.querySelectorAll('.opt').forEach(o => o.classList.remove('selected')); div.classList.add('selected'); }
-                clickFn(name, div);
-            };
-            cont.appendChild(div);
-        });
-    }
-
-    function setCategory(val) { tempItem.category = val; goNext(val === '汤' ? 'step-soup-select' : 'step-food-select'); }
-    function toggleMulti(val, el, list, max) {
-        if(list.includes(val)) { list.splice(list.indexOf(val), 1); el.classList.remove('selected'); } 
-        else { if(list.length >= max) return alert("最多选"+max+"个"); list.push(val); el.classList.add('selected'); }
-    }
-    function goNext(id) {
-        document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
-        document.getElementById(id).classList.add('active');
-        window.scrollTo(0,0);
-    }
-    function checkSoupNext() { if(tempItem.names.length === 0) return alert("请至少选一个汤品"); goNext('step-size'); }
-    function handleSizeBack() { goNext(tempItem.category === '汤' ? 'step-soup-select' : 'step-food-select'); }
+    function goNext(id) { document.querySelectorAll('.step').forEach(s=>s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
 
     function addToCart() {
-        let price = 0;
-        tempItem.names.forEach(n => price += (config[n]?.p || 0));
-        price += (config[tempItem.size]?.p || 0);
-        tempItem.price = price;
-        cart.push(JSON.parse(JSON.stringify(tempItem)));
-        updateCartDisplay();
-        goNext('step-finish');
+        let p = 0; tempItem.names.forEach(n => p += (config[n]||0)); p += (config[tempItem.size]||0);
+        tempItem.price = p; cart.push(JSON.parse(JSON.stringify(tempItem)));
+        updateCart(); goNext('step-finish');
     }
 
-    function updateCartDisplay() {
-        let total = 0;
-        document.getElementById('current-cart').innerHTML = cart.map((item, i) => {
-            total += item.price;
-            return `<div class="cart-item"><div><b>#${i+1} ${item.names.join('+')}</b> [${item.size}]<br><small>${item.noodle || ''} ${item.sauces.length ? ' / ' + item.sauces.join(',') : ''}</small></div><div>$${item.price}</div></div>`;
-        }).join('');
-        document.getElementById('total-sum').innerText = total;
+    function updateCart() {
+        let t = 0; document.getElementById('current-cart').innerHTML = cart.map(i => { t += i.price; return `<div><b>${i.names.join('+')}</b> (${i.size})<br>${i.noodle} / ${i.sauces.join(',')} - $${i.price}</div><hr>`; }).join('');
+        document.getElementById('total-sum').innerText = t;
     }
 
-    function resetForNewItem() {
-        tempItem = { category: '', names: [], size: '', noodle: '', sauces: [], price: 0 };
-        document.querySelectorAll('.opt').forEach(o => o.classList.remove('selected'));
-        goNext('step-start');
-    }
+    function resetPage() { tempItem = { names: [], size: '', noodle: '', sauces: [], price: 0 }; goNext('step-start'); }
 
-    // ✅ 简体中文 + GB2312/GBK 编码优化版
-    async function handlePrintAndFinish() {
-        if (!printCharacteristic) {
+    async function handlePrint() {
+        if (!printChar) {
             try {
-                const device = await navigator.bluetooth.requestDevice({
-                    acceptAllDevices: true,
-                    optionalServices: [
-                        '0000ffe0-0000-1000-8000-00805f9b34fb', 
-                        '000018f0-0000-1000-8000-00805f9b34fb',
-                        '49535343-fe7d-4ae5-8fa9-9fafd205e455'
-                    ]
-                });
-                
+                const device = await navigator.bluetooth.requestDevice({ acceptAllDevices: true, optionalServices: ['0000ffe0-0000-1000-8000-00805f9b34fb'] });
                 const server = await device.gatt.connect();
-                const services = await server.getPrimaryServices();
-                if (services.length === 0) throw new Error("找不到打印服务");
-                
-                const characteristics = await services[0].getCharacteristics();
-                printCharacteristic = characteristics.find(c => c.properties.write || c.properties.writeWithoutResponse);
-                
-                if (!printCharacteristic) throw new Error("找不到写入特征值");
-
-                alert("连接成功！请再次点击「蓝牙列印」出单。");
-                return;
-            } catch (err) {
-                alert("连接失败：" + err.message);
-                return;
-            }
+                const service = await server.getPrimaryService('0000ffe0-0000-1000-8000-00805f9b34fb');
+                printChar = await service.getCharacteristic('0000ffe1-0000-1000-8000-00805f9b34fb');
+                alert("已連接！再按一次列印。"); return;
+            } catch (e) { alert("連接失敗: " + e); return; }
         }
-
-        try {
-            // 使用 GBK 编码器
-            const gbkEncoder = new TextEncoder('gbk', { NONSTANDARD_allowLegacyEncoding: true });
-            
-            let commands = [];
-            
-            // 初始化
-            commands.push(new Uint8Array([0x1B, 0x40])); // ESC @
-            
-            // 设置代码页为 GBK (Page 0)
-            commands.push(new Uint8Array([0x1B, 0x74, 0x00])); // ESC t 0
-            
-            // 居中
-            commands.push(new Uint8Array([0x1B, 0x61, 0x01])); // ESC a 1
-            
-            // 放大字体
-            commands.push(new Uint8Array([0x1D, 0x21, 0x11])); // GS ! 17 (双倍高宽)
-            commands.push(gbkEncoder.encode("Million面店\n"));
-            
-            // 恢复正常字体
-            commands.push(new Uint8Array([0x1D, 0x21, 0x00])); // GS ! 0
-            commands.push(gbkEncoder.encode("==================\n\n"));
-            
-            // 左对齐
-            commands.push(new Uint8Array([0x1B, 0x61, 0x00])); // ESC a 0
-            
-            // 订单内容
-            cart.forEach((item, i) => {
-                commands.push(gbkEncoder.encode(`订单 #${i+1}\n`));
-                commands.push(new Uint8Array([0x1D, 0x21, 0x01])); // 加粗
-                commands.push(gbkEncoder.encode(`${item.names.join('+')}`));
-                commands.push(new Uint8Array([0x1D, 0x21, 0x00])); // 取消加粗
-                commands.push(gbkEncoder.encode(` (${item.size})\n`));
-                
-                if(item.noodle) commands.push(gbkEncoder.encode(`  ${item.noodle}\n`));
-                if(item.sauces.length) commands.push(gbkEncoder.encode(`  ${item.sauces.join(', ')}\n`));
-                commands.push(gbkEncoder.encode(`  价格: $${item.price}\n`));
-                commands.push(gbkEncoder.encode("---------------------------\n"));
-            });
-
-            // 总计
-            commands.push(new Uint8Array([0x1B, 0x61, 0x02])); // 右对齐
-            commands.push(new Uint8Array([0x1D, 0x21, 0x11])); // 放大
-            commands.push(gbkEncoder.encode(`总计: $${document.getElementById('total-sum').innerText}\n`));
-            commands.push(new Uint8Array([0x1D, 0x21, 0x00])); // 恢复
-            
-            commands.push(gbkEncoder.encode("\n\n\n"));
-            
-            // 切纸
-            commands.push(new Uint8Array([0x1D, 0x56, 0x01])); // GS V 1 (部分切纸)
-            
-            // 合并数据
-            let totalLength = commands.reduce((sum, cmd) => sum + cmd.length, 0);
-            let finalBuffer = new Uint8Array(totalLength);
-            let offset = 0;
-            commands.forEach(cmd => {
-                finalBuffer.set(cmd, offset);
-                offset += cmd.length;
-            });
-            
-            // 分块发送 (每次 512 字节)
-            const chunkSize = 512;
-            for (let i = 0; i < finalBuffer.length; i += chunkSize) {
-                const chunk = finalBuffer.slice(i, Math.min(i + chunkSize, finalBuffer.length));
-                await printCharacteristic.writeValue(chunk);
-                await new Promise(resolve => setTimeout(resolve, 100));
-            }
-            
-            alert("已送往厨房！");
-            cart = [];
-            updateCartDisplay();
-            resetForNewItem();
-        } catch (err) {
-            alert("打印出错：" + err.message);
-            printCharacteristic = null;
-        }
+        let txt = "\x1B\x40\x1B\x61\x01Million Noodles\n\n\x1B\x61\x00";
+        cart.forEach((i, idx) => { txt += `#${idx+1} ${i.names.join('+')}\nSize: ${i.size}\nNote: ${i.noodle} / ${i.sauces.join(',')}\nPrice: $${i.price}\n-----\n`; });
+        txt += `TOTAL: $${document.getElementById('total-sum').innerText}\n\n\n\n\n`;
+        await printChar.writeValue(new TextEncoder().encode(txt));
+        alert("打印完成！"); cart = []; updateCart(); resetPage();
     }
-
     init();
 </script>
 </body>
