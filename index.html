@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Million 麵店 - 單位修正版</title>
+    <title>Million 麵店 - 加料數量修正版</title>
     <style>
         :root { --primary: #1a73e8; --secondary: #f0f2f5; --success: #34a853; --price-tag: #d93025; --edit: #f39c12; --add: #673ab7; }
         body { font-family: sans-serif; background: var(--secondary); margin: 0; padding: 10px; text-align: center; }
@@ -21,12 +21,10 @@
         .opt span { padding: 8px 5px; font-weight: bold; font-size: 0.9rem; flex-grow: 1; display: flex; align-items: center; justify-content: center; }
         .opt.selected { border-color: var(--primary); background: #e8f0fe; }
         
-        /* 修正加料區 +/- 排版 */
         .add-qty-bar { display: flex; align-items: center; justify-content: center; gap: 5px; padding: 8px 5px; background: #f9f9f9; border-top: 1px solid #eee; white-space: nowrap; }
         .btn-add-minus { width: 32px; height: 32px; border-radius: 5px; border: 1px solid #ddd; background: white; font-weight: bold; font-size: 1.1rem; cursor: pointer; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
         .add-num { font-size: 1.1rem; font-weight: bold; color: var(--add); min-width: 25px; text-align: center; }
 
-        /* 購物車樣式 */
         .cart-box { margin-top: 20px; padding: 10px; border: 1px solid #ddd; border-radius: 10px; text-align: left; background: #fff; }
         .cart-item { border-bottom: 1px solid #eee; padding: 12px 0; }
         .item-row { display: flex; justify-content: space-between; align-items: center; }
@@ -95,12 +93,20 @@
 
 <script>
     const START_NO = 8238;
-    // 單位對照表
-    const UNITS = {
-        '魚圓': '粒', '肉圓': '粒', '魚餃': '粒',
-        '蝦': '隻'
+    
+    // 定義各項目的單位與數量倍率
+    const ITEM_RULES = {
+        '魚圓': { unit: '粒', factor: 2 },
+        '肉圓': { unit: '粒', factor: 2 },
+        '魚餃': { unit: '粒', factor: 2 },
+        '蝦': { unit: '隻', factor: 1 }
     };
-    function getUnit(name) { return UNITS[name] || '份'; }
+
+    function getDisplayQty(name, qty) {
+        const rule = ITEM_RULES[name];
+        if (rule) return `${qty * rule.factor}${rule.unit}`;
+        return `${qty}份`;
+    }
 
     const config = {
         '魚圓湯': { p: 5, img: 'https://lh3.googleusercontent.com/pw/AP1GczOoXizYOs7TlJVh_ikXpPT_8uSFOyH2mnDMFvu2CIFXpJVYqNssfvAbgkwksOqIi89J0NAktQdtJStc5KB6YPkxqk0ccWLkjKAGWKILKERYMt_PYsI=w2400?source=screenshot.guru' }, 
@@ -193,8 +199,7 @@
         const cont = document.getElementById('grid-additions');
         cont.innerHTML = '';
         config.additionsList.forEach(name => {
-            const div = document.createElement('div');
-            div.className = 'opt';
+            const div = document.createElement('div'); div.className = 'opt';
             const qty = tempItem.additions[name] || 0;
             div.innerHTML = `
                 <div class="img-box"><div class="price-circle">$1</div><img src="${config.additionsImgs[name]}"></div>
@@ -244,7 +249,9 @@
             let lineTotal = item.price * item.qty; t += lineTotal; 
             const shortSize = item.size.replace('的', '');
             let noExStr = item.noExtras.length > 0 ? `<br><small style="color:red;">[不要: ${item.noExtras.join(',')}]</small>` : ''; 
-            let adds = Object.entries(item.additions).map(([name, q]) => `${name}(${q}${getUnit(name)})`).join(', ');
+            
+            // 加料預覽套用數量顯示規則
+            let adds = Object.entries(item.additions).map(([name, q]) => `${name}(${getDisplayQty(name, q)})`).join(', ');
             let addStr = adds ? `<br><small style="color:var(--add);">+加料: ${adds}</small>` : '';
             const mainUnit = item.category === '湯' ? '碗' : '份';
 
@@ -305,9 +312,10 @@
             ctx.fillText(`${item.names.join('+')} (${item.qty}${unit})`, 374, y); y += 52;
             ctx.font = "bold 32px sans-serif"; ctx.fillText(`[${shortSize}] ${item.noodle||''} ${item.sauces.join(',')}`, 374, y); y += 45;
             
-            // 列印加料單位修正
-            let adds = Object.entries(item.additions).map(([name, q]) => `${name}(${q}${getUnit(name)})`).join(',');
+            // 列印加料套用倍率規則
+            let adds = Object.entries(item.additions).map(([name, q]) => `${name}(${getDisplayQty(name, q)})`).join(',');
             if(adds) { ctx.font = "bold 30px sans-serif"; ctx.fillText(` +加料: ${adds}`, 374, y); y += 45; }
+            
             if(item.noExtras.length > 0) { ctx.font = "bold 30px sans-serif"; ctx.fillText(` [不要: ${item.noExtras.join(',')}]`, 374, y); y += 45; }
             if (i < record.items.length - 1) { y += 20; ctx.textAlign = "center"; ctx.font = "bold 24px sans-serif"; ctx.fillText("******************************************", 192, y); y += 40; ctx.textAlign = "right"; } else { y += 25; }
         });
