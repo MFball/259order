@@ -208,7 +208,7 @@
             
             // --- 關鍵修改：不要配料間距 ---
             if(item.noExtras.length > 0) {
-                y += 40; // 【首先和上方保持 40 像素】
+                y += 20; // 【首先和上方保持 40 像素】
                 ctx.font = "bold 30px sans-serif"; ctx.fillText(` [不要: ${item.noExtras.join(',')}]`, 374, y); y += 45;
             }
             y += 25; // 每個大品項之間的間隔
