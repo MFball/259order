@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Million 麵店 - 省紙精準版</title>
+    <title>Million 麵店 - 進紙優化版</title>
     <style>
         :root { --primary: #1a73e8; --secondary: #f0f2f5; --success: #34a853; --price-tag: #d93025; --cancel: #666; }
         body { font-family: sans-serif; background: var(--secondary); margin: 0; padding: 10px; text-align: center; }
@@ -356,8 +356,8 @@
                 if (isFastMode) await targetChar.writeValueWithoutResponse(row); else await targetChar.writeValue(row);
                 if (y % 25 === 0) await new Promise(r => setTimeout(r, 60));
             }
-            // 【更新點】進紙指令改為 6 行 (0x06)，確保撕紙不卡住
-            await targetChar.writeValue(new Uint8Array([0x1B, 0x64, 0x06, 0x1D, 0x56, 0x00]));
+            // 【進紙 10 行】0x0A = 10，確保撕紙空間充足
+            await targetChar.writeValue(new Uint8Array([0x1B, 0x64, 0x0A, 0x1D, 0x56, 0x00]));
             document.getElementById('status').innerText = "✅ 完成";
             cart = []; updateCartDisplay(); btn.disabled = false; resetForNewItem();
         } catch (e) { alert(e.message); btn.disabled = false; }
