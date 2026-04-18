@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Million 麵店 - 圖片修正版</title>
+    <title>Million 麵店 - ImgBB 圖片版</title>
     <style>
         :root { --primary: #1a73e8; --secondary: #f0f2f5; --success: #34a853; --price-tag: #d93025; --cancel: #666; }
         body { font-family: sans-serif; background: var(--secondary); margin: 0; padding: 10px; text-align: center; }
@@ -18,7 +18,8 @@
         .opt { background: #fff; border: 2px solid #eee; border-radius: 12px; cursor: pointer; overflow: hidden; position: relative; display: flex; flex-direction: column; min-height: 140px; }
         .img-box { width: 100%; height: 100px; display: flex; background: #fafafa; overflow: hidden; position: relative; justify-content: center; align-items: center; }
         .img-box img { width: 100%; height: 100%; object-fit: cover; }
-        .no-icon-overlay { position: absolute; font-size: 50px; color: rgba(217, 48, 37, 0.7); z-index: 10; pointer-events: none; }
+        /* 禁止符號疊加 */
+        .no-icon-overlay { position: absolute; font-size: 55px; color: rgba(217, 48, 37, 0.75); z-index: 10; pointer-events: none; text-shadow: 0 0 10px white; }
         .price-circle { position: absolute; top: 5px; right: 5px; background: var(--price-tag); color: white; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.85rem; font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.2); z-index: 5; border: 2px solid white; }
         .opt span { padding: 8px 5px; font-weight: bold; font-size: 0.9rem; flex-grow: 1; display: flex; align-items: center; justify-content: center; }
         .opt.selected { border-color: var(--primary); background: #e8f0fe; }
@@ -88,7 +89,7 @@
     <div class="step" id="step-no-extra">
         <button class="back-btn-top" onclick="handleNoExtraBack()">←</button>
         <h2>6. 不要什麼配料？</h2>
-        <div class="limit-hint">可多選，完成後請按下方完成</div>
+        <div class="limit-hint">可多選，完成後請按下方按鈕</div>
         <div class="grid" id="grid-noExtra"></div>
         <div class="nav-btns"><button class="btn-blue" onclick="generatePreviewAndGo()">✅ 完成並加入購物車</button></div>
     </div>
@@ -142,7 +143,7 @@
         },
         'noExtra': ['油', '蔥', '香菇', '肉碎', '黑醬油', '肉圓換魚圓'],
         'noExtraImgs': {
-            '肉碎': 'https://photos.fife.usercontent.google.com/pw/AP1GczNCB4E7eDdOdg0tf17qTO2ee9QY_rz_reD_w3ViH-h8BvG35CEJJjIS=w1291-h763-s-no-gm?authuser=0'
+            '肉碎': 'https://i.ibb.co/676LvDVq/Gemini-Generated-Image-o7imd3o7imd3o7im.png'
         }
     };
 
@@ -151,17 +152,19 @@
     let savedDevice = null, savedCharacteristic = null, isFastMode = false;
 
     function init() {
-        renderGrid(['魚圓湯','肉圓湯','魚餃湯','三寶湯'], 'grid-soupItems', (val) => {
-            tempItem.names = [val]; goNext('step-size');
-        });
+        // 渲染湯品
+        renderGrid(['魚圓湯','肉圓湯','魚餃湯','三寶湯'], 'grid-soupItems', (val) => { tempItem.names = [val]; goNext('step-size'); });
+        // 渲染麵食
         renderGrid(['魚圓面', '香菇肉碎面', '招牌面', '餐餐面', '肉圓面', '蝦魚面', '西刀魚面', '香菇面', '魚餃面', '(純)肉碎面', '小魚香面'], 'grid-foodItems', (val) => { tempItem.names = [val]; goNext('step-size'); });
+        // 渲染大小
         renderGrid(['小的', '大的'], 'grid-size', (val) => { 
             tempItem.size = val; 
             if(tempItem.category === '湯') goNext('step-no-extra'); 
             else goNext('step-noodle-type'); 
         });
+        // 渲染麵種
         renderGrid(Object.keys(config.noodleType), 'grid-noodleType', (val) => { tempItem.noodle = val; });
-        
+        // 渲染醬料
         renderGrid(Object.keys(config.sauce), 'grid-sauce', (val, el) => {
             if (val === '湯') {
                 if (tempItem.sauces.length > 0) { alert("湯麵不能選其他醬料"); return; }
@@ -171,10 +174,8 @@
                 toggleMulti(val, el, tempItem.sauces, 3);
             }
         }, true);
-
-        renderGrid(config.noExtra, 'grid-noExtra', (val, el) => {
-            toggleMulti(val, el, tempItem.noExtras, 10);
-        }, true);
+        // 渲染不要配料
+        renderGrid(config.noExtra, 'grid-noExtra', (val, el) => { toggleMulti(val, el, tempItem.noExtras, 10); }, true);
     }
 
     function renderGrid(list, id, clickFn, multi = false) {
@@ -191,14 +192,13 @@
             else { imgSrc = config[name]?.img; price = config[name]?.p || 0; }
             
             const priceTag = (price > 0) ? `<div class="price-circle">$${price}</div>` : '';
-            
             let contentHTML = "";
+
             if (id === 'grid-noExtra') {
-                // 專門處理不要配料的顯示
                 if (imgSrc) {
-                    contentHTML = `<img src="${imgSrc}" style="opacity: 0.5;"><div class="no-icon-overlay">🚫</div>`;
+                    contentHTML = `<img src="${imgSrc}" style="opacity: 0.5;" onerror="this.style.display='none'; this.nextSibling.style.display='block';"><div class="no-icon-overlay">🚫</div>`;
                 } else {
-                    contentHTML = `<div class="no-icon-overlay">🚫</div>`;
+                    contentHTML = `<div class="no-icon-overlay" style="display:block;">🚫</div>`;
                 }
             } else {
                 contentHTML = Array.isArray(imgSrc) ? imgSrc.map(url => `<img src="${url}">`).join('') : `<img src="${imgSrc || ''}">`;
