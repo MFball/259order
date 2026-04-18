@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Million 麵店 - 客製化完整版</title>
+    <title>Million 麵店 - 圖片修正版</title>
     <style>
         :root { --primary: #1a73e8; --secondary: #f0f2f5; --success: #34a853; --price-tag: #d93025; --cancel: #666; }
         body { font-family: sans-serif; background: var(--secondary); margin: 0; padding: 10px; text-align: center; }
@@ -16,17 +16,15 @@
         .limit-hint { color: #d93025; font-size: 0.85rem; text-align: left; margin-bottom: 15px; font-weight: bold; }
         .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         .opt { background: #fff; border: 2px solid #eee; border-radius: 12px; cursor: pointer; overflow: hidden; position: relative; display: flex; flex-direction: column; min-height: 140px; }
-        .img-box { width: 100%; height: 100px; display: flex; background: #fafafa; overflow: hidden; position: relative; }
-        .img-box img { width: 100%; height: 100%; object-fit: cover; flex: 1; border-right: 1px solid #eee; }
-        .no-icon { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 40px; z-index: 2; color: rgba(217, 48, 37, 0.8); }
+        .img-box { width: 100%; height: 100px; display: flex; background: #fafafa; overflow: hidden; position: relative; justify-content: center; align-items: center; }
+        .img-box img { width: 100%; height: 100%; object-fit: cover; }
+        .no-icon-overlay { position: absolute; font-size: 50px; color: rgba(217, 48, 37, 0.7); z-index: 10; pointer-events: none; }
         .price-circle { position: absolute; top: 5px; right: 5px; background: var(--price-tag); color: white; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.85rem; font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.2); z-index: 5; border: 2px solid white; }
         .opt span { padding: 8px 5px; font-weight: bold; font-size: 0.9rem; flex-grow: 1; display: flex; align-items: center; justify-content: center; }
         .opt.selected { border-color: var(--primary); background: #e8f0fe; }
         .cart-box { margin-top: 20px; padding: 10px; border: 1px solid #ddd; border-radius: 10px; text-align: left; background: #fff; }
         .cart-item { border-bottom: 1px solid #eee; padding: 8px 0; display: flex; justify-content: space-between; align-items: center; }
         .total-price-bar { font-size: 1.6rem; color: var(--price-tag); font-weight: bold; margin: 15px 0; }
-        #preview-area { margin-top: 15px; border: 2px solid #333; padding: 5px; background: #666; display: none; }
-        #printPreviewImg { background: white; width: 100%; height: auto; display: block; image-rendering: pixelated; border: 1px solid #000; }
         .nav-btns { position: fixed; bottom: 0; left: 0; right: 0; background: white; padding: 15px; display: flex; gap: 8px; max-width: 500px; margin: auto; box-shadow: 0 -5px 10px rgba(0,0,0,0.05); z-index: 1000; }
         button { flex: 1; padding: 12px 5px; border-radius: 10px; border: none; font-size: 0.95rem; cursor: pointer; font-weight: bold; }
         .btn-blue { background: var(--primary); color: white; }
@@ -99,7 +97,6 @@
         <h2>🛒 購物車明細</h2>
         <div class="cart-box" id="current-cart"></div>
         <div class="total-price-bar">總金額: $<span id="total-sum">0</span></div>
-        <div id="preview-area"><p>【列印預覽】</p><img id="printPreviewImg" src=""></div>
         <div class="nav-btns">
             <button class="btn-red" onclick="cancelAndClear()">❌ 取消重選</button>
             <button class="btn-blue" onclick="resetForNewItem()">➕ 繼續點餐</button>
@@ -187,27 +184,27 @@
             const div = document.createElement('div');
             div.className = 'opt';
             let imgSrc, price = 0;
+            
             if (id === 'grid-noodleType') imgSrc = config.noodleType[name];
             else if (id === 'grid-sauce') imgSrc = config.sauce[name];
-            else if (id === 'grid-noExtra') imgSrc = config.noExtraImgs[name] || null;
+            else if (id === 'grid-noExtra') imgSrc = config.noExtraImgs[name]; 
             else { imgSrc = config[name]?.img; price = config[name]?.p || 0; }
             
             const priceTag = (price > 0) ? `<div class="price-circle">$${price}</div>` : '';
-            let imgHTML = '';
             
+            let contentHTML = "";
             if (id === 'grid-noExtra') {
+                // 專門處理不要配料的顯示
                 if (imgSrc) {
-                    // 有圖的話顯示圖加禁止符號
-                    imgHTML = `<img src="${imgSrc}" style="opacity:0.5;"><div class="no-icon">🚫</div>`;
+                    contentHTML = `<img src="${imgSrc}" style="opacity: 0.5;"><div class="no-icon-overlay">🚫</div>`;
                 } else {
-                    // 沒圖的話顯示大禁止符號
-                    imgHTML = `<div class="no-icon">🚫</div>`;
+                    contentHTML = `<div class="no-icon-overlay">🚫</div>`;
                 }
             } else {
-                imgHTML = Array.isArray(imgSrc) ? imgSrc.map(url => `<img src="${url}">`).join('') : `<img src="${imgSrc || ''}">`;
+                contentHTML = Array.isArray(imgSrc) ? imgSrc.map(url => `<img src="${url}">`).join('') : `<img src="${imgSrc || ''}">`;
             }
             
-            div.innerHTML = `<div class="img-box">${priceTag}${imgHTML}</div><span>${name}</span>`;
+            div.innerHTML = `<div class="img-box">${priceTag}${contentHTML}</div><span>${name}</span>`;
             div.onclick = () => { if(!multi) Array.from(cont.children).forEach(c=>c.classList.remove('selected')); div.classList.add('selected'); clickFn(name, div); };
             cont.appendChild(div);
         });
@@ -244,7 +241,6 @@
 
     function drawPrintCanvas() {
         const canvas = document.getElementById('printCanvas'), ctx = canvas.getContext('2d');
-        const previewImg = document.getElementById('printPreviewImg'), previewArea = document.getElementById('preview-area');
         canvas.height = 400 + (cart.length * 130);
         ctx.fillStyle = "white"; ctx.fillRect(0, 0, 384, canvas.height);
         ctx.textBaseline = "top"; ctx.fillStyle = "black";
@@ -262,8 +258,6 @@
         });
         ctx.font = "bold 26px sans-serif"; ctx.fillText("----------------------------", 10, y); y += 45;
         ctx.font = "bold 42px sans-serif"; ctx.fillText("TOTAL: $" + document.getElementById('total-sum').innerText, 10, y);
-        previewImg.src = canvas.toDataURL("image/png");
-        previewArea.style.display = "block";
     }
 
     function resetForNewItem() { 
