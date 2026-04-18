@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Million 麵店 - 修改功能強化版</title>
+    <title>Million 麵店 - 界面修正版</title>
     <style>
         :root { --primary: #1a73e8; --secondary: #f0f2f5; --success: #34a853; --price-tag: #d93025; --edit: #f39c12; }
         body { font-family: sans-serif; background: var(--secondary); margin: 0; padding: 10px; text-align: center; }
@@ -22,12 +22,17 @@
         .opt span { padding: 8px 5px; font-weight: bold; font-size: 0.9rem; flex-grow: 1; display: flex; align-items: center; justify-content: center; }
         .opt.selected { border-color: var(--primary); background: #e8f0fe; }
         
+        /* 修正後的購物車佈局 */
         .cart-box { margin-top: 20px; padding: 10px; border: 1px solid #ddd; border-radius: 10px; text-align: left; background: #fff; }
-        .cart-item { border-bottom: 1px solid #eee; padding: 12px 0; display: flex; flex-direction: column; gap: 8px; }
-        .item-row { display: flex; justify-content: space-between; align-items: flex-start; }
-        .qty-controls { display: flex; align-items: center; gap: 8px; margin-top: 5px; }
-        .btn-qty { width: 30px; height: 30px; border-radius: 50%; border: 1px solid #ddd; background: #f8f9fa; font-weight: bold; cursor: pointer; }
-        .btn-edit { background: var(--edit); color: white; border: none; padding: 4px 10px; border-radius: 5px; font-size: 0.8rem; cursor: pointer; margin-left: 10px; }
+        .cart-item { border-bottom: 1px solid #eee; padding: 12px 0; }
+        .item-row { display: flex; justify-content: space-between; align-items: center; width: 100%; }
+        .item-info { flex: 1; padding-right: 10px; }
+        .item-actions { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; min-width: 110px; } /* 固定最小寬度防止跌出 */
+        
+        .qty-controls { display: flex; align-items: center; gap: 5px; white-space: nowrap; } /* 防止按鈕換行 */
+        .btn-qty { width: 28px; height: 28px; border-radius: 50%; border: 1px solid #ccc; background: #f8f9fa; font-weight: bold; font-size: 1.1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        .qty-num { font-size: 1.1rem; font-weight: bold; min-width: 20px; text-align: center; }
+        .btn-edit { background: var(--edit); color: white; border: none; padding: 4px 8px; border-radius: 5px; font-size: 0.75rem; cursor: pointer; white-space: nowrap; }
         
         .total-price-bar { font-size: 1.6rem; color: var(--price-tag); font-weight: bold; margin: 15px 0; }
         .nav-btns { position: fixed; bottom: 0; left: 0; right: 0; background: white; padding: 15px; display: flex; gap: 8px; max-width: 500px; margin: auto; box-shadow: 0 -5px 10px rgba(0,0,0,0.05); z-index: 1000; }
@@ -127,7 +132,7 @@
 
     let cart = [];
     let tempItem = { category: '', names: [], size: '', noodle: '', sauces: [], noExtras: [], price: 0, qty: 1 };
-    let editIndex = -1; // 用來紀錄目前是在修改哪一個品項
+    let editIndex = -1;
     let savedDevice = null, savedCharacteristic = null, isFastMode = false;
 
     function getOrderData() { const today = new Date().toLocaleDateString(); let data = JSON.parse(localStorage.getItem('million_order_data')) || { date: today, num: START_NO, history: [] }; if (data.date !== today) { data.date = today; data.num = START_NO; data.history = []; } return data; }
@@ -157,10 +162,9 @@
             div.innerHTML = `<div class="img-box">${priceTag}<img src="${imgSrc}" onerror="this.style.display='none'; this.nextSibling.style.display='flex';"><div style="display:none; font-size:40px; color:#ddd;">🚫</div></div><span>${name}</span>`;
             div.onclick = () => { 
                 if(!multi) Array.from(cont.children).forEach(c=>c.classList.remove('selected')); 
-                div.classList.toggle('selected'); // 修改: 支援點選/取消點選
+                div.classList.toggle('selected');
                 clickFn(name, div); 
             };
-            // 如果是修改模式，自動幫忙選上
             if (multi) {
                 if (id === 'grid-sauce' && tempItem.sauces.includes(name)) div.classList.add('selected');
                 if (id === 'grid-noExtra' && tempItem.noExtras.includes(name)) div.classList.add('selected');
@@ -182,14 +186,8 @@
     function generatePreviewAndGo() {
         let p = 0; tempItem.names.forEach(n => p += (config[n]?.p || 0)); p += (config[tempItem.size]?.p || 0);
         tempItem.price = p; 
-        
-        if (editIndex > -1) {
-            cart[editIndex] = JSON.parse(JSON.stringify(tempItem)); // 修改現有品項
-            editIndex = -1;
-        } else {
-            cart.push(JSON.parse(JSON.stringify(tempItem))); // 新增品項
-        }
-        
+        if (editIndex > -1) { cart[editIndex] = JSON.parse(JSON.stringify(tempItem)); editIndex = -1; } 
+        else { cart.push(JSON.parse(JSON.stringify(tempItem))); }
         updateCartDisplay(); 
         const data = getOrderData();
         const now = new Date();
@@ -209,8 +207,12 @@
             return `
             <div class="cart-item">
                 <div class="item-row">
-                    <div><b>${item.names.join('+')}</b> [${shortSize}]<br><small>${item.noodle||''} ${item.sauces.join(',')}</small>${noExStr}</div>
-                    <div style="text-align:right;">
+                    <div class="item-info">
+                        <b>${item.names.join('+')}</b> [${shortSize}]<br>
+                        <small>${item.noodle||''} ${item.sauces.join(',')}</small>${noExStr}
+                        <div style="font-weight:bold; color:var(--price-tag); margin-top:5px;">$${lineTotal}</div>
+                    </div>
+                    <div class="item-actions">
                         <button class="btn-edit" onclick="editCartItem(${i})">✏️ 修改內容</button>
                         <div class="qty-controls">
                             <button class="btn-qty" onclick="changeQty(${i}, -1)">-</button>
@@ -219,17 +221,15 @@
                         </div>
                     </div>
                 </div>
-                <div style="text-align:right; font-weight:bold; color:var(--price-tag); margin-top:5px;">$${lineTotal}</div>
             </div>`; 
         }).join('');
         document.getElementById('total-sum').innerText = t;
     }
 
-    // --- 修改功能的關鍵：回填資料並重新初始化頁面 ---
     function editCartItem(index) {
         editIndex = index;
-        tempItem = JSON.parse(JSON.stringify(cart[index])); // 複製出要修改的內容
-        init(); // 重新渲染所有 Grid，讓 Selected 樣式正確顯示
+        tempItem = JSON.parse(JSON.stringify(cart[index])); 
+        init(); 
         goNext(tempItem.category === '湯' ? 'step-soup-select' : 'step-food-select');
     }
 
@@ -294,12 +294,7 @@
     }
     function reprintHistory(num) { const data = getOrderData(); const ord = data.history.find(o => o.num === num); if (ord) { drawPrintCanvas(ord); handleImagePrint(); } }
     function cancelAndClear() { if(confirm("確定要清空所有點餐嗎？")) { cart = []; updateCartDisplay(); resetForNewItem(); } }
-    function resetForNewItem() { 
-        tempItem = { category: '', names: [], size: '', noodle: '', sauces: [], noExtras: [], price: 0, qty: 1 }; 
-        editIndex = -1; // 重置修改狀態
-        document.querySelectorAll('.opt').forEach(o => o.classList.remove('selected')); 
-        goNext('step-start'); 
-    }
+    function resetForNewItem() { tempItem = { category: '', names: [], size: '', noodle: '', sauces: [], noExtras: [], price: 0, qty: 1 }; editIndex = -1; document.querySelectorAll('.opt').forEach(o => o.classList.remove('selected')); goNext('step-start'); }
 
     async function getPrinter() {
         if (savedDevice && savedDevice.gatt.connected && savedCharacteristic) return savedCharacteristic;
