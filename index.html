@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Million 麵店 - 客製化口味版</title>
+    <title>Million 麵店 - 客製化完整版</title>
     <style>
         :root { --primary: #1a73e8; --secondary: #f0f2f5; --success: #34a853; --price-tag: #d93025; --cancel: #666; }
         body { font-family: sans-serif; background: var(--secondary); margin: 0; padding: 10px; text-align: center; }
@@ -18,6 +18,7 @@
         .opt { background: #fff; border: 2px solid #eee; border-radius: 12px; cursor: pointer; overflow: hidden; position: relative; display: flex; flex-direction: column; min-height: 140px; }
         .img-box { width: 100%; height: 100px; display: flex; background: #fafafa; overflow: hidden; position: relative; }
         .img-box img { width: 100%; height: 100%; object-fit: cover; flex: 1; border-right: 1px solid #eee; }
+        .no-icon { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 40px; z-index: 2; color: rgba(217, 48, 37, 0.8); }
         .price-circle { position: absolute; top: 5px; right: 5px; background: var(--price-tag); color: white; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.85rem; font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.2); z-index: 5; border: 2px solid white; }
         .opt span { padding: 8px 5px; font-weight: bold; font-size: 0.9rem; flex-grow: 1; display: flex; align-items: center; justify-content: center; }
         .opt.selected { border-color: var(--primary); background: #e8f0fe; }
@@ -89,7 +90,7 @@
     <div class="step" id="step-no-extra">
         <button class="back-btn-top" onclick="handleNoExtraBack()">←</button>
         <h2>6. 不要什麼配料？</h2>
-        <div class="limit-hint">可多選，完成後請按下方按鈕</div>
+        <div class="limit-hint">可多選，完成後請按下方完成</div>
         <div class="grid" id="grid-noExtra"></div>
         <div class="nav-btns"><button class="btn-blue" onclick="generatePreviewAndGo()">✅ 完成並加入購物車</button></div>
     </div>
@@ -142,7 +143,10 @@
             '黑醬油': 'https://lh3.googleusercontent.com/pw/AP1GczM_Ogtz5euEqtTluhoqtEIKJyfVts2a-grnZ-INkM8jWyXh9mH13SlBrlvN6ccWl5PNecn1xnPOkNY3IuFZh3gQ8FKhbtBVFtIOfsKCVwlDVcg_WEM=w2400?source=screenshot.guru', '白醬青': 'https://lh3.googleusercontent.com/pw/AP1GczM0Y5r1CNFN7i_N0xRl3dGh55awsKnRrUnvb-xeZVVQK_8k_1drXDQXq77P9eSpaewdn8zQN8_Yq1LELzh2GZgK08Bm2h1mK-AUPq6Kaoqcj_tvvAU=w2400?source=screenshot.guru',
             '黑醋': 'https://lh3.googleusercontent.com/pw/AP1GczP78L4yujnIpxn3K004iS-q6Vm-A6Vp4UpTY6lKmyWVCrSsMU4XOLG6Em-03KJsMHT1YK94ae2-7QQ5bkhtbZNKo0mexj960hV9hUo0Q2-kLK1SZvo=w2400?source=screenshot.guru', '湯': 'https://lh3.googleusercontent.com/pw/AP1GczO41yvP4P-hmNWhW-kkM1iDfiDE0_-ugwWzhVxfF70z_xsDJE1VhyFZxt8PnlqS5J4VTcjIHwp7qIpF0wrBZnN73nM8zMLpnfN1MQaeuk9lNzU1RwE=w2400?source=screenshot.guru'
         },
-        'noExtra': ['油', '蔥', '香菇', '肉碎', '黑醬油', '肉圓換魚圓']
+        'noExtra': ['油', '蔥', '香菇', '肉碎', '黑醬油', '肉圓換魚圓'],
+        'noExtraImgs': {
+            '肉碎': 'https://photos.fife.usercontent.google.com/pw/AP1GczNCB4E7eDdOdg0tf17qTO2ee9QY_rz_reD_w3ViH-h8BvG35CEJJjIS=w1291-h763-s-no-gm?authuser=0'
+        }
     };
 
     let cart = [];
@@ -171,7 +175,6 @@
             }
         }, true);
 
-        // 初始化不要配料格網
         renderGrid(config.noExtra, 'grid-noExtra', (val, el) => {
             toggleMulti(val, el, tempItem.noExtras, 10);
         }, true);
@@ -186,13 +189,20 @@
             let imgSrc, price = 0;
             if (id === 'grid-noodleType') imgSrc = config.noodleType[name];
             else if (id === 'grid-sauce') imgSrc = config.sauce[name];
-            else if (id === 'grid-noExtra') imgSrc = null; // 配料唔使圖
+            else if (id === 'grid-noExtra') imgSrc = config.noExtraImgs[name] || null;
             else { imgSrc = config[name]?.img; price = config[name]?.p || 0; }
             
             const priceTag = (price > 0) ? `<div class="price-circle">$${price}</div>` : '';
             let imgHTML = '';
+            
             if (id === 'grid-noExtra') {
-                imgHTML = `<div style="font-size:30px; margin:auto;">🚫</div>`;
+                if (imgSrc) {
+                    // 有圖的話顯示圖加禁止符號
+                    imgHTML = `<img src="${imgSrc}" style="opacity:0.5;"><div class="no-icon">🚫</div>`;
+                } else {
+                    // 沒圖的話顯示大禁止符號
+                    imgHTML = `<div class="no-icon">🚫</div>`;
+                }
             } else {
                 imgHTML = Array.isArray(imgSrc) ? imgSrc.map(url => `<img src="${url}">`).join('') : `<img src="${imgSrc || ''}">`;
             }
@@ -262,7 +272,6 @@
         goNext('step-start'); 
     }
 
-    // 藍牙列印邏輯維持不變
     async function getPrinter() {
         if (savedDevice && savedDevice.gatt.connected && savedCharacteristic) return savedCharacteristic;
         document.getElementById('status').innerText = "🔍 搜尋印表機...";
