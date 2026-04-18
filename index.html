@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Million 麵店 - 字體放大版</title>
+    <title>Million 麵店 - 進紙 8 行優化版</title>
     <style>
         :root { --primary: #1a73e8; --secondary: #f0f2f5; --success: #34a853; --price-tag: #d93025; --cancel: #666; }
         body { font-family: sans-serif; background: var(--secondary); margin: 0; padding: 10px; text-align: center; }
@@ -268,36 +268,28 @@
 
     function drawPrintCanvas(record) {
         const canvas = document.getElementById('printCanvas'), ctx = canvas.getContext('2d');
-        // 增加畫布高度以適應放大後的字體
         const dynamicHeight = 250 + (record.items.length * 130) + 120;
         canvas.height = dynamicHeight;
 
         ctx.fillStyle = "white"; ctx.fillRect(0, 0, 384, canvas.height);
         ctx.textBaseline = "top"; ctx.fillStyle = "black";
         
-        // 1. 店名 (維持原大)
         ctx.textAlign = "center"; 
         ctx.font = "bold 32px sans-serif"; ctx.fillText("Million Noodles", 192, 10);
-        // 2. 日期時間 (維持原大)
         ctx.font = "20px sans-serif"; ctx.fillText(record.fullTime, 192, 50);
-        // 3. 單號 (維持原大/特大)
         ctx.font = "bold 46px sans-serif"; ctx.fillText(`No. ${record.num}`, 192, 80);
         
         ctx.textAlign = "left";
         let y = 145;
         record.items.forEach((item, i) => {
-            // 4. 品項名稱 (放大 1.5 倍: 28 -> 42)
             ctx.font = "bold 42px sans-serif"; ctx.fillText(`#${i+1} ${item.names.join('+')}`, 10, y); y += 50;
-            // 5. 大小/麵種/醬料 (放大 1.5 倍: 22 -> 33)
             ctx.font = "bold 33px sans-serif"; ctx.fillText(` [${item.size}] ${item.noodle||''} ${item.sauces.join(',')}`, 10, y); y += 40;
-            // 6. 不要配料 (放大 1.5 倍: 20 -> 30)
             if(item.noExtras.length > 0) {
                 ctx.font = "bold 30px sans-serif"; ctx.fillText(` [不要: ${item.noExtras.join(',')}]`, 10, y); y += 40;
             }
             y += 20;
         });
         ctx.font = "bold 26px sans-serif"; ctx.fillText("----------------------------", 10, y); y += 35;
-        // 7. TOTAL (維持原大)
         ctx.font = "bold 42px sans-serif"; ctx.fillText("TOTAL: $" + record.total, 10, y);
     }
 
@@ -364,8 +356,8 @@
                 if (isFastMode) await targetChar.writeValueWithoutResponse(row); else await targetChar.writeValue(row);
                 if (y % 25 === 0) await new Promise(r => setTimeout(r, 60));
             }
-            // 【進紙 12 行】0x0C = 12
-            await targetChar.writeValue(new Uint8Array([0x1B, 0x64, 0x0C, 0x1D, 0x56, 0x00]));
+            // 【進紙 8 行】0x08
+            await targetChar.writeValue(new Uint8Array([0x1B, 0x64, 0x08, 0x1D, 0x56, 0x00]));
             document.getElementById('status').innerText = "✅ 完成";
             cart = []; updateCartDisplay(); btn.disabled = false; resetForNewItem();
         } catch (e) { alert(e.message); btn.disabled = false; }
