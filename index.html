@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Million 麵店 - 清晰走料版</title>
+    <title>Million 麵店 - 原圖彩色版</title>
     <style>
         :root { --primary: #1a73e8; --secondary: #f0f2f5; --success: #34a853; --price-tag: #d93025; --cancel: #666; }
         body { font-family: sans-serif; background: var(--secondary); margin: 0; padding: 10px; text-align: center; }
@@ -15,34 +15,12 @@
         h2 { color: #333; font-size: 1.1rem; margin: 10px 0 5px 0; border-left: 5px solid var(--primary); padding-left: 10px; text-align: left; }
         .limit-hint { color: #d93025; font-size: 0.85rem; text-align: left; margin-bottom: 15px; font-weight: bold; }
         .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .opt { background: #fff; border: 2px solid #eee; border-radius: 12px; cursor: pointer; overflow: hidden; position: relative; display: flex; flex-direction: column; min-height: 140px; transition: all 0.2s; }
-        
+        .opt { background: #fff; border: 2px solid #eee; border-radius: 12px; cursor: pointer; overflow: hidden; position: relative; display: flex; flex-direction: column; min-height: 140px; }
         .img-box { width: 100%; height: 100px; display: flex; background: #fafafa; overflow: hidden; position: relative; justify-content: center; align-items: center; }
         .img-box img { width: 100%; height: 100%; object-fit: cover; }
-
-        /* 師傅，核心改動喺呢度 */
-        /* 「不要配料」頁面的圖片預設變灰色 */
-        #grid-noExtra .img-box img {
-            filter: grayscale(100%);
-            opacity: 0.7;
-        }
-
-        /* 當選取後，圖片變回彩色，並加強外框 */
-        #grid-noExtra .opt.selected {
-            border-color: var(--price-tag); /* 用紅色外框代表「確認不要」 */
-            background: #fdf2f2;
-        }
-        #grid-noExtra .opt.selected .img-box img {
-            filter: grayscale(0%);
-            opacity: 1;
-        }
-
         .price-circle { position: absolute; top: 5px; right: 5px; background: var(--price-tag); color: white; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.85rem; font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.2); z-index: 5; border: 2px solid white; }
         .opt span { padding: 8px 5px; font-weight: bold; font-size: 0.9rem; flex-grow: 1; display: flex; align-items: center; justify-content: center; }
-        
-        /* 一般選取的藍色樣式 (用於麵、大小等) */
         .opt.selected { border-color: var(--primary); background: #e8f0fe; }
-
         .cart-box { margin-top: 20px; padding: 10px; border: 1px solid #ddd; border-radius: 10px; text-align: left; background: #fff; }
         .cart-item { border-bottom: 1px solid #eee; padding: 8px 0; display: flex; justify-content: space-between; align-items: center; }
         .total-price-bar { font-size: 1.6rem; color: var(--price-tag); font-weight: bold; margin: 15px 0; }
@@ -109,7 +87,7 @@
     <div class="step" id="step-no-extra">
         <button class="back-btn-top" onclick="handleNoExtraBack()">←</button>
         <h2>6. 不要什麼配料？</h2>
-        <div class="limit-hint">請點選要「走」的配料 (變彩色代表選取)</div>
+        <div class="limit-hint">可多選，完成後請按下方按鈕</div>
         <div class="grid" id="grid-noExtra"></div>
         <div class="nav-btns"><button class="btn-blue" onclick="generatePreviewAndGo()">✅ 完成並加入購物車</button></div>
     </div>
@@ -162,7 +140,6 @@
             '黑醋': 'https://lh3.googleusercontent.com/pw/AP1GczP78L4yujnIpxn3K004iS-q6Vm-A6Vp4UpTY6lKmyWVCrSsMU4XOLG6Em-03KJsMHT1YK94ae2-7QQ5bkhtbZNKo0mexj960hV9hUo0Q2-kLK1SZvo=w2400?source=screenshot.guru', '湯': 'https://lh3.googleusercontent.com/pw/AP1GczO41yvP4P-hmNWhW-kkM1iDfiDE0_-ugwWzhVxfF70z_xsDJE1VhyFZxt8PnlqS5J4VTcjIHwp7qIpF0wrBZnN73nM8zMLpnfN1MQaeuk9lNzU1RwE=w2400?source=screenshot.guru'
         },
         'noExtra': ['油', '蔥', '香菇', '肉碎', '黑醬油', '肉圓換魚圓'],
-        // 師傅，新圖片已經放好
         'noExtraImgs': {
             '肉碎': 'https://i.ibb.co/676LvDVq/Gemini-Generated-Image-o7imd3o7imd3o7im.png',
             '香菇': 'https://i.ibb.co/gM38Xyd2/Gemini-Generated-Image-8vtp9l8vtp9l8vtp.png',
@@ -208,12 +185,11 @@
             else { imgSrc = config[name]?.img; price = config[name]?.p || 0; }
             const priceTag = (price > 0) ? `<div class="price-circle">$${price}</div>` : '';
             
-            // 師傅，呢度個 onerror 轉咗，如果冇圖或者圖死咗，就顯示大 🚫，如果有圖就顯示圖，冇疊加紅叉
             let contentHTML = "";
             if (imgSrc) {
-                contentHTML = `<img src="${imgSrc}" onerror="this.style.display='none'; this.nextSibling.style.display='flex';"><div style="display:none; font-size:50px; color:#ccc; height:100%; justify-content:center; align-items:center;">🚫</div>`;
+                contentHTML = `<img src="${imgSrc}" onerror="this.style.display='none'; this.nextSibling.style.display='flex';"><div style="display:none; font-size:40px; color:#ddd; height:100%; justify-content:center; align-items:center;">🚫</div>`;
             } else {
-                contentHTML = `<div style="display:flex; font-size:50px; color:#ccc; height:100%; justify-content:center; align-items:center;">🚫</div>`;
+                contentHTML = `<div style="display:flex; font-size:40px; color:#ddd; height:100%; justify-content:center; align-items:center;">🚫</div>`;
             }
             
             div.innerHTML = `<div class="img-box">${priceTag}${contentHTML}</div><span>${name}</span>`;
