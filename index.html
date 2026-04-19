@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Million 麵店 - 醬料改版</title>
+    <title>Million 麵店 - 醬料改版(湯麵版)</title>
     <style>
         :root { --primary: #1a73e8; --secondary: #f0f2f5; --success: #34a853; --price-tag: #d93025; --edit: #f39c12; --add: #673ab7; }
         body { font-family: sans-serif; background: var(--secondary); margin: 0; padding: 10px; text-align: center; }
@@ -106,7 +106,7 @@
                 <button class="sauce-btn" onclick="toggleSauce('黑醬油', this)">黑醬油</button>
                 <button class="sauce-btn" onclick="toggleSauce('白醬青', this)">白醬青</button>
                 <button class="sauce-btn" onclick="toggleSauce('三味', this)">三味</button>
-                <button class="sauce-btn" onclick="handleSoupSauce(this)" style="grid-column: span 3; margin-top:5px; background: #e3f2fd; border-color: #2196f3;">純喝湯 (不乾拌)</button>
+                <button class="sauce-btn" onclick="handleSoupSauce(this)" style="grid-column: span 3; margin-top:5px; background: #e3f2fd; border-color: #2196f3; color: #1565c0;">湯麵</button>
             </div>
         </div>
         <div class="nav-btns"><button class="btn-blue" onclick="checkSauceNext()">下一步</button></div>
@@ -217,7 +217,7 @@
 
     // 醬料選擇邏輯
     function toggleSauce(val, el) {
-        if (tempItem.sauces.includes('湯')) tempItem.sauces = []; // 如果之前選了湯，清空它
+        if (tempItem.sauces.includes('湯')) tempItem.sauces = [];
         
         if (tempItem.sauces.includes(val)) {
             tempItem.sauces = tempItem.sauces.filter(s => s !== val);
@@ -229,19 +229,17 @@
     }
 
     function handleSoupSauce(el) {
-        tempItem.sauces = ['湯'];
+        tempItem.sauces = ['湯']; // 內部邏輯和列印依然存為「湯」
         refreshSauceUI();
         goNext('step-no-extra');
     }
 
     function refreshSauceUI() {
         document.querySelectorAll('.sauce-btn').forEach(btn => {
-            btn.classList.toggle('selected', tempItem.sauces.includes(btn.innerText === '正常' ? getGroupLabel(btn) : btn.innerText));
-            // 特殊處理：當選擇的是「正常」時，比對對應的標籤（辣椒、茄汁、醋）
-            if (btn.innerText === '正常') {
-                const label = getGroupLabel(btn);
-                btn.classList.toggle('selected', tempItem.sauces.includes(label));
-            }
+            const btnText = btn.innerText;
+            // 如果按鈕是「湯麵」，對應的邏輯值是「湯」
+            const logicValue = (btnText === '湯麵') ? '湯' : (btnText === '正常' ? getGroupLabel(btn) : btnText);
+            btn.classList.toggle('selected', tempItem.sauces.includes(logicValue));
         });
     }
 
