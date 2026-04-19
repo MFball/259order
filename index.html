@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Million 麵店 - 特別要求與調價版</title>
+    <title>Million 麵店 - 醬料簡化版</title>
     <style>
         :root { --primary: #1a73e8; --secondary: #f0f2f5; --success: #34a853; --price-tag: #d93025; --edit: #f39c12; --add: #673ab7; }
         body { font-family: sans-serif; background: var(--secondary); margin: 0; padding: 10px; text-align: center; }
@@ -22,12 +22,13 @@
         .opt span { padding: 8px 5px; font-weight: bold; font-size: 0.9rem; flex-grow: 1; display: flex; align-items: center; justify-content: center; }
         .opt.selected { border-color: var(--primary); background: #e8f0fe; }
 
-        .sauce-group { margin-bottom: 15px; text-align: left; }
-        .sauce-label { font-weight: bold; font-size: 1rem; color: #555; margin-bottom: 8px; display: block; }
-        .sauce-row { display: flex; gap: 8px; justify-content: space-between; flex-wrap: wrap; }
-        .sauce-btn { flex: 1; min-width: 80px; padding: 12px 5px; border: 2px solid #eee; border-radius: 10px; background: white; font-weight: bold; font-size: 0.9rem; cursor: pointer; transition: 0.2s; }
+        /* 醬料頁面專用排版 */
+        .sauce-layout { display: flex; flex-direction: column; gap: 10px; margin-top: 10px; }
+        .sauce-row-flex { display: flex; gap: 8px; justify-content: center; }
+        .sauce-btn { flex: 1; padding: 15px 5px; border: 2px solid #eee; border-radius: 10px; background: white; font-weight: bold; font-size: 1rem; cursor: pointer; transition: 0.2s; min-width: 0; }
         .sauce-btn.selected { border-color: var(--primary); background: #e8f0fe; color: var(--primary); }
-        .other-sauce-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-top: 10px; }
+        .special-box { background: #fff8e1; padding: 10px; border-radius: 12px; border: 1px dashed #ffd54f; margin-top: 5px; }
+        .special-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 
         .add-qty-bar { display: flex; align-items: center; justify-content: center; gap: 5px; padding: 8px 5px; background: #f9f9f9; border-top: 1px solid #eee; white-space: nowrap; }
         .btn-add-minus { width: 32px; height: 32px; border-radius: 5px; border: 1px solid #ddd; background: white; font-weight: bold; font-size: 1.1rem; cursor: pointer; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
@@ -75,46 +76,30 @@
     
     <div class="step" id="step-sauce-select">
         <button class="back-btn-top" onclick="goNext('step-size')">←</button>
-        <h2>5. 醬料 (1-3) & 特別要求</h2>
-        <div id="sauce-container">
-            <div class="sauce-group">
-                <span class="sauce-label">辣椒：</span>
-                <div class="sauce-row">
-                    <button class="sauce-btn" onclick="toggleSauce('少辣', this)">少辣</button>
-                    <button class="sauce-btn" onclick="toggleSauce('辣椒', this)">正常</button>
-                    <button class="sauce-btn" onclick="toggleSauce('多辣', this)">多辣</button>
-                </div>
+        <h2>5. 選擇醬料與要求</h2>
+        <div class="sauce-layout">
+            <div class="sauce-row-flex">
+                <button class="sauce-btn" onclick="toggleSauce('辣椒', this)">辣椒</button>
+                <button class="sauce-btn" onclick="toggleSauce('少辣', this)">少辣</button>
+                <button class="sauce-btn" onclick="toggleSauce('多辣', this)">多辣</button>
             </div>
-            <div class="sauce-group">
-                <span class="sauce-label">茄汁：</span>
-                <div class="sauce-row">
-                    <button class="sauce-btn" onclick="toggleSauce('少茄', this)">少茄</button>
-                    <button class="sauce-btn" onclick="toggleSauce('茄汁', this)">正常</button>
-                    <button class="sauce-btn" onclick="toggleSauce('多茄', this)">多茄</button>
-                </div>
+            <div class="sauce-row-flex">
+                <button class="sauce-btn" onclick="toggleSauce('茄汁', this)">茄汁</button>
+                <button class="sauce-btn" onclick="toggleSauce('醋', this)">醋</button>
+                <button class="sauce-btn" onclick="toggleSauce('黑醬油', this)">黑醬油</button>
             </div>
-            <div class="sauce-group">
-                <span class="sauce-label">醋：</span>
-                <div class="sauce-row">
-                    <button class="sauce-btn" onclick="toggleSauce('少醋', this)">少醋</button>
-                    <button class="sauce-btn" onclick="toggleSauce('醋', this)">正常</button>
-                    <button class="sauce-btn" onclick="toggleSauce('多醋', this)">多醋</button>
-                </div>
+            <div class="sauce-row-flex">
+                <button class="sauce-btn" onclick="toggleSauce('白醬青', this)">白醬青</button>
+                <button class="sauce-btn" onclick="handleSoupSauce(this)" style="background: #e3f2fd; border-color: #2196f3; color: #1565c0;">湯麵</button>
             </div>
-            <div class="sauce-group" style="background: #fff8e1; padding: 10px; border-radius: 10px; border: 1px dashed #ffd54f;">
-                <span class="sauce-label">特別要求：</span>
-                <div class="sauce-row">
+            <div class="special-box">
+                <div style="font-weight:bold; font-size:0.9rem; color:#f57c00; margin-bottom:8px; text-align:left;">特別要求：</div>
+                <div class="special-grid">
                     <button class="sauce-btn" onclick="toggleSpecial('剪麵', this)">剪麵</button>
                     <button class="sauce-btn" onclick="toggleSpecial('豬油渣', this)">豬油渣</button>
                     <button class="sauce-btn" onclick="toggleSpecial('面要柔軟', this)">面要柔軟</button>
                     <button class="sauce-btn" onclick="toggleSpecial('面要彈性', this)">面要彈性</button>
                 </div>
-            </div>
-            <div class="other-sauce-grid">
-                <button class="sauce-btn" onclick="toggleSauce('黑醬油', this)">黑醬油</button>
-                <button class="sauce-btn" onclick="toggleSauce('白醬青', this)">白醬青</button>
-                <button class="sauce-btn" onclick="toggleSauce('三味', this)">三味</button>
-                <button class="sauce-btn" onclick="handleSoupSauce(this)" style="grid-column: span 3; margin-top:5px; background: #e3f2fd; border-color: #2196f3; color: #1565c0;">湯麵</button>
             </div>
         </div>
         <div class="nav-btns"><button class="btn-blue" onclick="checkSauceNext()">下一步</button></div>
@@ -197,7 +182,7 @@
             '肉碎': 'https://lh3.googleusercontent.com/pw/AP1GczM1EgErnLz57PZ0ckyDapaXUx27rggwr5VvU49Yo1vpygNeiLiTCVK6nGMT7UewX9jWyWN7Q04y5g8QeGtKBFBtYod8YZd1L42sFsRuRCpY2EvidrI=w2400?source=screenshot.guru', '西刀魚餅': 'https://lh3.googleusercontent.com/pw/AP1GczP8Id6j5IYXzYS9x0xyNmfZWXGzQHCdfQBNbC34EmSqOTaA8rw5DGfhdsijfjfb_EnoCdl4nbXlowqkys6NnbQok762CxfDYno4mODYOp4oEp4EqAM=w2400?source=screenshot.guru',
             '小魚香': 'https://lh3.googleusercontent.com/pw/AP1GczMOea7U-V10ztFr3Yim6w3K_-waMrZWgn9f5VdLk6JeObgOJpJu47IZGZ_N2Ok0WW57U0oCvjQ8Cd1llJYnEiMKw5BSLetmhF5BBxFnnGQwFCqmUjE=w2400?source=screenshot.guru', '蝦': 'https://lh3.googleusercontent.com/pw/AP1GczPzLY41C33tAb9NV8EUJrRpiZGqc1WqVhSNhr9K5H41JKgfnEG4CqFIDluEUqs4wRf67VHhOcvgN_9z1J6UrQAQWtj-SvpBk8V7RoiRxNjsTE-NfVE=w2400?source=screenshot.guru'
         },
-        'additionsPrices': { '西刀魚餅': 1.5 } // 特別設置 1.5 元
+        'additionsPrices': { '西刀魚餅': 1.5 }
     };
 
     let cart = [];
@@ -220,11 +205,10 @@
     function toggleSauce(val, el) {
         if (tempItem.sauces.includes('湯')) tempItem.sauces = [];
         if (tempItem.sauces.includes(val)) { tempItem.sauces = tempItem.sauces.filter(s => s !== val); } 
-        else { if (tempItem.sauces.length >= 3) return alert("最多只能選3種醬料！"); tempItem.sauces.push(val); }
+        else { if (tempItem.sauces.length >= 3) return alert("最多選3種醬料"); tempItem.sauces.push(val); }
         refreshSauceUI();
     }
 
-    // 新增：處理特別要求
     function toggleSpecial(val, el) {
         if (tempItem.specialReqs.includes(val)) { tempItem.specialReqs = tempItem.specialReqs.filter(s => s !== val); } 
         else { tempItem.specialReqs.push(val); }
@@ -235,21 +219,14 @@
 
     function refreshSauceUI() {
         document.querySelectorAll('.sauce-btn').forEach(btn => {
-            const btnText = btn.innerText;
-            if (['剪麵', '豬油渣', '面要柔軟', '面要彈性'].includes(btnText)) {
-                btn.classList.toggle('selected', tempItem.specialReqs.includes(btnText));
+            const txt = btn.innerText;
+            if (['剪麵', '豬油渣', '面要柔軟', '面要彈性'].includes(txt)) {
+                btn.classList.toggle('selected', tempItem.specialReqs.includes(txt));
             } else {
-                const logicValue = (btnText === '湯麵') ? '湯' : (btnText === '正常' ? getGroupLabel(btn) : btnText);
-                btn.classList.toggle('selected', tempItem.sauces.includes(logicValue));
+                const logicV = (txt === '湯麵') ? '湯' : txt;
+                btn.classList.toggle('selected', tempItem.sauces.includes(logicV));
             }
         });
-    }
-
-    function getGroupLabel(btn) {
-        const group = btn.closest('.sauce-group');
-        if (!group) return '';
-        const labelText = group.querySelector('.sauce-label').innerText;
-        return labelText.replace('：', '');
     }
 
     function renderGrid(list, id, clickFn, multi = false) {
@@ -275,7 +252,7 @@
         config.additionsList.forEach(name => {
             const div = document.createElement('div'); div.className = 'opt';
             const qty = tempItem.additions[name] || 0;
-            const price = config.additionsPrices[name] || 1; // 預設 1, 魚餅 1.5
+            const price = config.additionsPrices[name] || 1;
             div.innerHTML = `
                 <div class="img-box"><div class="price-circle">$${price}</div><img src="${config.additionsImgs[name]}"></div>
                 <span>${name}</span>
@@ -302,17 +279,14 @@
     function setCategory(v) { tempItem.category = v; goNext(v === '湯' ? 'step-soup-select' : 'step-food-select'); }
     function toggleMulti(v, el, list, max) { if(list.includes(v)) { list.splice(list.indexOf(v), 1); el.classList.remove('selected'); } else { if(list.length >= max) return; list.push(v); el.classList.add('selected'); } }
     function goNext(id) { document.querySelectorAll('.step').forEach(s => s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
-    function checkNoodleNext() { if(tempItem.noodle) goNext('step-size'); else alert("請選擇一款麵種！"); }
-    function checkSauceNext() { if(tempItem.sauces.length >= 1) goNext('step-no-extra'); else alert("請最少選擇一個醬料！"); }
+    function checkNoodleNext() { if(tempItem.noodle) goNext('step-size'); else alert("請選擇麵種"); }
+    function checkSauceNext() { if(tempItem.sauces.length >= 1) goNext('step-no-extra'); else alert("請最少選擇一個醬料"); }
     function handleSizeBack() { goNext(tempItem.category === '湯' ? 'step-soup-select' : 'step-noodle-type'); }
     function handleNoExtraBack() { goNext(tempItem.category === '湯' ? 'step-size' : 'step-sauce-select'); }
 
     function generatePreviewAndGo() {
         let p = 0; tempItem.names.forEach(n => p += (config[n]?.p || 0)); p += (config[tempItem.size]?.p || 0);
-        Object.entries(tempItem.additions).forEach(([name, qty]) => {
-            const uprice = config.additionsPrices[name] || 1;
-            p += (uprice * qty);
-        });
+        Object.entries(tempItem.additions).forEach(([name, qty]) => { p += ((config.additionsPrices[name] || 1) * qty); });
         tempItem.price = p; 
         if (editIndex > -1) { cart[editIndex] = JSON.parse(JSON.stringify(tempItem)); editIndex = -1; } else { cart.push(JSON.parse(JSON.stringify(tempItem))); }
         updateCartDisplay(); 
@@ -333,37 +307,16 @@
             let addStr = adds ? `<br><small style="color:var(--add);">+加料: ${adds}</small>` : '';
             const mainUnit = item.category === '湯' ? '碗' : '份';
 
-            return `
-            <div class="cart-item">
-                <div class="item-row">
-                    <div class="item-info">
-                        <b>${item.names.join('+')}</b> [${shortSize}]<br>
-                        <small>${item.noodle||''} ${sauceStr}</small>${noExStr}${addStr}
-                        <div style="font-weight:bold; color:var(--price-tag); margin-top:5px;">$${lineTotal.toFixed(2)}</div>
-                    </div>
-                    <div class="item-actions">
-                        <button class="btn-edit" onclick="editCartItem(${i})">✏️ 修改內容</button>
-                        <div class="qty-controls">
-                            <button class="btn-qty" onclick="changeQty(${i}, -1)">-</button>
-                            <span class="qty-num">${item.qty}${mainUnit}</span>
-                            <button class="btn-qty" onclick="changeQty(${i}, 1)">+</button>
-                        </div>
-                    </div>
-                </div>
-            </div>`; 
+            return `<div class="cart-item"><div class="item-row"><div class="item-info"><b>${item.names.join('+')}</b> [${shortSize}]<br><small>${item.noodle||''} ${sauceStr}</small>${noExStr}${addStr}<div style="font-weight:bold; color:var(--price-tag); margin-top:5px;">$${lineTotal.toFixed(2)}</div></div><div class="item-actions"><button class="btn-edit" onclick="editCartItem(${i})">✏️ 修改</button><div class="qty-controls"><button class="btn-qty" onclick="changeQty(${i}, -1)">-</button><span class="qty-num">${item.qty}${mainUnit}</span><button class="btn-qty" onclick="changeQty(${i}, 1)">+</button></div></div></div></div>`; 
         }).join('');
         document.getElementById('total-sum').innerText = t.toFixed(2);
     }
 
     function editCartItem(index) { editIndex = index; tempItem = JSON.parse(JSON.stringify(cart[index])); init(); goNext(tempItem.category === '湯' ? 'step-soup-select' : 'step-food-select'); }
-    function changeQty(index, delta) {
-        let item = cart[index];
-        if (item.qty + delta < 1) { if (confirm("是否取消這訂單？")) { cart.splice(index, 1); } } else if (item.qty + delta <= 99) { item.qty += delta; }
-        updateCartDisplay();
-    }
+    function changeQty(index, delta) { let item = cart[index]; if (item.qty + delta < 1) { if (confirm("取消訂單？")) cart.splice(index, 1); } else if (item.qty + delta <= 99) item.qty += delta; updateCartDisplay(); }
 
     function finalizeAndPrint() {
-        if (cart.length === 0) return alert("購物車內無品項！");
+        if (cart.length === 0) return alert("購物車為空");
         const data = getOrderData(); const now = new Date();
         const timeStr = `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}:${now.getSeconds().toString().padStart(2,'0')}`;
         const orderRecord = { num: data.num, time: timeStr, fullTime: `${now.toLocaleDateString()} ${timeStr}`, items: JSON.parse(JSON.stringify(cart)), total: document.getElementById('total-sum').innerText };
@@ -373,7 +326,6 @@
 
     function drawPrintCanvas(record) {
         const canvas = document.getElementById('printCanvas'), ctx = canvas.getContext('2d');
-        // 動態計算高度，特別要求如果存在會多一行
         const dynamicHeight = 250 + (record.items.length * 200) + (record.items.reduce((acc,item)=>acc+(item.noExtras.length>0?45:0)+(Object.keys(item.additions).length>0?45:0)+(item.specialReqs.length>0?45:0),0)) + 120;
         canvas.height = dynamicHeight;
         ctx.fillStyle = "white"; ctx.fillRect(0, 0, 384, canvas.height);
@@ -391,15 +343,12 @@
             ctx.fillText(`${item.names.join('+')} (${item.qty}${unit})`, 374, y); y += 52;
             ctx.font = "bold 32px sans-serif"; ctx.fillText(`[${shortSize}] ${item.noodle||''} ${item.sauces.join(',')}`, 374, y); y += 45;
             
-            // 重要：特別要求換行顯示
             if(item.specialReqs && item.specialReqs.length > 0) {
-                ctx.font = "bold 32px sans-serif";
-                ctx.fillText(`★${item.specialReqs.join(',')}`, 374, y); y += 45;
+                ctx.font = "bold 32px sans-serif"; ctx.fillText(`★${item.specialReqs.join(',')}`, 374, y); y += 45;
             }
 
             let adds = Object.entries(item.additions).map(([name, q]) => `${name}(${getDisplayQty(name, q)})`).join(',');
             if(adds) { ctx.font = "bold 30px sans-serif"; ctx.fillText(` +加料: ${adds}`, 374, y); y += 45; }
-            
             if(item.noExtras.length > 0) { ctx.font = "bold 30px sans-serif"; ctx.fillText(` [不要: ${item.noExtras.join(',')}]`, 374, y); y += 45; }
             if (i < record.items.length - 1) { y += 20; ctx.textAlign = "center"; ctx.font = "bold 24px sans-serif"; ctx.fillText("******************************************", 192, y); y += 40; ctx.textAlign = "right"; } else { y += 25; }
         });
@@ -409,7 +358,7 @@
 
     function showHistory() {
         const data = getOrderData(); const cont = document.getElementById('history-container');
-        cont.innerHTML = data.history.length === 0 ? '<p>今日暫無訂單</p>' : '';
+        cont.innerHTML = data.history.length === 0 ? '<p>無紀錄</p>' : '';
         data.history.slice().reverse().forEach(ord => {
             const div = document.createElement('div');
             div.innerHTML = `<div><b>No.${ord.num}</b> <small>(${ord.time})</small><br><span style="font-size:0.8rem">${ord.items[0].names[0]}等...</span></div><div>$${ord.total} <button class="btn-blue" style="padding:4px 8px; margin-left:10px; border-radius:5px; border:none; color:white;" onclick='reprintHistory(${ord.num})'>補印</button></div>`;
@@ -419,8 +368,8 @@
         goNext('step-history');
     }
     function reprintHistory(num) { const data = getOrderData(); const ord = data.history.find(o => o.num === num); if (ord) { drawPrintCanvas(ord); handleImagePrint(); } }
-    function cancelAndClear() { if(confirm("確定要清空所有點餐嗎？")) { cart = []; updateCartDisplay(); resetForNewItem(); } }
-    function resetForNewItem() { tempItem = { category: '', names: [], size: '', noodle: '', sauces: [], specialReqs: [], noExtras: [], additions: {}, price: 0, qty: 1 }; editIndex = -1; document.querySelectorAll('.opt').forEach(o => o.classList.remove('selected')); refreshSauceUI(); goNext('step-start'); }
+    function cancelAndClear() { if(confirm("清空？")) { cart = []; updateCartDisplay(); resetForNewItem(); } }
+    function resetForNewItem() { tempItem = { category: '', names: [], size: '', noodle: '', sauces: [], specialReqs: [], noExtras: [], additions: {}, price: 0, qty: 1 }; editIndex = -1; document.querySelectorAll('.opt, .sauce-btn').forEach(o => o.classList.remove('selected')); refreshSauceUI(); goNext('step-start'); }
 
     async function getPrinter() {
         if (savedDevice && savedDevice.gatt.connected && savedCharacteristic) return savedCharacteristic;
