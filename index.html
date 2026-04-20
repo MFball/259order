@@ -7,7 +7,7 @@
     <style>
         :root { --primary: #1a73e8; --secondary: #f0f2f5; --success: #34a853; --price-tag: #d93025; --edit: #f39c12; --add: #673ab7; }
         body { font-family: sans-serif; background: var(--secondary); margin: 0; padding: 10px; text-align: center; -webkit-tap-highlight-color: transparent; }
-        .container { max-width: 500px; margin: auto; background: white; padding: 15px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); padding-bottom: 110px; min-height: 90vh; position: relative; }
+        .container { max-width: 500px; margin: auto; background: white; padding: 15px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); padding-bottom: 110px; min-height: 85vh; position: relative; }
         .step { display: none; animation: fadeIn 0.3s; }
         .step.active { display: block; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
@@ -16,6 +16,7 @@
         .back-btn-top { position: absolute; left: 15px; top: 15px; width: 42px; height: 42px; border-radius: 50%; background: #f1f1f1; color: #333; border: none; font-size: 26px; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 100; font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
         h2 { color: #333; font-size: 1.3rem; margin: 20px 0 15px 0; border-left: 6px solid var(--primary); padding-left: 15px; text-align: left; font-weight: bold; }
         
+        /* 圖片網格樣式 */
         .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
         .opt { background: #fff; border: 2.3px solid #eee; border-radius: 18px; cursor: pointer; overflow: hidden; position: relative; display: flex; flex-direction: column; transition: all 0.2s ease; box-shadow: 0 3px 6px rgba(0,0,0,0.04); }
         .opt.selected { border-color: var(--primary); background: #f0f7ff; transform: translateY(-2px); box-shadow: 0 5px 15px rgba(26,115,232,0.1); }
@@ -26,18 +27,21 @@
         .price-circle { position: absolute; top: 10px; right: 10px; background: var(--price-tag); color: white; width: 48px; height: 38px; border-radius: 19px; display: flex; align-items: center; justify-content: center; font-size: 1rem; font-weight: bold; z-index: 5; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
         .opt span { padding: 12px 5px; font-weight: bold; font-size: 1.05rem; color: #2c3e50; }
 
+        /* 數量控制器 */
         .qty-input-overlay { background: #fdfdfd; display: flex; padding: 12px 4px; border-top: 1.5px solid #f0f0f0; gap: 8px; }
         .qty-row { flex: 1; display: flex; flex-direction: column; align-items: center; font-size: 0.85rem; font-weight: bold; color: #555; }
         .qty-btn-group { display: flex; align-items: center; gap: 10px; margin-top: 6px; }
         .qty-btn { width: 36px; height: 36px; border-radius: 10px; border: 1.5px solid #ddd; background: white; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: bold; color: var(--primary); transition: 0.1s; }
         .qty-btn:active { background: #f0f0f0; transform: scale(0.9); }
 
+        /* 底部按鈕 */
         .nav-btns { position: fixed; bottom: 0; left: 0; right: 0; background: rgba(255,255,255,0.95); backdrop-filter: blur(10px); padding: 20px; display: flex; gap: 12px; max-width: 500px; margin: auto; box-shadow: 0 -10px 30px rgba(0,0,0,0.1); z-index: 1000; border-radius: 25px 25px 0 0; }
         button.main-action { flex: 1; padding: 18px 5px; border-radius: 15px; border: none; font-size: 1.15rem; cursor: pointer; font-weight: bold; transition: 0.2s; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
         .btn-blue { background: var(--primary); color: white; }
         .btn-green { background: var(--success); color: white; }
         .btn-red { background: var(--price-tag); color: white; }
 
+        /* 醬料與特別要求 */
         .sauce-btn { padding: 18px 5px; border: 2px solid #eee; border-radius: 15px; background: white; font-weight: bold; font-size: 1.1rem; cursor: pointer; transition: 0.2s; }
         .sauce-btn.selected { border-color: var(--primary); background: #e8f0fe; color: var(--primary); box-shadow: inset 0 0 5px rgba(26,115,232,0.2); }
 
@@ -127,6 +131,7 @@
         foods: ['魚圓面', '香菇肉碎面', '招牌面', '餐餐面', '肉圓面', '蝦魚面', '西刀魚面', '香菇面', '魚餃面', '(純)肉碎面', '小魚香面'],
         soups: ['魚圓湯','肉圓湯','魚餃湯','三寶湯'],
         prices: { '魚圓面':4, '香菇肉碎面':5, '招牌面':6, '餐餐面':6, '肉圓面':4, '蝦魚面':5, '西刀魚面':4, '香菇面':5, '魚餃面':4, '(純)肉碎面':4, '小魚香面':4, '魚圓湯':5, '肉圓湯':5, '魚餃湯':5, '三寶湯':6, '大的':1, '小的':0 },
+        // 恢復 ver 2.9.9 的所有圖片路徑
         foodImgs: {
             '魚圓面': 'https://lh3.googleusercontent.com/pw/AP1GczM1EgErnLz57PZ0ckyDapaXUx27rggwr5VvU49Yo1vpygNeiLiTCVK6nGMT7UewX9jWyWN7Q04y5g8QeGtKBFBtYod8YZd1L42sFsRuRCpY2EvidrI=w2400?source=screenshot.guru',
             '香菇肉碎面': 'https://lh3.googleusercontent.com/pw/AP1GczPRrBESQHr4MjJaDdiXYFda03b72aUrxqrO--coLUrariBXksy0KTPNNaXhzOmmrVhkbChOGKQFqiR8zRRcPZWSd7Hk-inOhSXStOXgC8d0a85lycU=w2400?source=screenshot.guru',
@@ -173,8 +178,8 @@
                 <div class="img-box"><div class="price-circle">$${config.prices[name]}</div><img src="${config.foodImgs[name]}"></div>
                 <span>${name}</span>
                 <div class="qty-input-overlay" onclick="event.stopPropagation()">
-                    <div class="qty-row">小<div class="qty-btn-group"><button class="qty-btn" onclick="updateQty('${name}','小的',-1)">-</button><span id="q-s-${name}">0</span><button class="qty-btn" onclick="updateQty('${name}','小的',1)">+</button></div></div>
-                    <div class="qty-row">大<div class="qty-btn-group"><button class="qty-btn" onclick="updateQty('${name}','大的',-1)">-</button><span id="q-l-${name}">0</span><button class="qty-btn" onclick="updateQty('${name}','大的',1)">+</button></div></div>
+                    <div class="qty-row">小份<div class="qty-btn-group"><button class="qty-btn" onclick="updateQty('${name}','小的',-1)">-</button><span id="q-s-${name}">0</span><button class="qty-btn" onclick="updateQty('${name}','小的',1)">+</button></div></div>
+                    <div class="qty-row">大份<div class="qty-btn-group"><button class="qty-btn" onclick="updateQty('${name}','大的',-1)">-</button><span id="q-l-${name}">0</span><button class="qty-btn" onclick="updateQty('${name}','大的',1)">+</button></div></div>
                 </div>`;
             cont.appendChild(div);
         });
@@ -186,7 +191,6 @@
         document.getElementById(size==='小的' ? `q-s-${name}` : `q-l-${name}`).innerText = allCounts[key];
     }
 
-    // 多選順序處理核心
     function checkFoodNext() {
         session.sequence = [];
         Object.entries(allCounts).forEach(([key, val]) => {
@@ -195,7 +199,7 @@
                 for(let i=0; i<val; i++) session.sequence.push({ name, size });
             }
         });
-        if (session.sequence.length === 0) return alert("請先選擇數量");
+        if (session.sequence.length === 0) return alert("請至少選擇一份麵食");
         session.currentIdx = 0;
         renderNoodleTypeGrid();
         startNoodleAssign();
@@ -227,7 +231,7 @@
 
     function startNoodleAssign() {
         const current = session.sequence[session.currentIdx];
-        document.getElementById('noodle-target-info').innerHTML = `處理中 (${session.currentIdx+1}/${session.sequence.length})：<br><b style="font-size:1.5rem;">${current.name} (${current.size})</b>`;
+        document.getElementById('noodle-target-info').innerHTML = `正在處理 (${session.currentIdx+1}/${session.sequence.length})<br><span style="font-size:1.4rem;">${current.name} [${current.size}]</span>`;
         tempItem.mainName = current.name;
         tempItem.size = current.size;
         goNext('step-noodle-type');
@@ -285,7 +289,7 @@
             };
             cont.appendChild(div);
         });
-        document.getElementById('add-target-display').innerText = `加料 (${tempItem.mainName})`;
+        document.getElementById('add-target-display').innerText = `加料項目 (${tempItem.mainName})`;
         renderAdditionsGrid();
     }
 
@@ -298,7 +302,7 @@
                 <span>${name}</span>
                 <div class="qty-input-overlay" onclick="event.stopPropagation()">
                     <button class="qty-btn" onclick="updateAdd('${name}',-1)">-</button>
-                    <span id="add-${name}" style="font-weight:bold; font-size:1.3rem;">0</span>
+                    <span id="add-${name}" style="font-weight:bold; font-size:1.3rem; min-width:25px;">0</span>
                     <button class="qty-btn" onclick="updateAdd('${name}',1)">+</button>
                 </div>`;
             cont.appendChild(div);
@@ -336,7 +340,7 @@
                     <span style="color:var(--price-tag);">$${item.price.toFixed(2)}</span>
                 </div>
                 <div style="color:#666; font-size:0.9rem; margin-top:5px;">
-                    ${item.noodle} / ${item.sauces.join(',')} ${item.specials.length ? '| '+item.specials.join(',') : ''}
+                    麵種: ${item.noodle} / 醬: ${item.sauces.join(',')} ${item.specials.length ? '| '+item.specials.join(',') : ''}
                 </div>
                 ${item.noExtras.length ? `<div style="color:red; font-size:0.85rem;">✘ 不要: ${item.noExtras.join(',')}</div>` : ''}
                 ${adds ? `<div style="color:var(--add); font-size:0.85rem;">✚ 加料: ${adds}</div>` : ''}
@@ -346,7 +350,7 @@
         goNext('step-finish');
     }
 
-    // 列印相關 (對齊 ver 2.9.9)
+    // 恢復 2.9.9 的完整列印邏輯與灰階閾值
     async function getPrinter() {
         if (savedChar && savedDevice.gatt.connected) return savedChar;
         savedDevice = await navigator.bluetooth.requestDevice({ acceptAllDevices: true, optionalServices: ['0000ffe0-0000-1000-8000-00805f9b34fb'] });
@@ -359,7 +363,7 @@
     function drawCanvas(num) {
         const canvas = document.getElementById('printCanvas');
         const ctx = canvas.getContext('2d');
-        const h = 250 + (cart.length * 170) + 120;
+        const h = 250 + (cart.length * 160) + 120;
         canvas.height = h; ctx.fillStyle = "white"; ctx.fillRect(0, 0, 384, h); ctx.fillStyle = "black";
         ctx.textAlign = "center"; ctx.font = "bold 32px sans-serif"; ctx.fillText("Million Gold Bowl", 192, 45);
         ctx.font = "bold 70px sans-serif"; ctx.fillText(`No. ${num}`, 192, 120);
@@ -368,7 +372,7 @@
             ctx.font = "bold 40px sans-serif"; ctx.fillText(`${item.mainName} (${item.size.replace('的','')})`, 370, y); y+=50;
             ctx.font = "32px sans-serif"; ctx.fillText(`${item.noodle} ${item.sauces.join(',')}`, 370, y); y+=45;
             if(item.noExtras.length) { ctx.font = "bold 26px sans-serif"; ctx.fillText(`(不要: ${item.noExtras.join(',')})`, 370, y); y+=35; }
-            y+=30;
+            y+=25;
         });
         ctx.textAlign = "center"; ctx.font = "bold 45px sans-serif"; ctx.fillText("TOTAL: $" + document.getElementById('total-sum').innerText, 192, y+60);
     }
@@ -377,13 +381,15 @@
         const storage = JSON.parse(localStorage.getItem('million_orders')) || { date: '', num: START_NO };
         const today = new Date().toLocaleDateString();
         if(storage.date !== today) { storage.date = today; storage.num = START_NO; }
-        drawCanvas(storage.num);
         
         const btn = document.getElementById('printBtn');
         try {
             btn.disabled = true;
+            document.getElementById('status').innerText = "📤 列印中...";
             const targetChar = await getPrinter();
+            drawCanvas(storage.num);
             const pixels = document.getElementById('printCanvas').getContext('2d').getImageData(0,0,384,document.getElementById('printCanvas').height).data;
+            
             await targetChar.writeValue(new Uint8Array([0x1B, 0x40]));
             const widthBytes = 48;
             for (let y = 0; y < document.getElementById('printCanvas').height; y++) {
@@ -393,18 +399,26 @@
                     let b = 0;
                     for (let bit = 0; bit < 8; bit++) {
                         let idx = ((y * 384) + (x * 8 + bit)) * 4;
+                        // 恢復 2.9.9 的灰階計算與閾值 135
                         if (pixels[idx] * 0.3 + pixels[idx+1] * 0.59 + pixels[idx+2] * 0.11 < 135) b |= (1 << (7 - bit));
                     }
                     row[8 + x] = b;
                 }
+                // 使用 2.9.9 特有的 writeValueWithoutResponse
                 await targetChar.writeValueWithoutResponse(row);
                 if(y % 25 === 0) await new Promise(r => setTimeout(r, 60));
             }
             await targetChar.writeValue(new Uint8Array([0x1B, 0x64, 0x05, 0x1D, 0x56, 0x00]));
+            
             storage.num++;
             localStorage.setItem('million_orders', JSON.stringify(storage));
-            setTimeout(() => location.reload(), 1000);
-        } catch(e) { alert("列印失敗: " + e.message); btn.disabled = false; }
+            document.getElementById('status').innerText = "✅ 列印完成";
+            setTimeout(() => location.reload(), 1200);
+        } catch(e) { 
+            alert("列印錯誤: " + e.message); 
+            btn.disabled = false;
+            document.getElementById('status').innerText = "❌ 列印失敗";
+        }
     }
 </script>
 </body>
