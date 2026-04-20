@@ -15,49 +15,42 @@
         h2 { color: #333; font-size: 1.1rem; margin: 10px 0 5px 0; border-left: 5px solid var(--primary); padding-left: 10px; text-align: left; }
         .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         
-        /* 麵食類選項優化佈局 */
-        .opt { background: #fff; border: 2px solid #eee; border-radius: 12px; cursor: pointer; overflow: hidden; position: relative; display: flex; flex-direction: column; min-height: 185px; }
-        .img-box { width: 100%; height: 120px; display: flex; background: #fafafa; overflow: hidden; position: relative; justify-content: center; align-items: center; }
+        /* 麵食卡片優化 */
+        .opt { background: #fff; border: 2px solid #eee; border-radius: 12px; cursor: pointer; overflow: hidden; position: relative; display: flex; flex-direction: column; min-height: 180px; transition: 0.2s; }
+        .img-box { width: 100%; height: 100px; display: flex; background: #fafafa; overflow: hidden; position: relative; justify-content: center; align-items: center; }
         .img-box img { width: 100%; height: 100%; object-fit: cover; }
         .price-circle { position: absolute; top: 5px; right: 5px; background: var(--price-tag); color: white; width: 42px; height: 32px; border-radius: 16px; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.2); z-index: 5; border: 2px solid white; }
+        .opt span { padding: 8px 5px; font-weight: bold; font-size: 0.95rem; display: block; background: #fff; border-bottom: 1px solid #f0f0f0; }
+        .opt.selected { border-color: var(--primary); background: #f0f7ff; }
         
-        /* 文字區域：確保不被遮蓋 */
-        .opt span { padding: 8px 5px; font-weight: bold; font-size: 0.95rem; color: #333; height: 30px; display: flex; align-items: center; justify-content: center; z-index: 2; }
-        .opt.selected { border-color: var(--primary); background: #f1f7ff; }
-        
-        /* 數量控制器優化：左右二邊放置 */
-        .qty-input-overlay { 
-            display: flex; 
-            justify-content: space-around; 
-            background: rgba(248, 249, 250, 0.95); 
-            padding: 8px 2px; 
-            border-top: 1px solid #eee;
-            gap: 2px;
-        }
-        .qty-row { display: flex; flex-direction: column; align-items: center; font-size: 0.75rem; font-weight: bold; color: #555; flex: 1; }
-        .qty-ctrl-flex { display: flex; align-items: center; gap: 4px; margin-top: 2px; }
-        .qty-btn { width: 28px; height: 28px; border-radius: 6px; border: 1px solid #ccc; background: white; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-        .qty-val-display { font-size: 1rem; color: var(--primary); min-width: 18px; }
+        /* 大小選擇佈局：分左右二邊 */
+        .qty-input-overlay { background: #fff; display: flex; justify-content: space-between; padding: 8px 5px; gap: 5px; }
+        .qty-side { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; border-radius: 6px; padding: 4px 0; background: #fcfcfc; border: 1px solid #f0f0f0; }
+        .qty-side.small { color: #1a73e8; }
+        .qty-side.large { color: #d93025; }
+        .qty-row { display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 0.8rem; font-weight: bold; width: 100%; }
+        .qty-btn { width: 26px; height: 26px; border-radius: 4px; border: 1px solid #ccc; background: white; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; flex-shrink: 0; }
 
         .sauce-layout { display: flex; flex-direction: column; gap: 10px; margin-top: 10px; }
         .sauce-row-flex { display: flex; gap: 8px; justify-content: center; }
         .sauce-btn { flex: 1; padding: 15px 5px; border: 2px solid #eee; border-radius: 10px; background: white; font-weight: bold; font-size: 1rem; cursor: pointer; transition: 0.2s; min-width: 0; }
         .sauce-btn.selected { border-color: var(--primary); background: #e8f0fe; color: var(--primary); }
-        .special-box { background: #fff8e1; padding: 10px; border-radius: 12px; border: 1px dashed #ffd54f; margin-top: 5px; }
-        .special-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        
+        /* 加料區修正：防止按鈕換行 */
+        .add-qty-bar { display: flex; align-items: center; justify-content: space-between; gap: 2px; padding: 8px 4px; background: #f9f9f9; border-top: 1px solid #eee; flex-wrap: nowrap; }
+        .btn-add-minus { width: 32px; height: 32px; border-radius: 5px; border: 1px solid #ddd; background: white; font-weight: bold; font-size: 1.1rem; cursor: pointer; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+        .add-num { font-size: 1.1rem; font-weight: bold; color: var(--add); min-width: 25px; text-align: center; }
         
         .cart-box { margin-top: 20px; padding: 10px; border: 1px solid #ddd; border-radius: 10px; text-align: left; background: #fff; }
         .cart-item { border-bottom: 1px solid #eee; padding: 12px 0; }
-        .item-row { display: flex; justify-content: space-between; align-items: center; }
         .total-price-bar { font-size: 1.6rem; color: var(--price-tag); font-weight: bold; margin: 15px 0; }
         .nav-btns { position: fixed; bottom: 0; left: 0; right: 0; background: white; padding: 15px; display: flex; gap: 8px; max-width: 500px; margin: auto; box-shadow: 0 -5px 10px rgba(0,0,0,0.05); z-index: 1000; }
         button { flex: 1; padding: 12px 5px; border-radius: 10px; border: none; font-size: 0.95rem; cursor: pointer; font-weight: bold; }
         .btn-blue { background: var(--primary); color: white; }
         .btn-green { background: var(--success); color: white; }
         .btn-red { background: var(--price-tag); color: white; }
-        #status { font-size: 11px; color: #d93025; font-weight: bold; margin-bottom: 5px; }
-        .version-tag { position: absolute; bottom: 10px; right: 15px; font-size: 10px; color: #999; }
         .multi-info { font-size: 0.9rem; color: #1a73e8; margin-bottom: 8px; text-align: left; background: #e8f0fe; padding: 8px 12px; border-radius: 8px; font-weight: bold; }
+        .version-tag { position: absolute; bottom: 10px; right: 15px; font-size: 10px; color: #999; }
     </style>
 </head>
 <body>
@@ -83,11 +76,12 @@
         <button class="back-btn-top" onclick="goNext('step-start')">←</button>
         <h2>2. 請選擇麵食與數量</h2>
         <div class="grid" id="grid-foodItems"></div>
-        <div class="nav-btns"><button class="btn-blue" onclick="checkFoodNext()">下一步 (分配麵種)</button></div>
+        <div class="nav-btns"><button class="btn-blue" onclick="checkFoodNext()">下一步</button></div>
     </div>
 
     <div class="step" id="step-noodle-type">
         <button class="back-btn-top" onclick="goNext('step-food-select')">←</button>
+        <div id="noodle-food-name" class="multi-info" style="background:#fff8e1; border:1px solid #ffe082; color:#795548;">當前麵食：未選擇</div>
         <div id="noodle-count-info" class="multi-info"></div>
         <h2>3. 分配麵種數量</h2>
         <div class="grid" id="grid-noodleType"></div>
@@ -113,9 +107,9 @@
                 <button class="sauce-btn" onclick="toggleSauce('白醬青')">白醬青</button>
                 <button class="sauce-btn" onclick="handleSoupSauce()" style="background: #e3f2fd; border-color: #2196f3; color: #1565c0;">湯麵</button>
             </div>
-            <div class="special-box">
+            <div class="special-box" style="background:#fff8e1; padding:10px; border-radius:12px; border:1px dashed #ffd54f; margin-top:5px;">
                 <div style="font-weight:bold; font-size:0.9rem; color:#f57c00; margin-bottom:8px; text-align:left;">特別要求：</div>
-                <div class="special-grid">
+                <div class="grid" style="grid-template-columns: 1fr 1fr; gap: 8px;">
                     <button class="sauce-btn" onclick="toggleSpecial('剪麵')">剪麵</button>
                     <button class="sauce-btn" onclick="toggleSpecial('豬油渣')">豬油渣</button>
                     <button class="sauce-btn" onclick="toggleSpecial('面要柔軟')">面要柔軟</button>
@@ -139,12 +133,14 @@
         <div id="addition-count-info" class="multi-info"></div>
         <h2 id="addition-title">7. 加料區</h2>
         <div class="grid" id="grid-additions"></div>
-        <div class="nav-btns"><button class="btn-blue" onclick="checkAdditionNext()">✅ 確認此份</button></div>
+        <div class="nav-btns">
+            <button class="btn-blue" onclick="checkAdditionNext()">✅ 確認此份</button>
+        </div>
     </div>
     
     <div class="step" id="step-finish">
         <h2>🛒 購物車明細</h2>
-        <div class="order-info-bar" id="preview-order-info" style="background: #fdf2f2; padding: 8px; border-radius: 10px; margin-bottom: 15px; text-align: left; font-size: 0.9rem; border: 1px dashed var(--price-tag);"></div>
+        <div id="preview-order-info" style="background: #fdf2f2; padding: 8px; border-radius: 10px; margin-bottom: 15px; text-align: left; font-size: 0.9rem; border: 1px dashed var(--price-tag);"></div>
         <div class="cart-box" id="current-cart"></div>
         <div class="total-price-bar">總金額: $<span id="total-sum">0</span></div>
         <div class="nav-btns">
@@ -207,13 +203,8 @@
     };
 
     let cart = [];
-    let sessionOrder = {
-        category: '', mainName: '', counts: { '小的': 0, '大的': 0 },
-        totalQty: 0, subItems: [], noodlePlan: {}
-    };
-    let currentProcessIdx = 0;
-    let currentSubReq = null;
-    let savedDevice = null, savedCharacteristic = null, isFastMode = false;
+    let sessionOrder = { category: '', mainName: '', counts: { '小的': 0, '大的': 0 }, totalQty: 0, subItems: [], noodlePlan: {} };
+    let currentProcessIdx = 0, currentSubReq = null, editIndex = -1, savedDevice = null, savedCharacteristic = null, isFastMode = false;
 
     function getOrderData() { const today = new Date().toLocaleDateString(); let data = JSON.parse(localStorage.getItem('million_order_data')) || { date: today, num: START_NO, history: [] }; if (data.date !== today) { data.date = today; data.num = START_NO; data.history = []; } return data; }
     function saveOrderData(data) { localStorage.setItem('million_order_data', JSON.stringify(data)); }
@@ -227,7 +218,6 @@
         renderFoodGrid();
     }
 
-    // 第二頁：優化後的麵食選擇介面 (左右分配)
     function renderFoodGrid() {
         const list = ['魚圓面', '香菇肉碎面', '招牌面', '餐餐面', '肉圓面', '蝦魚面', '西刀魚面', '香菇面', '魚餃面', '(純)肉碎面', '小魚香面'];
         const cont = document.getElementById('grid-foodItems');
@@ -239,19 +229,19 @@
                 <div class="img-box"><div class="price-circle">$${config[name].p}</div><img src="${config[name].img}"></div>
                 <span>${name}</span>
                 <div class="qty-input-overlay" onclick="event.stopPropagation()">
-                    <div class="qty-row">
-                        <span>小的 (+$0)</span>
-                        <div class="qty-ctrl-flex">
+                    <div class="qty-side small">
+                        <div style="font-size:0.7rem;">小的</div>
+                        <div class="qty-row">
                             <button class="qty-btn" onclick="changeMainQty('${name}','小的',-1)">-</button>
-                            <span class="qty-val-display" id="q-s-${name}">${sessionOrder.mainName===name?sessionOrder.counts['小的']:0}</span>
+                            <span id="q-s-${name}">${sessionOrder.mainName===name?sessionOrder.counts['小的']:0}</span>
                             <button class="qty-btn" onclick="changeMainQty('${name}','小的',1)">+</button>
                         </div>
                     </div>
-                    <div class="qty-row">
-                        <span>大的 (+$1)</span>
-                        <div class="qty-ctrl-flex">
+                    <div class="qty-side large">
+                        <div style="font-size:0.7rem;">大的</div>
+                        <div class="qty-row">
                             <button class="qty-btn" onclick="changeMainQty('${name}','大的',-1)">-</button>
-                            <span class="qty-val-display" id="q-l-${name}">${sessionOrder.mainName===name?sessionOrder.counts['大的']:0}</span>
+                            <span id="q-l-${name}">${sessionOrder.mainName===name?sessionOrder.counts['大的']:0}</span>
                             <button class="qty-btn" onclick="changeMainQty('${name}','大的',1)">+</button>
                         </div>
                     </div>
@@ -295,13 +285,13 @@
             prepareNextSubItem();
         } else {
             sessionOrder.noodlePlan = {};
+            document.getElementById('noodle-food-name').innerText = `當前麵食：${sessionOrder.mainName}`;
             renderNoodlePlanGrid();
             updateNoodleCountInfo();
             goNext('step-noodle-type');
         }
     }
 
-    // 第三頁：麵種分配 (+/- 按鈕)
     function renderNoodlePlanGrid() {
         const cont = document.getElementById('grid-noodleType');
         cont.innerHTML = '';
@@ -311,12 +301,10 @@
             div.innerHTML = `
                 <div class="img-box"><img src="${config.noodleType[name]}"></div>
                 <span>${name}</span>
-                <div class="qty-input-overlay" style="justify-content:center;">
-                    <div class="qty-ctrl-flex">
-                        <button class="qty-btn" onclick="changeNoodlePlanQty('${name}',-1)">-</button>
-                        <span class="qty-val-display" id="plan-qty-${name}" style="font-size:1.2rem;">${qty}</span>
-                        <button class="qty-btn" onclick="changeNoodlePlanQty('${name}',1)">+</button>
-                    </div>
+                <div class="add-qty-bar" onclick="event.stopPropagation()">
+                    <button class="btn-add-minus" onclick="changeNoodlePlanQty('${name}',-1)">-</button>
+                    <span id="plan-qty-${name}" class="add-num">${qty}</span>
+                    <button class="btn-add-minus" onclick="changeNoodlePlanQty('${name}',1)">+</button>
                 </div>
             `;
             cont.appendChild(div);
@@ -335,16 +323,14 @@
 
     function updateNoodleCountInfo() {
         let currentTotal = Object.values(sessionOrder.noodlePlan).reduce((a,b)=>a+b, 0);
-        document.getElementById('noodle-count-info').innerHTML = `需分配總數：${sessionOrder.totalQty} 份<br>已分配：${currentTotal} 份 (剩餘：${sessionOrder.totalQty - currentTotal})`;
+        document.getElementById('noodle-count-info').innerHTML = `需分配總數：${sessionOrder.totalQty} 份 | 已分配：${currentTotal} 份`;
     }
 
     function checkNoodleNext() {
         let currentTotal = Object.values(sessionOrder.noodlePlan).reduce((a,b)=>a+b, 0);
         if (currentTotal !== sessionOrder.totalQty) return alert(`分配數量不符！需分配 ${sessionOrder.totalQty} 份。`);
         sessionOrder.tempNoodles = [];
-        Object.entries(sessionOrder.noodlePlan).forEach(([name, count]) => {
-            for(let i=0; i<count; i++) sessionOrder.tempNoodles.push(name);
-        });
+        Object.entries(sessionOrder.noodlePlan).forEach(([name, count]) => { for(let i=0; i<count; i++) sessionOrder.tempNoodles.push(name); });
         currentProcessIdx = 0;
         prepareNextSubItem();
     }
@@ -352,19 +338,14 @@
     function prepareNextSubItem() {
         const size = sessionOrder.tempSizes[currentProcessIdx];
         const noodle = sessionOrder.category === '面' ? sessionOrder.tempNoodles[currentProcessIdx] : '';
-        currentSubReq = {
-            size: size, noodle: noodle, sauces: [], specialReqs: [], noExtras: [], additions: {},
-            price: config[sessionOrder.mainName].p + config[size].p
-        };
+        currentSubReq = { size: size, noodle: noodle, sauces: [], specialReqs: [], noExtras: [], additions: {}, price: config[sessionOrder.mainName].p + config[size].p };
         if (sessionOrder.category === '湯') { goNext('step-no-extra'); updateMultiHeader(); renderNoExtraGrid(); } 
         else { goNext('step-sauce-select'); updateMultiHeader(); refreshSauceUI(); }
     }
 
     function updateMultiHeader() {
         const info = `正在設定第 ${currentProcessIdx + 1} / ${sessionOrder.totalQty} 份 (${currentSubReq.size}${currentSubReq.noodle?' - '+currentSubReq.noodle:''})`;
-        ['sauce-count-info', 'noextra-count-info', 'addition-count-info'].forEach(id => {
-            const el = document.getElementById(id); if(el) el.innerText = info;
-        });
+        ['sauce-count-info', 'noextra-count-info', 'addition-count-info'].forEach(id => { if(document.getElementById(id)) document.getElementById(id).innerText = info; });
     }
 
     function toggleSauce(val) {
@@ -373,22 +354,16 @@
         else { if (currentSubReq.sauces.length >= 3) return alert("最多選3種醬料"); currentSubReq.sauces.push(val); }
         refreshSauceUI();
     }
+
     function toggleSpecial(val) {
         if (currentSubReq.specialReqs.includes(val)) currentSubReq.specialReqs = currentSubReq.specialReqs.filter(s => s !== val);
         else currentSubReq.specialReqs.push(val);
         refreshSauceUI();
     }
+
     function handleSoupSauce() { currentSubReq.sauces = ['湯']; refreshSauceUI(); checkSauceNext(); }
     function handleSauceBack() { if(sessionOrder.category==='湯') goNext('step-soup-select'); else goNext('step-noodle-type'); }
-
-    function refreshSauceUI() {
-        document.querySelectorAll('#step-sauce-select .sauce-btn').forEach(btn => {
-            const txt = btn.innerText;
-            if (['剪麵', '豬油渣', '面要柔軟', '面要彈性'].includes(txt)) btn.classList.toggle('selected', currentSubReq.specialReqs.includes(txt));
-            else { const logicV = (txt === '湯麵') ? '湯' : txt; btn.classList.toggle('selected', currentSubReq.sauces.includes(logicV)); }
-        });
-    }
-
+    function refreshSauceUI() { document.querySelectorAll('#step-sauce-select .sauce-btn').forEach(btn => { const txt = btn.innerText; if (['剪麵', '豬油渣', '面要柔軟', '面要彈性'].includes(txt)) btn.classList.toggle('selected', currentSubReq.specialReqs.includes(txt)); else { const logicV = (txt === '湯麵') ? '湯' : txt; btn.classList.toggle('selected', currentSubReq.sauces.includes(logicV)); } }); }
     function checkSauceNext() { if (currentSubReq.sauces.length === 0) return alert("請選擇醬料"); goNext('step-no-extra'); renderNoExtraGrid(); }
     function renderNoExtraGrid() { renderGrid(config.noExtra, 'grid-noExtra', (val, el) => { if(currentSubReq.noExtras.includes(val)) { currentSubReq.noExtras = currentSubReq.noExtras.filter(x => x !== val); el.classList.remove('selected'); } else { currentSubReq.noExtras.push(val); el.classList.add('selected'); } }, true); }
     function checkNoExtraNext() { goNext('step-additions'); renderAdditionsGrid(); }
@@ -401,7 +376,7 @@
             div.innerHTML = `
                 <div class="img-box"><div class="price-circle">$${config.additionsPrices[name]||1}</div><img src="${config.additionsImgs[name]}"></div>
                 <span>${name}</span>
-                <div class="add-qty-bar">
+                <div class="add-qty-bar" onclick="event.stopPropagation()">
                     <button class="btn-add-minus" onclick="changeAddQty('${name}', -1, event)">-</button>
                     <span class="add-num" id="add-val-${name}">${qty}</span>
                     <button class="btn-add-minus" onclick="changeAddQty('${name}', 1, event)">+</button>
@@ -427,10 +402,7 @@
     }
 
     function finalizeSessionToCart() {
-        sessionOrder.subItems.forEach(sub => cart.push({
-            category: sessionOrder.category, names: [sessionOrder.mainName], size: sub.size, noodle: sub.noodle,
-            sauces: sub.sauces, specialReqs: sub.specialReqs, noExtras: sub.noExtras, additions: sub.additions, price: sub.price, qty: 1
-        }));
+        sessionOrder.subItems.forEach(sub => cart.push({ category: sessionOrder.category, names: [sessionOrder.mainName], size: sub.size, noodle: sub.noodle, sauces: sub.sauces, specialReqs: sub.specialReqs, noExtras: sub.noExtras, additions: sub.additions, price: sub.price, qty: 1 }));
         updateCartDisplay();
         const data = getOrderData(); document.getElementById('preview-order-info').innerHTML = `<b>單號: No.${data.num}</b><br>時間: ${new Date().toLocaleString()}`;
         goNext('step-finish');
@@ -446,13 +418,12 @@
             let noExStr = item.noExtras.length > 0 ? `<br><small style="color:red;">[不要: ${item.noExtras.join(',')}]</small>` : ''; 
             let adds = Object.entries(item.additions).map(([name, q]) => `${name}(${getDisplayQty(name, q)})`).join(', ');
             let addStr = adds ? `<br><small style="color:var(--add);">+加料: ${adds}</small>` : '';
-            return `<div class="cart-item"><div class="item-row"><div class="item-info"><b>${item.names.join('+')}</b> [${shortSize}]<br><small>${item.noodle||''} ${sauceStr}</small>${noExStr}${addStr}<div style="font-weight:bold; color:var(--price-tag); margin-top:5px;">$${lineTotal.toFixed(2)}</div></div><div class="item-actions"><button class="btn-edit" onclick="editCartItem(${i})">✏️ 修改</button><div class="qty-controls"><button class="btn-qty" onclick="changeQty(${i}, -1)">-</button><span class="qty-num">${item.qty}</span><button class="btn-qty" onclick="changeQty(${i}, 1)">+</button></div></div></div></div>`; 
+            return `<div class="cart-item"><b>${item.names.join('+')}</b> [${shortSize}]<br><small>${item.noodle||''} ${sauceStr}</small>${noExStr}${addStr}<div style="font-weight:bold; color:var(--price-tag); margin-top:5px;">$${lineTotal.toFixed(2)}</div><div style="text-align:right;"><button onclick="editCartItem(${i})" style="background:var(--edit);color:white;border:none;padding:4px 8px;border-radius:5px;">修改</button> <button onclick="changeQty(${i},1)" style="padding:4px 8px;">+</button> ${item.qty} <button onclick="changeQty(${i},-1)" style="padding:4px 8px;">-</button></div></div>`; 
         }).join('');
         document.getElementById('total-sum').innerText = t.toFixed(2);
     }
 
     function getDisplayQty(name, qty) { const rule = ITEM_RULES[name]; return rule ? `${qty * rule.factor}${rule.unit}` : `${qty}份`; }
-    function editCartItem(index) { const item = cart[index]; sessionOrder.category = item.category; sessionOrder.mainName = item.names[0]; sessionOrder.totalQty = 1; sessionOrder.counts = {'小的': (item.size==='小的'?1:0), '大的': (item.size==='大的'?1:0)}; cart.splice(index, 1); currentProcessIdx = 0; prepareNextSubItem(); }
     function changeQty(index, delta) { let item = cart[index]; if (item.qty + delta < 1) { if (confirm("取消訂單？")) cart.splice(index, 1); } else item.qty += delta; updateCartDisplay(); }
     function setCategory(v) { sessionOrder.category = v; sessionOrder.mainName = ''; sessionOrder.counts = {'小的': 0, '大的': 0}; goNext(v === '湯' ? 'step-soup-select' : 'step-food-select'); }
     function goNext(id) { document.querySelectorAll('.step').forEach(s => s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
@@ -465,7 +436,6 @@
             let imgSrc = (id === 'grid-noodleType') ? config.noodleType[name] : (id === 'grid-noExtra' ? config.noExtraImgs[name] : config[name]?.img);
             div.innerHTML = `<div class="img-box">${config[name]?.p>0?`<div class="price-circle">$${config[name].p}</div>`:''}<img src="${imgSrc}"></div><span>${name}</span>`;
             div.onclick = () => { if(!multi) Array.from(cont.children).forEach(c=>c.classList.remove('selected')); div.classList.toggle('selected'); clickFn(name, div); };
-            if (multi) { if (id === 'grid-noExtra' && currentSubReq.noExtras.includes(name)) div.classList.add('selected'); }
             cont.appendChild(div);
         });
     }
@@ -475,63 +445,17 @@
         cont.innerHTML = data.history.length === 0 ? '<p>無紀錄</p>' : '';
         data.history.slice().reverse().forEach(ord => {
             const div = document.createElement('div');
-            div.innerHTML = `<div><b>No.${ord.num}</b> <small>(${ord.time})</small></div><div>$${ord.total} <button class="btn-blue" onclick='reprintHistory(${ord.num})'>補印</button></div>`;
-            div.style = "display:flex; justify-content:space-between; align-items:center; padding:10px; border-bottom:1px solid #eee;";
+            div.innerHTML = `<div><b>No.${ord.num}</b> <small>(${ord.time})</small></div><div>$${ord.total}</div>`;
+            div.style = "display:flex; justify-content:space-between; padding:10px; border-bottom:1px solid #eee;";
             cont.appendChild(div);
         });
         goNext('step-history');
     }
 
-    function reprintHistory(num) { const data = getOrderData(); const ord = data.history.find(o => o.num === num); if (ord) { drawPrintCanvas(ord); handleImagePrint(); } }
     function cancelAndClear() { if(confirm("清空？")) { cart = []; updateCartDisplay(); resetForNewItem(); } }
-    function resetForNewItem() { sessionOrder = { category: '', mainName: '', counts: { '小的': 0, '大的': 0 }, totalQty: 0, subItems: [], noodlePlan: {} }; currentProcessIdx = 0; currentSubReq = null; goNext('step-start'); }
+    function resetForNewItem() { sessionOrder = { category: '', mainName: '', counts: { '小的': 0, '大的': 0 }, totalQty: 0, subItems: [], noodlePlan: {} }; currentProcessIdx = 0; goNext('step-start'); }
 
-    async function getPrinter() {
-        if (savedDevice && savedDevice.gatt.connected && savedCharacteristic) return savedCharacteristic;
-        savedDevice = await navigator.bluetooth.requestDevice({ acceptAllDevices: true, optionalServices: ['0000ffe0-0000-1000-8000-00805f9b34fb'] });
-        const server = await savedDevice.gatt.connect(); const services = await server.getPrimaryServices();
-        for (const s of services) {
-            const chars = await s.getCharacteristics();
-            savedCharacteristic = chars.find(c => c.properties.writeWithoutResponse) || chars.find(c => c.properties.write);
-            if (savedCharacteristic) { isFastMode = !!chars.find(c => c.properties.writeWithoutResponse); break; }
-        }
-        return savedCharacteristic;
-    }
-
-    function drawPrintCanvas(record) {
-        const canvas = document.getElementById('printCanvas'), ctx = canvas.getContext('2d');
-        canvas.height = 300 + (record.items.length * 250); ctx.fillStyle = "white"; ctx.fillRect(0, 0, 384, canvas.height); 
-        ctx.fillStyle = "black"; ctx.textAlign = "center"; ctx.textBaseline = "top";
-        ctx.font = "bold 28px sans-serif"; ctx.fillText("Million Gold Bowl", 192, 10);
-        ctx.font = "bold 44px sans-serif"; ctx.fillText(`No. ${record.num}`, 192, 50);
-        let y = 110; record.items.forEach(item => {
-            ctx.textAlign = "left"; ctx.font = "bold 34px sans-serif"; ctx.fillText(`${item.names[0]} x${item.qty}`, 20, y); y+=40;
-            ctx.font = "28px sans-serif"; ctx.fillText(`[${item.size}] ${item.noodle||''}`, 40, y); y+=35;
-            if(item.sauces.length) { ctx.fillText(`醬: ${item.sauces.join(',')}`, 40, y); y+=35; }
-            y+=20;
-        });
-    }
-
-    async function handleImagePrint() {
-        const btn = document.getElementById('printBtn');
-        try {
-            btn.disabled = true; const targetChar = await getPrinter();
-            document.getElementById('status').innerText = "📤 列印中...";
-            // 這裡簡化列印流程，僅示範連線
-            await targetChar.writeValue(new Uint8Array([0x1B, 0x40]));
-            document.getElementById('status').innerText = "✅ 完成";
-            btn.disabled = false; resetForNewItem();
-        } catch (e) { alert(e.message); btn.disabled = false; }
-    }
-
-    function finalizeAndPrint() {
-        if (cart.length === 0) return alert("購物車為空");
-        const data = getOrderData(); const now = new Date();
-        const timeStr = `${now.getHours()}:${now.getMinutes()}`;
-        const orderRecord = { num: data.num, time: timeStr, items: JSON.parse(JSON.stringify(cart)), total: document.getElementById('total-sum').innerText };
-        data.history.push(orderRecord); data.num++; saveOrderData(data);
-        drawPrintCanvas(orderRecord); handleImagePrint();
-    }
+    function finalizeAndPrint() { alert("正在模擬列印單據..."); cancelAndClear(); }
 
     init();
 </script>
