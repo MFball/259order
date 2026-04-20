@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Million 麵店 - ver 3.0.8</title>
+    <title>Million 麵店 - ver 3.0.9 修正版</title>
     <style>
         :root { --primary: #1a73e8; --secondary: #f0f2f5; --success: #34a853; --price-tag: #d93025; --edit: #f39c12; --add: #673ab7; }
         body { font-family: sans-serif; background: var(--secondary); margin: 0; padding: 10px; text-align: center; }
@@ -15,35 +15,31 @@
         h2 { color: #333; font-size: 1.1rem; margin: 10px 0 5px 0; border-left: 5px solid var(--primary); padding-left: 10px; text-align: left; }
         
         .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .opt { background: #fff; border: 2px solid #eee; border-radius: 12px; cursor: pointer; overflow: hidden; position: relative; display: flex; flex-direction: column; min-height: 140px; }
+        .opt { background: #fff; border: 2px solid #eee; border-radius: 12px; cursor: pointer; overflow: hidden; position: relative; display: flex; flex-direction: column; min-height: 140px; transition: 0.2s; }
+        .opt.selected { border-color: var(--primary); background: #e8f0fe; box-shadow: 0 0 10px rgba(26,115,232,0.2); }
         
-        /* 圖片高度固定 100px */
         .img-box { width: 100%; height: 100px; display: flex; background: #fafafa; overflow: hidden; position: relative; justify-content: center; align-items: center; }
         .img-box img { width: 100%; height: 100%; object-fit: cover; }
         
         .price-circle { position: absolute; top: 5px; right: 5px; background: var(--price-tag); color: white; width: 42px; height: 32px; border-radius: 16px; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: bold; z-index: 5; border: 2px solid white; }
         .opt span { padding: 5px; font-weight: bold; font-size: 0.9rem; display: flex; align-items: center; justify-content: center; min-height: 35px; }
-        .opt.selected { border-color: var(--primary); background: #e8f0fe; }
 
         .noodle-target-banner { background: #fff3f3; color: #d93025; padding: 12px; border-radius: 10px; margin-bottom: 10px; border: 1px solid #d93025; font-weight: bold; font-size: 1rem; text-align: left; }
 
-        /* 數量控制器不遮擋文字 */
         .qty-input-overlay { background: #f8f9fa; display: flex; padding: 6px 2px; border-top: 1px solid #ddd; gap: 2px; margin-top: auto; }
         .qty-row { flex: 1; display: flex; flex-direction: column; align-items: center; font-size: 0.75rem; font-weight: bold; border-right: 1px solid #eee; }
         .qty-row:last-child { border-right: none; }
         .qty-btn-group { display: flex; align-items: center; gap: 4px; margin-top: 2px; }
-        .qty-btn { width: 28px; height: 28px; border-radius: 4px; border: 1px solid #ccc; background: white; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1rem; }
+        .qty-btn { width: 30px; height: 30px; border-radius: 4px; border: 1px solid #ccc; background: white; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; font-weight: bold; }
 
         .sauce-layout { display: flex; flex-direction: column; gap: 10px; margin-top: 10px; }
         .sauce-row-flex { display: flex; gap: 8px; justify-content: center; }
         .sauce-btn { flex: 1; padding: 15px 5px; border: 2px solid #eee; border-radius: 10px; background: white; font-weight: bold; font-size: 1rem; cursor: pointer; }
         .sauce-btn.selected { border-color: var(--primary); background: #e8f0fe; color: var(--primary); }
-        .special-box { background: #fff8e1; padding: 10px; border-radius: 12px; border: 1px dashed #ffd54f; margin-top: 5px; }
-        .special-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-
-        .add-qty-bar { display: flex; align-items: center; justify-content: center; gap: 5px; padding: 8px 5px; background: #f9f9f9; border-top: 1px solid #eee; }
-        .btn-add-minus { width: 32px; height: 32px; border-radius: 5px; border: 1px solid #ddd; background: white; font-weight: bold; font-size: 1.1rem; }
-        .add-num { font-size: 1.1rem; font-weight: bold; color: var(--add); min-width: 25px; }
+        
+        .add-qty-bar { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 10px 5px; background: #f9f9f9; border-top: 1px solid #eee; }
+        .btn-add-minus { width: 35px; height: 35px; border-radius: 5px; border: 1px solid #ddd; background: white; font-weight: bold; font-size: 1.3rem; }
+        .add-num { font-size: 1.2rem; font-weight: bold; color: var(--add); min-width: 25px; }
 
         .cart-box { margin-top: 20px; padding: 10px; border: 1px solid #ddd; border-radius: 10px; text-align: left; background: #fff; }
         .cart-item { border-bottom: 1px solid #eee; padding: 12px 0; }
@@ -74,7 +70,7 @@
 
     <div class="step" id="step-food-select">
         <button class="back-btn-top" onclick="goNext('step-start')">←</button>
-        <h2>2. 請選擇麵食與數量</h2>
+        <h2>2. 請選中麵食後調整數量</h2>
         <div class="grid" id="grid-foodItems"></div>
         <div class="nav-btns"><button class="btn-blue" onclick="checkFoodNext()">下一步 (分配麵種)</button></div>
     </div>
@@ -89,21 +85,21 @@
         <button class="back-btn-top" onclick="goNext('step-food-select')">←</button>
         <div id="noodle-target-info" class="noodle-target-banner"></div>
         <div id="noodle-progress" style="font-size: 0.85rem; color: #666; margin-bottom: 10px; text-align: left; padding-left: 5px;"></div>
-        <h2>3. 請分配麵種</h2>
+        <h2>3. 請選擇麵種</h2>
         <div class="grid" id="grid-noodleType"></div>
     </div>
 
     <div class="step" id="step-sauce-select">
         <button class="back-btn-top" onclick="goNext('step-noodle-type')">←</button>
         <div id="sauce-target-display" style="background: #e8f0fe; padding: 10px; border-radius: 8px; margin-bottom: 10px; font-weight: bold; color: #1a73e8; text-align: left;"></div>
-        <h2>5. 選擇醬料與要求</h2>
+        <h2>4. 選擇醬料與要求</h2>
         <div class="sauce-layout">
-            <div class="sauce-row-flex"><button class="sauce-btn" onclick="toggleSauce('辣椒', this)">辣椒</button><button class="sauce-btn" onclick="toggleSauce('少辣', this)">少辣</button><button class="sauce-btn" onclick="toggleSauce('多辣', this)">多辣</button></div>
-            <div class="sauce-row-flex"><button class="sauce-btn" onclick="toggleSauce('茄汁', this)">茄汁</button><button class="sauce-btn" onclick="toggleSauce('醋', this)">醋</button><button class="sauce-btn" onclick="toggleSauce('黑醬油', this)">黑醬油</button></div>
-            <div class="sauce-row-flex"><button class="sauce-btn" onclick="toggleSauce('白醬青', this)">白醬青</button><button class="sauce-btn" onclick="handleSoupSauce(this)" style="background: #e3f2fd; border-color: #2196f3; color: #1565c0;">湯麵</button></div>
-            <div class="special-box">
+            <div class="sauce-row-flex"><button class="sauce-btn" onclick="toggleSauce('辣椒')">辣椒</button><button class="sauce-btn" onclick="toggleSauce('少辣')">少辣</button><button class="sauce-btn" onclick="toggleSauce('多辣')">多辣</button></div>
+            <div class="sauce-row-flex"><button class="sauce-btn" onclick="toggleSauce('茄汁')">茄汁</button><button class="sauce-btn" onclick="toggleSauce('醋')">醋</button><button class="sauce-btn" onclick="toggleSauce('黑醬油')">黑醬油</button></div>
+            <div class="sauce-row-flex"><button class="sauce-btn" onclick="toggleSauce('白醬青')">白醬青</button><button class="sauce-btn" onclick="handleSoupSauce()" style="background: #e3f2fd; color: #1565c0;">湯麵</button></div>
+            <div style="background: #fff8e1; padding: 10px; border-radius: 12px; border: 1px dashed #ffd54f; margin-top: 5px;">
                 <div style="font-weight:bold; font-size:0.9rem; color:#f57c00; margin-bottom:8px; text-align:left;">特別要求：</div>
-                <div class="special-grid"><button class="sauce-btn" onclick="toggleSpecial('剪麵', this)">剪麵</button><button class="sauce-btn" onclick="toggleSpecial('豬油渣', this)">豬油渣</button><button class="sauce-btn" onclick="toggleSpecial('面要柔軟', this)">面要柔軟</button><button class="sauce-btn" onclick="toggleSpecial('面要彈性', this)">面要彈性</button></div>
+                <div class="grid" style="grid-template-columns: 1fr 1fr;"><button class="sauce-btn" onclick="toggleSpecial('剪麵')">剪麵</button><button class="sauce-btn" onclick="toggleSpecial('豬油渣')">豬油渣</button><button class="sauce-btn" onclick="toggleSpecial('面要柔軟')">面要柔軟</button><button class="sauce-btn" onclick="toggleSpecial('面要彈性')">面要彈性</button></div>
             </div>
         </div>
         <div class="nav-btns"><button class="btn-blue" onclick="checkSauceNext()">下一步</button></div>
@@ -111,7 +107,7 @@
 
     <div class="step" id="step-no-extra">
         <button class="back-btn-top" onclick="goNext('step-sauce-select')">←</button>
-        <h2>6. 不要什麼配料？</h2>
+        <h2>5. 不要什麼配料？</h2>
         <div class="grid" id="grid-noExtra"></div>
         <div class="nav-btns"><button class="btn-blue" onclick="goNext('step-additions')">下一步 (加料)</button></div>
     </div>
@@ -119,7 +115,7 @@
     <div class="step" id="step-additions">
         <button class="back-btn-top" id="additions-back-btn" onclick="goNext('step-no-extra')">←</button>
         <div id="add-target-display" style="background: #f1f8e9; padding: 10px; border-radius: 8px; margin-bottom: 10px; font-weight: bold; color: #2e7d32; text-align: left;"></div>
-        <h2>7. 加料區</h2>
+        <h2>6. 加料區</h2>
         <div class="grid" id="grid-additions"></div>
         <div class="nav-btns"><button class="btn-blue" onclick="processCurrentSubItem()">✅ 完成入車</button></div>
     </div>
@@ -142,37 +138,22 @@
 
 <script>
     const START_NO = 8238;
-    const ITEM_RULES = { '魚圓': { unit: '粒', factor: 2 }, '肉圓': { unit: '粒', factor: 2 }, '魚餃': { unit: '粒', factor: 2 }, '蝦': { unit: '隻', factor: 1 } };
-    
     const config = {
-        '魚圓湯': { p: 5, img: 'https://lh3.googleusercontent.com/pw/AP1GczOoXizYOs7TlJVh_ikXpPT_8uSFOyH2mnDMFvu2CIFXpJVYqNssfvAbgkwksOqIi89J0NAktQdtJStc5KB6YPkxqk0ccWLkjKAGWKILKERYMt_PYsI=w2400?source=screenshot.guru' }, 
-        '肉圓湯': { p: 5, img: 'https://lh3.googleusercontent.com/pw/AP1GczO53IM8P6okuoqH4lpXGLStyLy4PSLp2LEAXBolANcUA0dm0WBHCGxJ965cGrMP9F72cF24Uln8JbdwG9pt910rs1pG-dnU-CrwKWKcOhZoPnNbR6Q=w2400?source=screenshot.guru' }, 
-        '魚餃湯': { p: 5, img: 'https://lh3.googleusercontent.com/pw/AP1GczN3UWnlef_F80kDzpyJtDbUke-trWR_2HA4zVAnHG8PlM1N9FoBkIAThTpdOffxXiIKGYn9gNQV9Defs8T8CC7ChbKQGKCLctVtW-G84qTu6qGcuvM=w2400?source=screenshot.guru' }, 
-        '三寶湯': { p: 6, img: 'https://lh3.googleusercontent.com/pw/AP1GczOGkSr6douVYw5ED49ONXDbTqp9tX92Syg3QnRHG43a8zZebTgtjWEUXgLieeqYOw-7CQdLF9Tm_1aVhak1HCxrCdPKf6lwtrrL9GopjkdCwX9FUtM=w2400?source=screenshot.guru' },
-        '魚圓面': { p: 4, img: 'https://lh3.googleusercontent.com/pw/AP1GczM1EgErnLz57PZ0ckyDapaXUx27rggwr5VvU49Yo1vpygNeiLiTCVK6nGMT7UewX9jWyWN7Q04y5g8QeGtKBFBtYod8YZd1L42sFsRuRCpY2EvidrI=w2400?source=screenshot.guru' }, 
-        '香菇肉碎面': { p: 5, img: 'https://lh3.googleusercontent.com/pw/AP1GczPRrBESQHr4MjJaDdiXYFda03b72aUrxqrO--coLUrariBXksy0KTPNNaXhzOmmrVhkbChOGKQFqiR8zRRcPZWSd7Hk-inOhSXStOXgC8d0a85lycU=w2400?source=screenshot.guru' },
-        '招牌面': { p: 6, img: 'https://lh3.googleusercontent.com/pw/AP1GczOVfyFF0BVjs49utoC4oxktdqpCblSROVp-z7A0aH5pjECVNDmcaKulF2YA7DBUEDZxzEij53427j1LqfZYPzUSFGdUM2_Zt-aYxIYJY40qAfH5wq8=w2400?source=screenshot.guru' }, 
-        '餐餐面': { p: 6, img: 'https://lh3.googleusercontent.com/pw/AP1GczPI477AgneL3f4pcuLKg25GQlwB9XCNdxRaABOxwTvciSuYeGzbEu1cez6OIb25ZSS6RMchPIuuTEFHKttxXRnvYboZ5PQh-0HJH1MtI49AWBL1GDA=w2400?source=screenshot.guru' }, 
-        '肉圓面': { p: 4, img: 'https://lh3.googleusercontent.com/pw/AP1GczO2J-xP5sDqsYL-5nFYQgmYldq26dabn-ezwb-vCUGDZ-S5nq_i7dsnWNmsswG5ippV0aBSwxf3zx6lfCHrhVOehydel1JSOBnr0aXMXmInJ1_9gnM=w2400?source=screenshot.guru' }, 
-        '蝦魚面': { p: 5, img: 'https://lh3.googleusercontent.com/pw/AP1GczPzLY41C33tAb9NV8EUJrRpiZGqc1WqVhSNhr9K5H41JKgfnEG4CqFIDluEUqs4wRf67VHhOcvgN_9z1J6UrQAQWtj-SvpBk8V7RoiRxNjsTE-NfVE=w2400?source=screenshot.guru' }, 
-        '西刀魚面': { p: 4, img: 'https://lh3.googleusercontent.com/pw/AP1GczP8Id6j5IYXzYS9x0xyNmfZWXGzQHCdfQBNbC34EmSqOTaA8rw5DGfhdsijfjfb_EnoCdl4nbXlowqkys6NnbQok762CxfDYno4mODYOp4oEp4EqAM=w2400?source=screenshot.guru' }, 
-        '香菇面': { p: 5, img: 'https://lh3.googleusercontent.com/pw/AP1GczOMJvr-1snMcDEsJsBV_QX2oISkKXtVZQGiajhBRNCUkTEpzev8LTJzjQ4jzeziLq4inDVPgROLRQ9NXxT3tnZGxJAgPNtPg3lgC-Cs582xH1jRiho=w2400?source=screenshot.guru' }, 
-        '魚餃面': { p: 4, img: 'https://i.ibb.co/nNLMt8jp/Fish-Dumpling-noodle.png' },
-        '(純)肉碎面': { p: 4, img: 'https://lh3.googleusercontent.com/pw/AP1GczM1EgErnLz57PZ0ckyDapaXUx27rggwr5VvU49Yo1vpygNeiLiTCVK6nGMT7UewX9jWyWN7Q04y5g8QeGtKBFBtYod8YZd1L42sFsRuRCpY2EvidrI=w2400?source=screenshot.guru' },
-        '小魚香面': { p: 4, img: 'https://lh3.googleusercontent.com/pw/AP1GczMOea7U-V10ztFr3Yim6w3K_-waMrZWgn9f5VdLk6JeObgOJpJu47IZGZ_N2Ok0WW57U0oCvjQ8Cd1llJYnEiMKw5BSLetmhF5BBxFnnGQwFCqmUjE=w2400?source=screenshot.guru' }, 
+        '魚圓面': { p: 4, img: 'https://lh3.googleusercontent.com/pw/AP1GczM1EgErnLz57PZ0ckyDapaXUx27rggwr5VvU49Yo1vpygNeiLiTCVK6nGMT7UewX9jWyWN7Q04y5g8QeGtKBFBtYod8YZd1L42sFsRuRCpY2EvidrI=w2400?source=screenshot.guru' }, '香菇肉碎面': { p: 5, img: 'https://lh3.googleusercontent.com/pw/AP1GczPRrBESQHr4MjJaDdiXYFda03b72aUrxqrO--coLUrariBXksy0KTPNNaXhzOmmrVhkbChOGKQFqiR8zRRcPZWSd7Hk-inOhSXStOXgC8d0a85lycU=w2400?source=screenshot.guru' },
+        '招牌面': { p: 6, img: 'https://lh3.googleusercontent.com/pw/AP1GczOVfyFF0BVjs49utoC4oxktdqpCblSROVp-z7A0aH5pjECVNDmcaKulF2YA7DBUEDZxzEij53427j1LqfZYPzUSFGdUM2_Zt-aYxIYJY40qAfH5wq8=w2400?source=screenshot.guru' }, '餐餐面': { p: 6, img: 'https://lh3.googleusercontent.com/pw/AP1GczPI477AgneL3f4pcuLKg25GQlwB9XCNdxRaABOxwTvciSuYeGzbEu1cez6OIb25ZSS6RMchPIuuTEFHKttxXRnvYboZ5PQh-0HJH1MtI49AWBL1GDA=w2400?source=screenshot.guru' },
+        '肉圓面': { p: 4, img: 'https://lh3.googleusercontent.com/pw/AP1GczO2J-xP5sDqsYL-5nFYQgmYldq26dabn-ezwb-vCUGDZ-S5nq_i7dsnWNmsswG5ippV0aBSwxf3zx6lfCHrhVOehydel1JSOBnr0aXMXmInJ1_9gnM=w2400?source=screenshot.guru' }, '蝦魚面': { p: 5, img: 'https://lh3.googleusercontent.com/pw/AP1GczPzLY41C33tAb9NV8EUJrRpiZGqc1WqVhSNhr9K5H41JKgfnEG4CqFIDluEUqs4wRf67VHhOcvgN_9z1J6UrQAQWtj-SvpBk8V7RoiRxNjsTE-NfVE=w2400?source=screenshot.guru' },
+        '西刀魚面': { p: 4, img: 'https://lh3.googleusercontent.com/pw/AP1GczP8Id6j5IYXzYS9x0xyNmfZWXGzQHCdfQBNbC34EmSqOTaA8rw5DGfhdsijfjfb_EnoCdl4nbXlowqkys6NnbQok762CxfDYno4mODYOp4oEp4EqAM=w2400?source=screenshot.guru' }, '香菇面': { p: 5, img: 'https://lh3.googleusercontent.com/pw/AP1GczOMJvr-1snMcDEsJsBV_QX2oISkKXtVZQGiajhBRNCUkTEpzev8LTJzjQ4jzeziLq4inDVPgROLRQ9NXxT3tnZGxJAgPNtPg3lgC-Cs582xH1jRiho=w2400?source=screenshot.guru' },
+        '魚餃面': { p: 4, img: 'https://i.ibb.co/nNLMt8jp/Fish-Dumpling-noodle.png' }, '(純)肉碎面': { p: 4, img: 'https://lh3.googleusercontent.com/pw/AP1GczM1EgErnLz57PZ0ckyDapaXUx27rggwr5VvU49Yo1vpygNeiLiTCVK6nGMT7UewX9jWyWN7Q04y5g8QeGtKBFBtYod8YZd1L42sFsRuRCpY2EvidrI=w2400?source=screenshot.guru' },
+        '小魚香面': { p: 4, img: 'https://lh3.googleusercontent.com/pw/AP1GczMOea7U-V10ztFr3Yim6w3K_-waMrZWgn9f5VdLk6JeObgOJpJu47IZGZ_N2Ok0WW57U0oCvjQ8Cd1llJYnEiMKw5BSLetmhF5BBxFnnGQwFCqmUjE=w2400?source=screenshot.guru' },
+        '魚圓湯': { p: 5, img: 'https://lh3.googleusercontent.com/pw/AP1GczOoXizYOs7TlJVh_ikXpPT_8uSFOyH2mnDMFvu2CIFXpJVYqNssfvAbgkwksOqIi89J0NAktQdtJStc5KB6YPkxqk0ccWLkjKAGWKILKERYMt_PYsI=w2400?source=screenshot.guru' }, '肉圓湯': { p: 5, img: 'https://lh3.googleusercontent.com/pw/AP1GczO53IM8P6okuoqH4lpXGLStyLy4PSLp2LEAXBolANcUA0dm0WBHCGxJ965cGrMP9F72cF24Uln8JbdwG9pt910rs1pG-dnU-CrwKWKcOhZoPnNbR6Q=w2400?source=screenshot.guru' },
+        '魚餃湯': { p: 5, img: 'https://lh3.googleusercontent.com/pw/AP1GczN3UWnlef_F80kDzpyJtDbUke-trWR_2HA4zVAnHG8PlM1N9FoBkIAThTpdOffxXiIKGYn9gNQV9Defs8T8CC7ChbKQGKCLctVtW-G84qTu6qGcuvM=w2400?source=screenshot.guru' }, '三寶湯': { p: 6, img: 'https://lh3.googleusercontent.com/pw/AP1GczOGkSr6douVYw5ED49ONXDbTqp9tX92Syg3QnRHG43a8zZebTgtjWEUXgLieeqYOw-7CQdLF9Tm_1aVhak1HCxrCdPKf6lwtrrL9GopjkdCwX9FUtM=w2400?source=screenshot.guru' },
         '小的': { p: 0 }, '大的': { p: 1 },
-        'noodleType': { 
-            '面薄': 'https://lh3.googleusercontent.com/pw/AP1GczPTdYtkKQVVtu2xC4GqatBEs58tYr0xrU6-P08JGLPXNa9URyrd85OABGJvhRRywZqI_6ILtjozkyDCPJWyfo34-z3KP5EPG56bOb6S73_130W3J00=w2400?source=screenshot.guru', '幼面': 'https://lh3.googleusercontent.com/pw/AP1GczNzHJopdj33Emt-5K2nGrlY8AQRwcGxsmIGUyy2dzSKyFYLHxqH-tz7bIRoqlVFfxfetpW7bKNjWvenQuHQ1oPEWLa8r0Zv98IXzUaIhJlRpdNaMJU=w2400?source=screenshot.guru',
-            '粿條': 'https://lh3.googleusercontent.com/pw/AP1GczPwzNH0_FdwO99aeaxK8kWR64JXsBGwj4s5HB13lSvp-sZwggbp8XT8yfDkbp7Cz_ZB-jynkrLK7FFpIQSTf_t4Umd8Eje8i_nWWxFshmGTKkrzCn4=w2400?source=screenshot.guru', '熟面': 'https://lh3.googleusercontent.com/pw/AP1GczO5hHYBkxDeOygQ1hWxWYtPlMOGUWWImLcvrXSe9dYeWIPukbqHY5O9qq6IrM9Q88jSG6EE8HmeIM9jOg081VP1KcW7uXlnaMCsWb56wt3dRd9WJJw=w2400?source=screenshot.guru',
-            '米粉': 'https://lh3.googleusercontent.com/pw/AP1GczMCq_h1GaefE-Kpouj1xUx_GoEhsa6BHL7giIsCTbZqtOKJG_8AJIpYSsqpPEiR5Ao00oYTYixHE7KxdZjWSv2LTg-CQ_xWVBv8OfAB98J7Z1wPYG0=w2400?source=screenshot.guru', '米太目': 'https://lh3.googleusercontent.com/pw/AP1GczNPdhdHay7KR_IB303jyQY9PkJv14r8_ctsIwsnIGVdX5m0e4mAQjGoW6kMCuWfZEzoGn0PfIS4YbYsam7ncI1eDn9rYAbQ53qUsbpt4BHxE2Gur3k=w600-h315-p-k',
-            '冬粉': 'https://lh3.googleusercontent.com/pw/AP1GczMjjBg1W6WSV-nXO1fI3_rZXHO1u53fhIyPuY8F5PfDsGsSNuMqbrcoNbcIYTISpCvg-YzHA3xOyUmD1SUOQQvXXoAsXW9wTiEt9IswwswNBTCsoCc=w2400?source=screenshot.guru', '粿條面': 'https://i.ibb.co/4Z3pjddg/Kuay-Teow-Noodle.png', 
-            '粿條米粉': 'https://i.ibb.co/Kc4dzrMJ/Kuay-Teow-Mee-Hoon.png', '米粉面': 'https://i.ibb.co/GvHqTPM4/Mee-Hoon-Noodle.png' 
-        },
+        'noodleType': { '面薄': 'https://lh3.googleusercontent.com/pw/AP1GczPTdYtkKQVVtu2xC4GqatBEs58tYr0xrU6-P08JGLPXNa9URyrd85OABGJvhRRywZqI_6ILtjozkyDCPJWyfo34-z3KP5EPG56bOb6S73_130W3J00=w2400?source=screenshot.guru', '幼面': 'https://lh3.googleusercontent.com/pw/AP1GczNzHJopdj33Emt-5K2nGrlY8AQRwcGxsmIGUyy2dzSKyFYLHxqH-tz7bIRoqlVFfxfetpW7bKNjWvenQuHQ1oPEWLa8r0Zv98IXzUaIhJlRpdNaMJU=w2400?source=screenshot.guru', '粿條': 'https://lh3.googleusercontent.com/pw/AP1GczPwzNH0_FdwO99aeaxK8kWR64JXsBGwj4s5HB13lSvp-sZwggbp8XT8yfDkbp7Cz_ZB-jynkrLK7FFpIQSTf_t4Umd8Eje8i_nWWxFshmGTKkrzCn4=w2400?source=screenshot.guru', '熟面': 'https://lh3.googleusercontent.com/pw/AP1GczO5hHYBkxDeOygQ1hWxWYtPlMOGUWWImLcvrXSe9dYeWIPukbqHY5O9qq6IrM9Q88jSG6EE8HmeIM9jOg081VP1KcW7uXlnaMCsWb56wt3dRd9WJJw=w2400?source=screenshot.guru', '米粉': 'https://lh3.googleusercontent.com/pw/AP1GczMCq_h1GaefE-Kpouj1xUx_GoEhsa6BHL7giIsCTbZqtOKJG_8AJIpYSsqpPEiR5Ao00oYTYixHE7KxdZjWSv2LTg-CQ_xWVBv8OfAB98J7Z1wPYG0=w2400?source=screenshot.guru', '米太目': 'https://lh3.googleusercontent.com/pw/AP1GczNPdhdHay7KR_IB303jyQY9PkJv14r8_ctsIwsnIGVdX5m0e4mAQjGoW6kMCuWfZEzoGn0PfIS4YbYsam7ncI1eDn9rYAbQ53qUsbpt4BHxE2Gur3k=w600-h315-p-k', '冬粉': 'https://lh3.googleusercontent.com/pw/AP1GczMjjBg1W6WSV-nXO1fI3_rZXHO1u53fhIyPuY8F5PfDsGsSNuMqbrcoNbcIYTISpCvg-YzHA3xOyUmD1SUOQQvXXoAsXW9wTiEt9IswwswNBTCsoCc=w2400?source=screenshot.guru', '粿條面': 'https://i.ibb.co/4Z3pjddg/Kuay-Teow-Noodle.png', '粿條米粉': 'https://i.ibb.co/Kc4dzrMJ/Kuay-Teow-Mee-Hoon.png', '米粉面': 'https://i.ibb.co/GvHqTPM4/Mee-Hoon-Noodle.png' },
         'noExtra': ['油', '蔥', '香菇', '肉碎', '黑醬油', '肉圓換魚圓'],
         'noExtraImgs': { '肉碎': 'https://i.ibb.co/676LvDVq/Gemini-Generated-Image-o7imd3o7imd3o7im.png', '香菇': 'https://i.ibb.co/gM38Xyd2/Gemini-Generated-Image-8vtp9l8vtp9l8vtp.png', '蔥': 'https://i.ibb.co/VWF95cZS/Gemini-Generated-Image-bfrir0bfrir0bfri.png', '油': 'https://i.ibb.co/X6SD0Tg/Gemini-Generated-Image-rsjy20rsjy20rsjy.png', '黑醬油': 'https://i.ibb.co/b5xFQwFg/Gemini-Generated-Image-npcrx5npcrx5npcr.png' },
-        'additionsList': ['魚圓', '肉圓', '魚餃', '香菇', '肉碎', '西刀魚餅', '小魚香', '蝦'],
-        'additionsImgs': { '魚圓': 'https://lh3.googleusercontent.com/pw/AP1GczOoXizYOs7TlJVh_ikXpPT_8uSFOyH2mnDMFvu2CIFXpJVYqNssfvAbgkwksOqIi89J0NAktQdtJStc5KB6YPkxqk0ccWLkjKAGWKILKERYMt_PYsI=w2400?source=screenshot.guru', '肉圓': 'https://lh3.googleusercontent.com/pw/AP1GczO53IM8P6okuoqH4lpXGLStyLy4PSLp2LEAXBolANcUA0dm0WBHCGxJ965cGrMP9F72cF24Uln8JbdwG9pt910rs1pG-dnU-CrwKWKcOhZoPnNbR6Q=w2400?source=screenshot.guru', '魚餃': 'https://lh3.googleusercontent.com/pw/AP1GczN3UWnlef_F80kDzpyJtDbUke-trWR_2HA4zVAnHG8PlM1N9FoBkIAThTpdOffxXiIKGYn9gNQV9Defs8T8CC7ChbKQGKCLctVtW-G84qTu6qGcuvM=w2400?source=screenshot.guru', '香菇': 'https://lh3.googleusercontent.com/pw/AP1GczOMJvr-1snMcDEsJsBV_QX2oISkKXtVZQGiajhBRNCUkTEpzev8LTJzjQ4jzeziLq4inDVPgROLRQ9NXxT3tnZGxJAgPNtPg3lgC-Cs582xH1jRiho=w2400?source=screenshot.guru', '肉碎': 'https://i.ibb.co/TMFvjFRN/Minced.png', '西刀魚餅': 'https://lh3.googleusercontent.com/pw/AP1GczP8Id6j5IYXzYS9x0xyNmfZWXGzQHCdfQBNbC34EmSqOTaA8rw5DGfhdsijfjfb_EnoCdl4nbXlowqkys6NnbQok762CxfDYno4mODYOp4oEp4EqAM=w2400?source=screenshot.guru', '小魚香': 'https://lh3.googleusercontent.com/pw/AP1GczMOea7U-V10ztFr3Yim6w3K_-waMrZWgn9f5VdLk6JeObgOJpJu47IZGZ_N2Ok0WW57U0oCvjQ8Cd1llJYnEiMKw5BSLetmhF5BBxFnnGQwFCqmUjE=w2400?source=screenshot.guru', '蝦': 'https://lh3.googleusercontent.com/pw/AP1GczPzLY41C33tAb9NV8EUJrRpiZGqc1WqVhSNhr9K5H41JKgfnEG4CqFIDluEUqs4wRf67VHhOcvgN_9z1J6UrQAQWtj-SvpBk8V7RoiRxNjsTE-NfVE=w2400?source=screenshot.guru' },
-        'additionsPrices': { '西刀魚餅': 1.5 }
+        'addList': ['魚圓', '肉圓', '魚餃', '香菇', '肉碎', '西刀魚餅', '小魚香', '蝦'],
+        'addImgs': { '魚圓': 'https://lh3.googleusercontent.com/pw/AP1GczOoXizYOs7TlJVh_ikXpPT_8uSFOyH2mnDMFvu2CIFXpJVYqNssfvAbgkwksOqIi89J0NAktQdtJStc5KB6YPkxqk0ccWLkjKAGWKILKERYMt_PYsI=w2400?source=screenshot.guru', '肉圓': 'https://lh3.googleusercontent.com/pw/AP1GczO53IM8P6okuoqH4lpXGLStyLy4PSLp2LEAXBolANcUA0dm0WBHCGxJ965cGrMP9F72cF24Uln8JbdwG9pt910rs1pG-dnU-CrwKWKcOhZoPnNbR6Q=w2400?source=screenshot.guru', '魚餃': 'https://lh3.googleusercontent.com/pw/AP1GczN3UWnlef_F80kDzpyJtDbUke-trWR_2HA4zVAnHG8PlM1N9FoBkIAThTpdOffxXiIKGYn9gNQV9Defs8T8CC7ChbKQGKCLctVtW-G84qTu6qGcuvM=w2400?source=screenshot.guru', '香菇': 'https://lh3.googleusercontent.com/pw/AP1GczOMJvr-1snMcDEsJsBV_QX2oISkKXtVZQGiajhBRNCUkTEpzev8LTJzjQ4jzeziLq4inDVPgROLRQ9NXxT3tnZGxJAgPNtPg3lgC-Cs582xH1jRiho=w2400?source=screenshot.guru', '肉碎': 'https://i.ibb.co/TMFvjFRN/Minced.png', '西刀魚餅': 'https://lh3.googleusercontent.com/pw/AP1GczP8Id6j5IYXzYS9x0xyNmfZWXGzQHCdfQBNbC34EmSqOTaA8rw5DGfhdsijfjfb_EnoCdl4nbXlowqkys6NnbQok762CxfDYno4mODYOp4oEp4EqAM=w2400?source=screenshot.guru', '小魚香': 'https://lh3.googleusercontent.com/pw/AP1GczMOea7U-V10ztFr3Yim6w3K_-waMrZWgn9f5VdLk6JeObgOJpJu47IZGZ_N2Ok0WW57U0oCvjQ8Cd1llJYnEiMKw5BSLetmhF5BBxFnnGQwFCqmUjE=w2400?source=screenshot.guru', '蝦': 'https://lh3.googleusercontent.com/pw/AP1GczPzLY41C33tAb9NV8EUJrRpiZGqc1WqVhSNhr9K5H41JKgfnEG4CqFIDluEUqs4wRf67VHhOcvgN_9z1J6UrQAQWtj-SvpBk8V7RoiRxNjsTE-NfVE=w2400?source=screenshot.guru' },
+        'addPrices': { '西刀魚餅': 1.5 }
     };
 
     let cart = [];
@@ -180,38 +161,48 @@
     let tempSubItem = { noodle: '', sauces: [], specialReqs: [], noExtras: [], additions: {}, price: 0 };
     let savedDevice = null, savedCharacteristic = null, isFastMode = false;
 
-    function getOrderData() { const today = new Date().toLocaleDateString(); let data = JSON.parse(localStorage.getItem('million_order_data')) || { date: today, num: START_NO, history: [] }; if (data.date !== today) { data.date = today; data.num = START_NO; data.history = []; } return data; }
-    function saveOrderData(data) { localStorage.setItem('million_order_data', JSON.stringify(data)); }
-
     function setCategory(v) {
         sessionData.category = v;
-        sessionData.counts = {'小的': 0, '大的': 0}; // 重置數量
+        sessionData.mainName = ''; 
+        sessionData.counts = {'小的': 0, '大的': 0};
         if (v === '湯') { renderSoupGrid(); goNext('step-soup-select'); }
         else { renderFoodGrid(); goNext('step-food-select'); }
     }
 
-    // 麵食選擇頁
     function renderFoodGrid() {
         const list = ['魚圓面', '香菇肉碎面', '招牌面', '餐餐面', '肉圓面', '蝦魚面', '西刀魚面', '香菇面', '魚餃面', '(純)肉碎面', '小魚香面'];
         const cont = document.getElementById('grid-foodItems'); cont.innerHTML = '';
         list.forEach(name => {
-            const div = document.createElement('div'); div.className = 'opt';
+            const div = document.createElement('div'); div.className = 'opt'; div.id = `food-${name}`;
             div.innerHTML = `<div class="img-box"><div class="price-circle">$${config[name].p}</div><img src="${config[name].img}"></div><span>${name}</span>
-                <div class="qty-input-overlay" onclick="event.stopPropagation()"><div class="qty-row">小<div class="qty-btn-group"><button class="qty-btn" onclick="updateCount('${name}','小的',-1)">-</button><span id="c-s-${name}">0</span><button class="qty-btn" onclick="updateCount('${name}','小的',1)">+</button></div></div><div class="qty-row">大<div class="qty-btn-group"><button class="qty-btn" onclick="updateCount('${name}','大的',-1)">-</button><span id="c-l-${name}">0</span><button class="qty-btn" onclick="updateCount('${name}','大的',1)">+</button></div></div></div>`;
-            div.onclick = () => { sessionData.mainName = name; Array.from(cont.children).forEach(c=>c.classList.remove('selected')); div.classList.add('selected'); };
+                <div class="qty-input-overlay" onclick="event.stopPropagation()">
+                    <div class="qty-row">小<div class="qty-btn-group"><button class="qty-btn" onclick="updateCount('${name}','小的',-1)">-</button><span id="c-s-${name}">0</span><button class="qty-btn" onclick="updateCount('${name}','小的',1)">+</button></div></div>
+                    <div class="qty-row">大<div class="qty-btn-group"><button class="qty-btn" onclick="updateCount('${name}','大的',-1)">-</button><span id="c-l-${name}">0</span><button class="qty-btn" onclick="updateCount('${name}','大的',1)">+</button></div></div>
+                </div>`;
+            div.onclick = () => { 
+                sessionData.mainName = name; 
+                document.querySelectorAll('.opt').forEach(el => el.classList.remove('selected'));
+                div.classList.add('selected');
+            };
             cont.appendChild(div);
         });
     }
 
     function updateCount(name, size, delta) {
-        sessionData.mainName = name;
-        sessionData.counts[size] = Math.max(0, (sessionData.counts[size] || 0) + delta);
+        // 更新數量時，不自動切換選中的麵，除非當前沒有選中
+        if(!sessionData.mainName) {
+            sessionData.mainName = name;
+            document.getElementById(`food-${name}`).classList.add('selected');
+        }
+        if(sessionData.mainName !== name) return alert(`請先選中 ${name} 再調整數量`);
+        
+        sessionData.counts[size] = Math.max(0, sessionData.counts[size] + delta);
         document.getElementById(size === '小的' ? `c-s-${name}` : `c-l-${name}`).innerText = sessionData.counts[size];
     }
 
     function checkFoodNext() {
         const total = sessionData.counts['小的'] + sessionData.counts['大的'];
-        if (total === 0 || !sessionData.mainName) return alert("請先選麵食與數量");
+        if (total === 0 || !sessionData.mainName) return alert("請先選中麵食並設定數量");
         sessionData.sizeSequence = [];
         for(let i=0; i<sessionData.counts['大的']; i++) sessionData.sizeSequence.push('大的');
         for(let i=0; i<sessionData.counts['小的']; i++) sessionData.sizeSequence.push('小的');
@@ -219,7 +210,6 @@
         renderNoodleTypeGrid(); updateNoodleStepInfo(); goNext('step-noodle-type');
     }
 
-    // 湯品選擇頁
     function renderSoupGrid() {
         const list = ['魚圓湯','肉圓湯','魚餃湯','三寶湯'];
         const cont = document.getElementById('grid-soupItems'); cont.innerHTML = '';
@@ -238,7 +228,6 @@
         });
     }
 
-    // 分配麵種頁
     function renderNoodleTypeGrid() {
         const cont = document.getElementById('grid-noodleType'); cont.innerHTML = '';
         Object.keys(config.noodleType).forEach(name => {
@@ -263,11 +252,10 @@
         refreshSauceUI(); goNext('step-sauce-select');
     }
 
-    // 醬料邏輯
     function toggleSauce(val) {
         if (tempSubItem.sauces.includes('湯')) tempSubItem.sauces = [];
         if (tempSubItem.sauces.includes(val)) tempSubItem.sauces = tempSubItem.sauces.filter(s => s !== val);
-        else { if (tempSubItem.sauces.length >= 3) return alert("最多選3種"); tempSubItem.sauces.push(val); }
+        else { if (tempSubItem.sauces.length >= 3) return alert("最多3種"); tempSubItem.sauces.push(val); }
         refreshSauceUI();
     }
     function toggleSpecial(val) {
@@ -289,7 +277,6 @@
         renderNoExtraGrid(); goNext('step-no-extra'); 
     }
 
-    // 不要配料頁
     function renderNoExtraGrid() {
         const cont = document.getElementById('grid-noExtra'); cont.innerHTML = '';
         config.noExtra.forEach(name => {
@@ -303,35 +290,31 @@
         renderAdditionsGrid();
     }
 
-    // 加料頁
     function renderAdditionsGrid() {
         const cont = document.getElementById('grid-additions'); cont.innerHTML = '';
-        tempSubItem.additions = {}; // 每次渲染重置
-        config.additionsList.forEach(name => {
+        config.addList.forEach(name => {
             const div = document.createElement('div'); div.className = 'opt';
-            const price = config.additionsPrices[name] || 1;
-            div.innerHTML = `<div class="img-box"><div class="price-circle">$${price}</div><img src="${config.additionsImgs[name]}"></div><span>${name}</span><div class="add-qty-bar"><button class="btn-add-minus" onclick="changeAddQty('${name}', -1, event)">-</button><span class="add-num" id="add-val-${name}">0</span><button class="btn-add-minus" onclick="changeAddQty('${name}', 1, event)">+</button></div>`;
+            const price = config.addPrices[name] || 1;
+            div.innerHTML = `<div class="img-box"><div class="price-circle">$${price}</div><img src="${config.addImgs[name]}"></div><span>${name}</span><div class="add-qty-bar"><button class="btn-add-minus" onclick="changeAddQty('${name}', -1, event)">-</button><span class="add-num" id="add-val-${name}">0</span><button class="btn-add-minus" onclick="changeAddQty('${name}', 1, event)">+</button></div>`;
             cont.appendChild(div);
         });
     }
 
     function changeAddQty(name, delta, event) {
         event.stopPropagation();
-        let current = tempSubItem.additions[name] || 0;
-        let next = Math.max(0, Math.min(9, current + delta));
+        let cur = tempSubItem.additions[name] || 0;
+        let next = Math.max(0, cur + delta);
         if (next === 0) delete tempSubItem.additions[name]; else tempSubItem.additions[name] = next;
         document.getElementById(`add-val-${name}`).innerText = next;
     }
 
-    // 入車邏輯
     function processCurrentSubItem() {
-        let addPrice = 0;
-        Object.entries(tempSubItem.additions).forEach(([n, q]) => addPrice += (config.additionsPrices[n] || 1) * q);
-        const currentSize = sessionData.sizeSequence[sessionData.currentIdx];
+        let addP = 0;
+        Object.entries(tempSubItem.additions).forEach(([n, q]) => addP += (config.addPrices[n] || 1) * q);
         const finalItem = {
-            category: sessionData.category, names: [sessionData.mainName], size: currentSize,
+            mainName: sessionData.mainName, size: sessionData.sizeSequence[sessionData.currentIdx],
             noodle: tempSubItem.noodle, sauces: [...tempSubItem.sauces], specialReqs: [...tempSubItem.specialReqs],
-            noExtras: [...tempSubItem.noExtras], additions: {...tempSubItem.additions}, price: tempSubItem.price + addPrice, qty: 1
+            noExtras: [...tempSubItem.noExtras], additions: {...tempSubItem.additions}, price: (tempSubItem.price + addP), qty: 1
         };
         cart.push(finalItem);
         sessionData.currentIdx++;
@@ -343,43 +326,17 @@
         let t = 0; const cont = document.getElementById('current-cart');
         cont.innerHTML = cart.map((item, i) => {
             t += item.price * item.qty;
-            const sauceStr = item.sauces.length ? item.sauces.join(',') : '';
-            const specStr = item.specialReqs.length ? ` | ${item.specialReqs.join(',')}` : '';
-            const noExStr = item.noExtras.length ? `<br><small style="color:red;">[不要: ${item.noExtras.join(',')}]</small>` : '';
-            const addStr = Object.entries(item.additions).length ? `<br><small style="color:var(--add);">+加料: ${Object.entries(item.additions).map(([n,q])=>`${n}(${q})`).join(',')}</small>` : '';
-            return `<div class="cart-item"><div class="item-row"><div class="item-info"><b>${item.names[0]}</b> [${item.size.replace('的','')}]<br><small>${item.noodle} ${sauceStr}${specStr}</small>${noExStr}${addStr}<div style="color:var(--price-tag);font-weight:bold;margin-top:5px;">$${(item.price*item.qty).toFixed(2)}</div></div><div class="item-actions"><button class="btn-qty" onclick="changeCartQty(${i},-1)">-</button><span style="font-weight:bold;">${item.qty}</span><button class="btn-qty" onclick="changeCartQty(${i},1)">+</button></div></div></div>`;
+            const sStr = item.sauces.join(',') + (item.specialReqs.length ? ` | ${item.specialReqs.join(',')}` : '');
+            const nStr = item.noExtras.length ? `<br><small style="color:red;">[不要: ${item.noExtras.join(',')}]</small>` : '';
+            const aStr = Object.entries(item.additions).length ? `<br><small style="color:var(--add);">+加料: ${Object.entries(item.additions).map(([n,q])=>`${n}(${q})`).join(',')}</small>` : '';
+            return `<div class="cart-item"><div class="item-row"><div><b>${item.mainName}</b> [${item.size.replace('的','')}]<br><small>${item.noodle} ${sStr}</small>${nStr}${aStr}<div style="color:var(--price-tag);font-weight:bold;margin-top:5px;">$${(item.price*item.qty).toFixed(2)}</div></div><div><button class="qty-btn" onclick="changeCartQty(${i},-1)">-</button><span style="padding:0 10px; font-weight:bold;">${item.qty}</span><button class="qty-btn" onclick="changeCartQty(${i},1)">+</button></div></div></div>`;
         }).join('');
         document.getElementById('total-sum').innerText = t.toFixed(2);
     }
 
     function changeCartQty(idx, d) { if(cart[idx].qty+d > 0) cart[idx].qty+=d; else if(confirm("移除？")) cart.splice(idx,1); updateCartDisplay(); }
-    
-    // 藍牙與列印 (保持原始邏輯)
-    function finalizeAndPrint() {
-        if (cart.length === 0) return alert("購物車空");
-        const data = getOrderData(); const now = new Date();
-        const timeStr = `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
-        const record = { num: data.num, time: timeStr, fullTime: `${now.toLocaleDateString()} ${timeStr}`, items: JSON.parse(JSON.stringify(cart)), total: document.getElementById('total-sum').innerText };
-        data.history.push(record); data.num++; saveOrderData(data);
-        drawPrintCanvas(record); handleImagePrint();
-    }
 
-    function drawPrintCanvas(record) {
-        const canvas = document.getElementById('printCanvas'), ctx = canvas.getContext('2d');
-        const h = 250 + (record.items.length * 180) + 120;
-        canvas.height = h; ctx.fillStyle="white"; ctx.fillRect(0,0,384,h); ctx.fillStyle="black"; ctx.textAlign="center"; 
-        ctx.font="bold 26px sans-serif"; ctx.fillText("Million FishBall Noodle", 192, 30);
-        ctx.font="bold 44px sans-serif"; ctx.fillText(`No. ${record.num - 1}`, 192, 85);
-        ctx.textAlign="right"; let y = 145;
-        record.items.forEach(item => {
-            ctx.font="bold 38px sans-serif"; ctx.fillText(`${item.names[0]} x${item.qty}`, 374, y); y+=45;
-            ctx.font="bold 28px sans-serif"; ctx.fillText(`[${item.size.replace('的','')}] ${item.noodle} ${item.sauces.join(',')}`, 374, y); y+=40;
-            if(item.noExtras.length) { ctx.font="26px sans-serif"; ctx.fillText(`[不要: ${item.noExtras.join(',')}]`, 374, y); y+=35; }
-            y+=15;
-        });
-        ctx.textAlign="center"; ctx.font="bold 42px sans-serif"; ctx.fillText("TOTAL: $" + record.total, 192, y+50);
-    }
-
+    // 藍牙與列印保持穩定
     async function getPrinter() {
         if (savedDevice && savedDevice.gatt.connected && savedCharacteristic) return savedCharacteristic;
         savedDevice = await navigator.bluetooth.requestDevice({ acceptAllDevices: true, optionalServices: ['0000ffe0-0000-1000-8000-00805f9b34fb'] });
@@ -420,6 +377,32 @@
         } catch (e) { alert(e.message); btn.disabled = false; }
     }
 
+    function drawPrintCanvas(record) {
+        const canvas = document.getElementById('printCanvas'), ctx = canvas.getContext('2d');
+        const h = 250 + (record.items.length * 180) + 120;
+        canvas.height = h; ctx.fillStyle="white"; ctx.fillRect(0,0,384,h); ctx.fillStyle="black"; ctx.textAlign="center"; 
+        ctx.font="bold 26px sans-serif"; ctx.fillText("Million FishBall Noodle", 192, 30);
+        ctx.font="bold 44px sans-serif"; ctx.fillText(`No. ${record.num - 1}`, 192, 85);
+        ctx.textAlign="right"; let y = 145;
+        record.items.forEach(item => {
+            ctx.font="bold 38px sans-serif"; ctx.fillText(`${item.mainName} x${item.qty}`, 374, y); y+=45;
+            ctx.font="bold 28px sans-serif"; ctx.fillText(`[${item.size.replace('的','')}] ${item.noodle} ${item.sauces.join(',')}`, 374, y); y+=40;
+            if(item.noExtras.length) { ctx.font="26px sans-serif"; ctx.fillText(`[不要: ${item.noExtras.join(',')}]`, 374, y); y+=35; }
+            y+=15;
+        });
+        ctx.textAlign="center"; ctx.font="bold 42px sans-serif"; ctx.fillText("TOTAL: $" + record.total, 192, y+50);
+    }
+
+    function finalizeAndPrint() {
+        if (cart.length === 0) return alert("購物車空");
+        const data = getOrderData(); const now = new Date();
+        const timeStr = `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
+        const record = { num: data.num, time: timeStr, fullTime: `${now.toLocaleDateString()} ${timeStr}`, items: JSON.parse(JSON.stringify(cart)), total: document.getElementById('total-sum').innerText };
+        data.history.push(record); data.num++; localStorage.setItem('million_order_data', JSON.stringify(data));
+        drawPrintCanvas(record); handleImagePrint();
+    }
+
+    function getOrderData() { const today = new Date().toLocaleDateString(); let d = JSON.parse(localStorage.getItem('million_order_data')) || { date: today, num: START_NO, history: [] }; if (d.date !== today) { d.date = today; d.num = START_NO; d.history = []; } return d; }
     function goNext(id) { document.querySelectorAll('.step').forEach(s => s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
     function resetForNewItem() { location.reload(); }
     function cancelAndClear() { if(confirm("清空？")) resetForNewItem(); }
