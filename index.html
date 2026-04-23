@@ -385,20 +385,20 @@
             const unit = item.category === '湯' ? (printLang==='zh'?'碗':'bowl') : (printLang==='zh'?'份':'qty');
             
             // 品項名稱 (修正：英文時縮小字體到 34px 並限制寬度)
-            const mainFontSize = printLang === 'en' ? "bold 34px sans-serif" : "bold 42px sans-serif";
+            const mainFontSize = printLang === 'en' ? "bold 36px sans-serif" : "bold 42px sans-serif";
             ctx.font = mainFontSize;
             ctx.fillText(`${getName(item.mainKey)} (${item.qty}${unit})`, centerX, y, maxW); 
             y += 45;
 
             // 麵種與醬料 (修正：字體調小至 26px)
-            ctx.font = "bold 26px sans-serif"; 
+            ctx.font = "bold 30px sans-serif"; 
             let detailStr = `[${getName(item.sizeKey).replace('的','')}] ${item.noodleKey==='湯品'?'':getName(item.noodleKey)} ${item.sauceKeys.map(k=>getName(k)).join(',')}`;
             ctx.fillText(detailStr, centerX, y, maxW);
             y += 40;
             
             // 特別要求
             if(item.specialKeys.length) { 
-                ctx.font = "bold 26px sans-serif"; 
+                ctx.font = "bold 30px sans-serif"; 
                 ctx.fillText(`★ ${item.specialKeys.map(k=>getName(k)).join(',')}`, centerX, y, maxW); 
                 y += 40; 
             }
