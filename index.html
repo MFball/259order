@@ -406,7 +406,7 @@
             // 加料區
             let addsStr = Object.entries(item.additionKeys).filter(([k,v])=>v>0).map(([k,v])=>`${getName(k)}(${v*getItemRatio(k)}${getItemUnit(k,printLang)})`).join(',');
             if(addsStr) { 
-                ctx.font = "bold 24px sans-serif"; 
+                ctx.font = "bold 30px sans-serif"; 
                 ctx.fillText(`+${printLang==='zh'?'加':'Add'}: ${addsStr}`, centerX, y, maxW); 
                 y += 40; 
             }
