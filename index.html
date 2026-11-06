@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>Million FishBall Noodle - Ver 5.3.6 (堂食/外賣)</title>
+<title>Million FishBall Noodle - Ver 5.9.9 (堂食/外賣)</title>
 <style>
     :root {
         --primary: #1a73e8;
@@ -21,7 +21,7 @@
     html, body { height: 100%; margin: 0; overflow: hidden; overscroll-behavior: contain; }
     /* ✅ overscroll-behavior: contain → 防止手指往上/往左右滑過頭時，
        瀏覽器把這個手勢當成「下拉刷新」或「側滑上一頁」而觸發整頁重新整理
-       （這是導致藍牙連線中斷、需要重新配對的主因）*/
+       （這樣會把還沒送出的購物車內容整個清空，要重新點一次）*/
     body { font-family: -apple-system, "Helvetica Neue", "PingFang TC", sans-serif; background: var(--secondary); user-select: none; }
     button { font-family: inherit; cursor: pointer; }
 
@@ -37,9 +37,22 @@
     .cat-tab.active[data-cat="面"] { background: var(--noodle); color: #fff; border-color: var(--noodle); }
     .cat-tab.active[data-cat="小食"] { background: var(--add); color: #fff; border-color: var(--add); }
     .cat-tab.active[data-cat="人氣"] { background: var(--hot); color: #fff; border-color: var(--hot); }
+    /* ✅ ver5.9.5：語言切換從「一個個按鈕排出來」改成一顆下拉選單（跟顧客點餐 App
+       customer-v3_4_1 同一套做法），拉下去可以看到繁體中文／简体中文／English 三個選項 */
     #lang-toggle { display: flex; gap: 4px; }
-    #lang-toggle button { padding: 8px 10px; border-radius: 10px; border: 2px solid #eee; background: #fff; font-weight: bold; font-size: 0.8rem; color: #666; }
-    #lang-toggle button.active { background: #111; color: #fff; border-color: #111; }
+    .lang-select { padding: 9px 10px; border-radius: 10px; border: 2px solid #eee; background: #fff; font-weight: bold; font-size: 0.8rem; color: #444; }
+    /* ✅ ver5.9.7：改成跟客製化面板「堂食/外賣」同一種左右滑動開關樣式（沿用 .ta-toggle-track/
+       .ta-toggle-thumb 的滑動機制），而不是兩顆獨立按鈕——省下的版面在 iPhone X 這種窄螢幕
+       上差很多，兩顆獨立按鈕在窄螢幕上太佔位置、擠壓到旁邊的圖示。
+       左邊(關/預設)＝中文，右邊(開/.active)＝英文，滑動的視覺跟現有的堂食/外賣開關一致，
+       只是縮小尺寸塞進頂部這一列。 */
+    .print-lang-switch { display: flex; align-items: center; gap: 5px; background: #fff; border: 2px solid #eee; border-radius: 12px; padding: 6px 8px; flex-shrink: 0; }
+    .print-lang-switch.active { background: #e8eaf6; border-color: var(--takeaway); }
+    .print-lang-switch .ta-toggle-track { width: 32px; height: 18px; border-radius: 10px; }
+    .print-lang-switch .ta-toggle-thumb { width: 14px; height: 14px; top: 2px; left: 2px; }
+    .print-lang-switch.active .ta-toggle-thumb { left: 16px; }
+    .print-lang-switch-text { font-size: 0.7rem; font-weight: 900; color: #666; white-space: nowrap; }
+    .print-lang-switch.active .print-lang-switch-text { color: var(--takeaway); }
     .icon-btn { width: 40px; height: 40px; border-radius: 10px; border: 2px solid #eee; background: #fff; font-size: 1rem; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
     #version-tag { font-size: 0.65rem; color: #aaa; font-weight: 900; white-space: nowrap; padding: 0 2px; }
 
@@ -54,7 +67,8 @@
     .side-item.active { background: #ffe4d9; border-left: 5px solid var(--price-tag); }
 
     #panel { flex: 1; overflow-y: auto; padding: 16px 16px 20px 16px; background: #fff; position: relative; }
-    #panel::after { content: ''; display: block; height: 110px; }
+    /* ✅ ver5.9.5：底部操作列改兩行後變高了，這裡的預留空間跟著加高，避免最後一項被擋住 */
+    #panel::after { content: ''; display: block; height: 180px; }
 
     .empty-hint { text-align: center; color: #999; padding: 60px 20px; font-size: 1.05rem; line-height: 1.8; }
 
@@ -146,17 +160,27 @@
     .hot-order-btn { background: var(--hot); color: #fff; border: none; padding: 9px 16px; border-radius: 10px; font-weight: 900; font-size: 0.85rem; white-space: nowrap; }
 
     /* ── 底部固定操作列 ── */
-    #bottombar { position: fixed; left: 0; right: 0; bottom: 0; background: #fff; padding: 10px 14px calc(16px + env(safe-area-inset-bottom)) 14px; box-shadow: 0 -6px 16px rgba(0,0,0,0.1); display: flex; align-items: center; gap: 8px; z-index: 500; }
+    #bottombar { position: fixed; left: 0; right: 0; bottom: 0; background: #fff; padding: 10px 14px calc(10px + env(safe-area-inset-bottom)) 14px; box-shadow: 0 -6px 16px rgba(0,0,0,0.1); display: flex; flex-direction: column; gap: 6px; z-index: 500; }
+    #bottombar-buttons { display: flex; align-items: center; gap: 8px; width: 100%; }
+    /* ✅ ver5.9.5：iPhone X 這種比較窄的機型，原本 4 顆按鈕擠在同一行，
+       「確認送出」會被擠出畫面外看不到。改成兩行：
+       第一行 清空/購物車/不收據，第二行 確認送出 自己獨占一整行。 */
+    #bottombar-row2 { display: flex; width: 100%; }
+    #bottombar-row2 .bb-btn { flex: 1; }
     #cart-summary-mini { font-weight: 900; font-size: 1rem; white-space: nowrap; background: #fff3e0; border: 2px solid var(--hot); border-radius: 12px; padding: 12px 14px; color: #222; }
     #cart-summary-mini span#cart-total-sum { color: var(--price-tag); font-size: 1.2rem; }
+    #cart-promo-tag { display: none; width: 100%; box-sizing: border-box; text-align: center; font-size: 0.8rem; color: #e53935; font-weight: 900; background: #fff3e0; border: 2px solid var(--hot); border-radius: 10px; padding: 5px 8px; }
     .bb-btn { flex: 1; padding: 16px 6px; border-radius: 12px; border: none; font-weight: 900; color: #fff; font-size: 0.95rem; white-space: nowrap; }
 
     /* ── 歷史記錄面板 / 預覽 Modal（沿用舊版）── */
     #history-panel { display:none; position:fixed; top:6%; left:5%; right:5%; bottom:6%; background:white; z-index:2000; border-radius:24px; box-shadow: 0 20px 50px rgba(0,0,0,0.3); padding:20px; border:3px solid var(--primary); overflow-y:auto; }
+    #pending-payment-panel { display:none; position:fixed; top:6%; left:5%; right:5%; bottom:6%; background:white; z-index:2000; border-radius:24px; box-shadow: 0 20px 50px rgba(0,0,0,0.3); padding:20px; border:3px solid #e53935; overflow-y:auto; }
+    .pending-item { display:flex; justify-content:space-between; align-items:center; gap:10px; padding:12px; border:1px solid #eee; border-radius:12px; margin-bottom:10px; }
     .hist-item { display:flex; justify-content:space-between; align-items:center; padding:15px; border-bottom:1px solid #eee; }
     #preview-modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:3000; align-items:center; justify-content:center; padding:20px; }
     /* ✅ 列印語言選擇彈窗：取代原本只能兩個按鈕的 confirm()，改成可以放第三個「取消返回」按鈕 */
     #print-lang-modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:3100; align-items:center; justify-content:center; padding:20px; }
+    /* ✅ ver5.8.3：語言選擇彈窗，共用 .plm-card / .plm-btn 樣式，z-index 比列印方式彈窗更高，確保先問語言再問方式 */
     .plm-card { background:#fff; border-radius:20px; padding:22px; max-width:360px; width:100%; text-align:center; }
     .plm-title { font-weight:900; font-size:1.15rem; margin-bottom:18px; }
     .plm-btn { display:block; width:100%; padding:16px; border-radius:14px; border:none; font-weight:900; font-size:1.1rem; margin-bottom:10px; color:#fff; }
@@ -179,7 +203,9 @@
     @media (max-width: 430px) {
         #topbar { padding: 8px 10px; padding-top: max(8px, env(safe-area-inset-top)); gap: 6px; }
         #status-text { display: none; }             /* 空間有限，隱藏次要文字，優先確保分類可見 */
-        #lang-toggle button { padding: 6px 8px; font-size: 0.72rem; }
+        #lang-toggle .lang-select { padding: 6px 8px; font-size: 0.72rem; }
+        #print-lang-switch { padding: 4px 6px; gap: 3px; }
+        #print-lang-switch .print-lang-switch-text { font-size: 0.62rem; }
         .icon-btn { width: 34px; height: 34px; font-size: 0.9rem; }
         #cat-tabs { order: 3; flex-basis: 100%; width: 100%; gap: 5px; }
         .cat-tab { padding: 9px 8px; font-size: 0.78rem; border-radius: 9px; }
@@ -209,14 +235,25 @@
             <button class="cat-tab" data-cat="小食" onclick="selectCategory('小食')">🍡 小食</button>
             <button class="cat-tab" data-cat="人氣" onclick="selectCategory('人氣')">🔥 人氣</button>
         </div>
-        <div id="status-text">● 藍牙待機中</div>
+        <div id="status-text">● 準備送單</div>
+        <button class="icon-btn" title="待確認付款" onclick="togglePendingPayments()" style="position:relative;">⏳<span id="pending-count-badge" style="display:none; position:absolute; top:-4px; right:-4px; background:#e53935; color:white; font-size:0.65rem; border-radius:50%; width:18px; height:18px; line-height:18px; text-align:center; font-weight:bold;"></span></button>
         <button class="icon-btn" title="歷史重印" onclick="toggleHistory()">🕒</button>
         <button class="icon-btn" title="預覽列印" onclick="handlePrintPreview()">🔍</button>
         <button class="icon-btn" id="menu-reload-btn" title="重新載入菜單（主理員改完菜單後按這個）" onclick="reloadMenuFromCloud()">🔄</button>
-        <span id="version-tag">v5.3.6</span>
+        <button class="icon-btn" title="重新選擇列印方式（本機／雲端）" onclick="changePrintMethod()">🖨️⚙️</button>
+        <span id="version-tag">v5.9.9</span>
+        <!-- ✅ ver5.9.7：收據列印語言改成左右滑動開關（跟堂食/外賣同一種樣式），
+             左邊(關)＝中文、右邊(開)＝英文，控制的是印出來的收據文字，不是畫面介面 -->
+        <button id="print-lang-switch" class="print-lang-switch" onclick="togglePrintLang()" title="收據列印語言（跟畫面顯示語言分開設定）">
+            <span class="ta-toggle-track"><span class="ta-toggle-thumb"></span></span>
+            <span class="print-lang-switch-text">🖨️中</span>
+        </button>
         <div id="lang-toggle">
-            <button data-lang="zh" class="active" onclick="setLang('zh')">中</button>
-            <button data-lang="en" onclick="setLang('en')">EN</button>
+            <select class="lang-select" onchange="setLang(this.value)">
+                <option value="zh">繁體中文</option>
+                <option value="cn">简体中文</option>
+                <option value="en">English</option>
+            </select>
         </div>
     </div>
 
@@ -226,10 +263,15 @@
     </div>
 
     <div id="bottombar">
-        <button class="bb-btn" style="background:var(--price-tag); flex:0.7;" onclick="clearWholeOrder()">❌ 清空</button>
-        <button id="cart-summary-mini" onclick="showCartModal()">🛒 <span id="cart-count">0</span>項 · $<span id="cart-total-sum">0.00</span></button>
-        <button class="bb-btn" style="background:#607d8b; flex:0.9;" onclick="handleNoReceipt()">🚫 不收據</button>
-        <button class="bb-btn" id="printBtn" style="background:var(--primary); flex:1.3;" onclick="askPrintLanguage()">🖨️ 確認送出</button>
+        <div id="bottombar-buttons">
+            <button class="bb-btn" style="background:var(--price-tag); flex:0.7;" onclick="clearWholeOrder()">❌ 清空</button>
+            <button id="cart-summary-mini" onclick="showCartModal()">🛒 <span id="cart-count">0</span>項 · $<span id="cart-total-sum">0.00</span></button>
+            <button class="bb-btn" style="background:#607d8b; flex:0.9;" onclick="handleNoReceipt()">🚫 不收據</button>
+        </div>
+        <div id="bottombar-row2">
+            <button class="bb-btn" id="printBtn" style="background:var(--primary);" onclick="confirmSubmitPrompt()">📤 確認送出</button>
+        </div>
+        <div id="cart-promo-tag"></div>
     </div>
 </div>
 
@@ -237,8 +279,9 @@
 
 <div id="cart-view-modal">
     <div style="background:white; border-radius:20px; padding:15px; max-width:480px; width:100%; max-height:85vh; display:flex; flex-direction:column;">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; gap:8px;">
             <h3 style="margin:0;">🛒 目前購物車</h3>
+            <button id="cart-dining-toggle-btn" onclick="toggleCartDiningOption()" style="display:none; border:none; border-radius:10px; padding:8px 14px; font-weight:bold; font-size:0.9rem; white-space:nowrap; color:white; cursor:pointer;"></button>
             <button onclick="closeCartModal()" style="background:#eee; border:none; border-radius:50%; width:34px; height:34px; font-size:18px; cursor:pointer;">✕</button>
         </div>
         <div id="cart-modal-body" style="overflow-y:auto; flex:1;"></div>
@@ -246,12 +289,16 @@
     </div>
 </div>
 
+<!-- ✅ ver5.7.6：拿掉每次送出都要問一次的語言選擇彈窗，收據語言直接沿用畫面上方
+     已經選好的中文／English 切換鈕（userLang），不用再多一層詢問。 -->
+
 <div id="print-lang-modal">
     <div class="plm-card">
-        <div class="plm-title" id="plm-title">選擇列印語言 / Select Print Language</div>
-        <button class="plm-btn plm-btn-zh" onclick="confirmPrintLanguage('zh')">中文</button>
-        <button class="plm-btn plm-btn-en" onclick="confirmPrintLanguage('en')">English</button>
-        <button class="plm-btn plm-btn-cancel" id="plm-cancel-btn" onclick="cancelPrintLanguage()">取消返回</button>
+        <div class="plm-title" id="plm-title">選擇列印方式</div>
+        <div style="font-size:0.85rem; color:#888; font-weight:normal; margin:-10px 0 16px;">本機列印會搜尋這部裝置附近的藍牙印表機；雲端列印則交由廚房出單機處理。</div>
+        <button class="plm-btn plm-btn-zh" onclick="choosePrintMethod('direct')">🖨️ 本機搜尋印表機並直接列印</button>
+        <button class="plm-btn plm-btn-en" onclick="choosePrintMethod('cloud')">☁️ 使用 Firebase 命令（廚房出單機）</button>
+        <button class="plm-btn plm-btn-cancel" id="plm-cancel-btn" onclick="cancelSubmitPrompt()">取消返回</button>
     </div>
 </div>
 
@@ -272,6 +319,14 @@
     <h3 style="margin-top:0;">🕒 當日所有列印記錄</h3>
     <div id="history-list"></div>
     <button style="background:#666; color:white; border:none; padding:12px; width:100%; border-radius:12px; margin-top:15px; font-weight:bold;" onclick="toggleHistory()">關閉面板</button>
+</div>
+
+<!-- ✅ 待確認付款面板：顧客手機PayNow下單先進這裡，店員核對收款後手動放行給廚房 -->
+<div id="pending-payment-panel">
+    <h3 style="margin-top:0;">⏳ 待確認付款訂單</h3>
+    <div style="font-size:0.8rem; color:#888; margin:-8px 0 12px;">請核對自己PayNow收款App裡的金額與訂單編號一致後，再按「放行給廚房」</div>
+    <div id="pending-payment-list"></div>
+    <button style="background:#666; color:white; border:none; padding:12px; width:100%; border-radius:12px; margin-top:15px; font-weight:bold;" onclick="togglePendingPayments()">關閉面板</button>
 </div>
 
 <script>
@@ -295,8 +350,8 @@
        視窗。⚠️ 重要限制：基於瀏覽器安全規範（防止假造的釣魚式彈窗），Chrome／
        Safari 等現代瀏覽器「不允許」網頁自訂這個確認視窗的文字內容，一律只會
        顯示瀏覽器自己的制式提示（不會顯示成「是否退出」這幾個字），但效果一致：
-       選擇「離開」＝允許重新整理／關閉；選擇「取消」＝留在原頁面，藍牙連線和
-       購物車內容都不受影響。*/
+       選擇「離開」＝允許重新整理／關閉；選擇「取消」＝留在原頁面，購物車內容
+       不受影響。*/
     window.addEventListener('beforeunload', (e) => {
         e.preventDefault();
         e.returnValue = '';   // 觸發瀏覽器原生的離開確認提示（文字內容由瀏覽器決定，無法自訂）
@@ -304,6 +359,293 @@
 
     const START_NO = 8238;
     const CLOUD_URL = "https://million-fishballnoodle-backend-default-rtdb.asia-southeast1.firebasedatabase.app/orders.json";
+    const PRINT_CONFIG_URL = "https://million-fishballnoodle-backend-default-rtdb.asia-southeast1.firebasedatabase.app/printConfig.json";
+    /* ✅ ver5.6.0：顧客手機下單改成先付款(PayNow)，因為沒接銀行API無法自動驗證款項，
+       客人按「已付款」後訂單會先進這個「待確認付款」節點，需要收銀機這邊的店員核對
+       PayNow收款後手動「放行」，才會真的轉進 CLOUD_URL 給廚房自動列印，避免有人亂按
+       已付款但沒真的付錢，讓廚房白做一份沒人要的餐點 */
+    const PENDING_ORDERS_URL = "https://million-fishballnoodle-backend-default-rtdb.asia-southeast1.firebasedatabase.app/pendingOrders.json";
+
+    /* ✅ ver5.4.0：收銀機列印收據過去也是完全寫死的樣板（店名、是否印價錢都固定），
+       跟主理員後台的「列印設定」沒有任何關聯。現在改成開機讀取雲端 /printConfig，
+       並定期背景重新讀取，讓後台改了設定後，這台收銀機不用重開也能套用最新設定。*/
+    let printConfig = {
+        shopName: "Million FishBall Noodle",
+        paperSize: "80mm",
+        footerText: "",
+        /* A～L 對應實際收據標註 */
+        topMargin: 20,              // A
+        titleSize: 18,              // B
+        timeSize: 11,               // C
+        orderNoSize: 44,            // D
+        bodySize: 13,               // E
+        optionsSize: 13,            // F
+        noteSize: 11,               // G
+        takeawayFeeSize: 18,        // H
+        promoOriginalSize: 11,      // I
+        promoDiscountSize: 11,      // J
+        totalSize: 42,              // K
+        tagSize: 29,                // L
+        lineHeight: 1.3,
+        gapBetweenItems: 8,
+        gapBeforeTag: 20,
+        gapWithinItem: 8,
+        gapAfterTitle: 15,
+        gapAfterTime: 12,
+        gapAfterOrderNo: 20,
+        dividerSize: 20,
+        gapAfterTopDivider: 17,
+        gapAfterTag: 20,
+        bottomMargin: 40,
+        gapAfterItemContent: 8,
+        gapAfterId: 20,
+        itemDivider: '--------------------------------------------------------------',
+        preferredPrintMethod: '',
+        showShopName: true,
+        showOrderNo: true,
+        showTime: true,
+        showTableNo: true,
+        showPrice: true,
+        showNotes: true,
+        showFooter: true,
+        showTicketId: false
+    };
+    async function loadPrintConfig() {
+        try {
+            const res = await fetch(PRINT_CONFIG_URL + '?t=' + Date.now());
+            const data = await res.json();
+            if (res.ok && data && !data.error) {
+                printConfig = { ...printConfig, ...data };
+                /* 若本機尚未選過列印方式，且後台有指定 preferredPrintMethod，則自動套用 */
+                if (!localStorage.getItem(PRINT_METHOD_KEY) && (data.preferredPrintMethod === 'direct' || data.preferredPrintMethod === 'cloud')) {
+                    localStorage.setItem(PRINT_METHOD_KEY, data.preferredPrintMethod);
+                }
+            }
+        } catch (err) {
+            console.log('讀取列印設定失敗，暫時沿用目前設定：', err.message);
+        }
+    }
+
+    /* ═══════════════════════════════════════════════════
+       活動優惠設定（讀取端，設定內容由主理員後台維護）
+       ✅ 這裡跟收銀機結帳、收據列印都共用同一套 computePromoDiscount()，
+       確保「賣出去的價錢」跟後台看到的價錢一定一致。
+       ═══════════════════════════════════════════════════ */
+    const PROMOTION_URL = "https://million-fishballnoodle-backend-default-rtdb.asia-southeast1.firebasedatabase.app/promotion.json";
+    let promotionConfig = { enabled: false, startDateTime: '', endDateTime: '', tiers: [], excludedItems: [] };
+    /* ✅ ver5.9.8 新增：活動優惠一年才辦一次，平常沒活動的時候完全不需要背景輪詢。
+       loadPromotion() 每次讀完都會呼叫這個，自己判斷「接下來還需不需要繼續追蹤」——
+       只有活動已啟用、而且還沒結束（包含已經在跑、或還沒到開始時間但已經設定排程好了）
+       才會安排下一次輪詢；平常沒活動、或活動已經結束，讀這一次之後就完全安靜下來。
+       跟 isPromoActive() 不一樣：isPromoActive() 只看「此刻算不算在活動期間內」（算折扣用），
+       這裡看的是「接下來還要不要繼續追蹤它」（排程用），兩者條件不完全一樣。 */
+    let promotionPollTimer = null;
+    function isPromoRelevantForPolling() {
+        if (!promotionConfig.enabled || !promotionConfig.endDateTime) return false;
+        return new Date() <= new Date(promotionConfig.endDateTime);
+    }
+    function schedulePromotionPolling() {
+        if (promotionPollTimer) { clearInterval(promotionPollTimer); promotionPollTimer = null; }
+        if (isPromoRelevantForPolling()) promotionPollTimer = setInterval(loadPromotion, 60000);
+    }
+    async function loadPromotion() {
+        try {
+            const res = await fetch(PROMOTION_URL + '?t=' + Date.now());
+            const data = await res.json();
+            if (res.ok && data && !data.error) {
+                promotionConfig = { enabled: !!data.enabled, startDateTime: data.startDateTime || '', endDateTime: data.endDateTime || '', tiers: data.tiers || [], excludedItems: data.excludedItems || [] };
+            }
+        } catch (err) {
+            console.log('讀取活動設定失敗，暫時視為沒有活動：', err.message);
+        }
+        refreshCartViews();
+        schedulePromotionPolling();
+    }
+    function isPromoActive() {
+        if (!promotionConfig.enabled || !promotionConfig.startDateTime || !promotionConfig.endDateTime) return false;
+        const now = new Date();
+        return now >= new Date(promotionConfig.startDateTime) && now <= new Date(promotionConfig.endDateTime);
+    }
+    /* 依購物車內容算出「符合活動的份數」與「應套用的折扣」
+       ✅ 規則調整：只挑「符合份數中，門檻最高」的那一檔當基準（不重複疊加多檔），
+       但基準檔位之後，每多買1份、自動再多折$1——
+       例如只設定「買滿2份減$2」，買3份會自動變減$3、買4份自動變減$4，以此類推，
+       不需要每個數量都手動新增檔位。如果之後新增了更高的檔位（例如買滿5份減$10 這種
+       不照$1規律的特別門檻），一樣會先抓到那個門檻當基準，再從那裡繼續每多1份多折$1。 */
+    function computePromoDiscount(cartItems) {
+        const result = { active: false, qty: 0, discount: 0, tier: null };
+        if (!isPromoActive() || !promotionConfig.tiers || promotionConfig.tiers.length === 0) return result;
+        let qty = 0;
+        (cartItems || []).forEach(item => {
+            if (!promotionConfig.excludedItems.includes(item.mainKey)) qty += item.qty;
+        });
+        let bestTier = null;
+        promotionConfig.tiers.forEach(t => {
+            if (qty >= t.qty && (!bestTier || t.qty > bestTier.qty)) bestTier = t;
+        });
+        result.active = true;
+        result.qty = qty;
+        if (bestTier) {
+            result.tier = bestTier;
+            const extraQty = qty - bestTier.qty;   // 超過該檔位門檻的份數
+            result.discount = bestTier.discount + extraQty * 1;   // 每多1份再多折$1
+        }
+        return result;
+    }
+    /* 統一算出「原價、活動折扣、應付總額」，收銀機顯示與收據列印都共用這個函式，
+       確保賣出去的價錢（收銀機）與後台看到的活動設定計算出來的結果永遠一致 */
+    function getCartTotals(cartItems) {
+        let original = 0;
+        (cartItems || []).forEach(item => { original += item.price * item.qty + (item.isTakeaway ? 0.30 * item.qty : 0); });
+        const promo = computePromoDiscount(cartItems);
+        const discount = Math.min(promo.discount || 0, original);
+        const final = Math.max(0, original - discount);
+        return { original: +original.toFixed(2), discount: +discount.toFixed(2), final: +final.toFixed(2), promo };
+    }
+
+    /* ═══════════════ 待確認付款（顧客PayNow下單，需人工核對收款後才放行給廚房）═══════════════ */
+    let pendingPaymentsData = {};   // { key: orderObj, ... } 目前畫面上看到的所有待確認訂單
+    let pendingEs = null;
+    let audioCtx = null;
+
+    /* 提示音：沿用跟廚房出單機一樣的做法（Web Audio API 現場產生音效，不需要額外音效檔）*/
+    function ensurePendingAudioCtx() {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        return audioCtx;
+    }
+    function playPendingBell() {
+        try {
+            const ctx = ensurePendingAudioCtx();
+            const osc = ctx.createOscillator(), gain = ctx.createGain();
+            osc.type = 'sine'; osc.frequency.value = 660;
+            gain.gain.setValueAtTime(0.001, ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.3, ctx.currentTime + 0.02);
+            gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
+            osc.connect(gain); gain.connect(ctx.destination);
+            osc.start(); osc.stop(ctx.currentTime + 0.5);
+        } catch (err) { console.error('待確認付款提示音播放失敗：', err); }
+    }
+    /* 第一次點擊畫面任何地方時順便解鎖瀏覽器的音效播放權限（瀏覽器規定音效必須源自使用者手勢）*/
+    document.addEventListener('click', function unlockAudioOnce() {
+        ensurePendingAudioCtx();
+        document.removeEventListener('click', unlockAudioOnce);
+    }, { once: true });
+
+    function renderPendingPaymentsList() {
+        const list = document.getElementById('pending-payment-list');
+        const keys = Object.keys(pendingPaymentsData);
+        const badge = document.getElementById('pending-count-badge');
+        if (badge.innerText !== '!') {   // 連線警告(!)由 show/hidePendingConnectionWarning 專門管理，這裡不覆蓋
+            if (keys.length > 0) { badge.style.display = 'block'; badge.innerText = keys.length; }
+            else { badge.style.display = 'none'; }
+        }
+
+        list.innerHTML = badge.innerText === '!'
+            ? '<div style="text-align:center;color:#f9a825;padding:30px;font-weight:bold;">⚠️ 連線異常，可能是 Firebase 資料庫規則尚未開放 /pendingOrders 節點<br><span style="font-weight:normal;color:#888;font-size:0.85rem;">請檢查 Realtime Database → Rules 設定</span></div>'
+            : keys.length === 0 ? '<div style="text-align:center;color:gray;padding:30px;">目前沒有待確認付款的訂單</div>' :
+            keys.map(key => {
+                const o = pendingPaymentsData[key];
+                return `<div class="pending-item">
+                    <div style="text-align:left;">
+                        <div style="font-weight:bold; font-size:1.1rem;">No. ${o.orderNo}　$${o.totalPrice}</div>
+                        <div style="font-size:0.8rem; color:#888; white-space:pre-line;">${(o.summary||'').replace(/\|/g,'\n')}</div>
+                        <div style="font-size:0.7rem; color:#aaa;">${o.time || ''}</div>
+                    </div>
+                    <div style="display:flex; flex-direction:column; gap:6px;">
+                        <button onclick="releaseToKitchen('${key}')" style="background:#34a853; color:white; border:none; padding:10px 14px; border-radius:10px; font-weight:bold;">✅ 放行給廚房</button>
+                        <button onclick="rejectPendingPayment('${key}')" style="background:#eee; color:#666; border:none; padding:8px 14px; border-radius:10px; font-size:0.85rem;">❌ 未收到款項</button>
+                    </div>
+                </div>`;
+            }).join('');
+    }
+
+    function togglePendingPayments() {
+        const p = document.getElementById('pending-payment-panel');
+        p.style.display = (p.style.display === 'block') ? 'none' : 'block';
+        if (p.style.display === 'block') renderPendingPaymentsList();
+    }
+
+    /* ✅ 店員核對過自己PayNow收款App裡的金額/訂單編號無誤後，按這個「放行」：
+       把訂單轉存進 CLOUD_URL（廚房出單機監聽的節點，會自動列印），
+       再從「待確認付款」節點移除，避免重複處理 */
+    async function releaseToKitchen(key) {
+        const order = pendingPaymentsData[key];
+        if (!order) return;
+        if (!confirm(`確認已收到 No. ${order.orderNo} 的 $${order.totalPrice} PayNow款項，放行給廚房列印？`)) return;
+        try {
+            const res1 = await fetch(CLOUD_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(order) });
+            if (!res1.ok) throw new Error(`轉入廚房佇列失敗（伺服器回應 ${res1.status}）`);
+            const res2 = await fetch(`${PENDING_ORDERS_URL.replace('.json', '')}/${key}.json`, { method: 'DELETE' });
+            if (!res2.ok) throw new Error(`從待確認清單移除失敗（伺服器回應 ${res2.status}），但已成功轉給廚房，請留意這筆單可能重複出現`);
+            delete pendingPaymentsData[key];
+            renderPendingPaymentsList();
+        } catch (err) {
+            alert('放行失敗，請重新嘗試：' + err.message);
+        }
+    }
+
+    /* ❌ 核對後發現沒收到款項（客人亂按已付款）：直接刪除，這筆單永遠不會送到廚房 */
+    async function rejectPendingPayment(key) {
+        const order = pendingPaymentsData[key];
+        if (!order) return;
+        if (!confirm(`確認 No. ${order.orderNo} 沒有收到款項，要直接刪除這筆訂單嗎？（廚房不會印出這張單）`)) return;
+        try {
+            const res = await fetch(`${PENDING_ORDERS_URL.replace('.json', '')}/${key}.json`, { method: 'DELETE' });
+            if (!res.ok) throw new Error(`刪除失敗（伺服器回應 ${res.status}）`);
+            delete pendingPaymentsData[key];
+            renderPendingPaymentsList();
+        } catch (err) {
+            alert('刪除失敗，請重新嘗試：' + err.message);
+        }
+    }
+
+    /* ✅ 即時監聽 /pendingOrders，沿用廚房出單機一樣的 EventSource(SSE) 做法，
+       客人一按「已完成付款」，這裡幾乎立刻就會跳出提示音+清單更新 */
+    function startListeningPendingPayments() {
+        if (pendingEs) pendingEs.close();
+        pendingEs = new EventSource(PENDING_ORDERS_URL);
+        let everConnected = false;
+
+        const handleData = (path, data) => {
+            everConnected = true;
+            hidePendingConnectionWarning();
+            let changed = false;
+            if (path === '/') {
+                if (data) Object.entries(data).forEach(([key, order]) => {
+                    if (!pendingPaymentsData[key]) changed = true;
+                    pendingPaymentsData[key] = order;
+                });
+            } else {
+                const key = path.replace(/^\//, '');
+                if (data === null) { delete pendingPaymentsData[key]; }
+                else { if (!pendingPaymentsData[key]) changed = true; pendingPaymentsData[key] = data; }
+            }
+            if (changed) playPendingBell();
+            renderPendingPaymentsList();
+        };
+
+        pendingEs.addEventListener('put', (e) => { const { path, data } = JSON.parse(e.data); handleData(path, data); });
+        pendingEs.addEventListener('patch', (e) => { const { path, data } = JSON.parse(e.data); handleData(path, data); });
+        pendingEs.onerror = () => { if (!everConnected) showPendingConnectionWarning(); };
+        /* ✅ 開連線後6秒內完全沒收到任何資料（Firebase一連上就一定會先送一次現有資料，
+           就算是空的也一樣），代表連線根本沒有真的成功——最常見原因是 Firebase 資料庫規則
+           還沒開放 /pendingOrders 節點的讀取權限，不是「剛好沒有訂單」，用驚嘆號跟一般的
+           0筆/沒有訂單區分開來，避免店員誤以為系統正常運作、只是剛好沒人下單 */
+        setTimeout(() => { if (!everConnected) showPendingConnectionWarning(); }, 6000);
+    }
+
+    function showPendingConnectionWarning() {
+        const badge = document.getElementById('pending-count-badge');
+        badge.style.display = 'block';
+        badge.style.background = '#f9a825';
+        badge.innerText = '!';
+        badge.title = '待確認付款清單連線異常，可能是 Firebase 資料庫規則尚未開放 /pendingOrders 節點的讀取權限，請檢查 Realtime Database → Rules';
+    }
+    function hidePendingConnectionWarning() {
+        const badge = document.getElementById('pending-count-badge');
+        if (badge.innerText === '!') { badge.style.display = 'none'; badge.style.background = '#e53935'; badge.title = ''; }
+    }
 
     /* ✅ 主理員菜單同步：主理員後台寫入 /menu，這裡在開機時讀取一次，
        並合併到內建的 config／dictionary.items 上（雲端資料優先，
@@ -414,6 +756,16 @@
                 config.specials = Object.keys(orderMap).sort((a, b) => orderMap[a] - orderMap[b]);
             }
 
+            /* ✅ ver5.9.9：麵種改成可以在主理員後台「🍜 麵種」分頁新增/修改/刪除/排序。
+               雲端有資料時以雲端為準（刪掉的麵種就不會再出現），沿用已知的圖片網址；
+               雲端沒有資料（後台還沒更新到新版）就繼續用程式內建的 10 種麵。 */
+            if (cloud.noodleTypes && Object.keys(cloud.noodleTypes).length > 0) {
+                const nk = Object.keys(cloud.noodleTypes).sort((a, b) => (cloud.noodleTypes[a].order ?? 9999) - (cloud.noodleTypes[b].order ?? 9999));
+                const rebuiltNoodles = {};
+                nk.forEach(k => { rebuiltNoodles[k] = config.noodleTypeImgs[k] || ''; mergeSimpleOptionName(k, cloud.noodleTypes[k]); });
+                config.noodleTypeImgs = rebuiltNoodles;
+            }
+
             /* ✅ 排放位置：依照主理員設定的 order 排序 —— 面/湯重新排列圖片對照表的 key 順序，
                小食則直接排序 additions 陣列，前台所有清單渲染都會跟著這個順序顯示 */
             config.foodImgs = reorderMapByMeta(config.foodImgs, config.meta);
@@ -448,6 +800,8 @@
         const oldText = btn.innerText;
         btn.innerText = '⏳';
         await loadCloudMenu();
+        await loadPromotion();      // ✅ ver5.9.8：活動優惠平常不輪詢，補上手動重新整理時順便一起檢查一次
+                                     // （例如剛在後台把活動打開，店員按這顆鈕就能馬上生效，不用等重開頁面）
         quickSuggestionCache = {};   // 清空隨機推薦快取，讓它根據最新菜單重新抽選
         selectCategory(currentCategory);   // 重新渲染目前畫面
         btn.innerText = oldText;
@@ -458,6 +812,74 @@
 
     let savedDevice = null, savedCharacteristic = null, isFastMode = false;
     let userLang = 'zh';
+    /* ═══════════════ ver5.9.5 新增：簡體中文支援 ═══════════════
+       跟顧客點餐 App(customer-v3_4_1) 同一套做法——不另外維護一整套簡體翻譯字典，
+       繁簡幾乎是同一批詞、只差字形，用「繁轉簡字元對照表」在畫面渲染完之後自動轉換。
+       這份對照表只涵蓋這個 App 目前實際會用到的字（用程式掃過整份原始碼產生）。
+       ⚠️ 重要：userLang 這個變數本身繼續只當 'zh'/'en' 二元判斷用（列印/雲端摘要的語言
+       完全是照 userLang 走的，全部維持原樣不動），簡體只是多一層「畫面顯示」的後製轉換，
+       不會影響收據列印或送到雲端的訂單摘要文字（那些永遠還是繁體或英文，不會印出簡體字）。 */
+    const T2S_MAP = {
+        '並':'并','亂':'乱','佇':'伫','來':'来','個':'个','側':'侧','備':'备','傳':'传','價':'价','優':'优','兒':'儿','內':'内','兩':'两',
+        '別':'别','刪':'删','則':'则','剛':'刚','動':'动','務':'务','勢':'势','區':'区','員':'员','問':'问','啟':'启','單':'单','嗎':'吗',
+        '嘆':'叹','嘗':'尝','噴':'喷','圓':'圆','圖':'图','執':'执','報':'报','場':'场','塊':'块','壓':'压','壞':'坏','實':'实','寫':'写',
+        '寬':'宽','寶':'宝','將':'将','專':'专','尋':'寻','對':'对','導':'导','層':'层','屬':'属','帳':'帐','帶':'带','幫':'帮','幾':'几',
+        '庫':'库','廚':'厨','張':'张','強':'强','彈':'弹','後':'后','徑':'径','從':'从','復':'复','態':'态','應':'应','捲':'卷','掃':'扫',
+        '換':'换','搶':'抢','擇':'择','擊':'击','擋':'挡','據':'据','擠':'挤','擾':'扰','攔':'拦','攤':'摊','敗':'败','數':'数','斷':'断',
+        '於':'于','時':'时','暢':'畅','暫':'暂','書':'书','會':'会','東':'东','條':'条','極':'极','構':'构','標':'标','樣':'样','機':'机',
+        '檔':'档','檢':'检','檯':'台','檻':'槛','櫃':'柜','欄':'栏','權':'权','歷':'历','歸':'归','氣':'气','決':'决','沒':'没','況':'况',
+        '減':'减','測':'测','湯':'汤','準':'准','滿':'满','瀏':'浏','為':'为','無':'无','煩':'烦','熱':'热','燈':'灯','狀':'状','獨':'独',
+        '現':'现','環':'环','產':'产','畫':'画','異':'异','當':'当','疊':'叠','發':'发','監':'监','確':'确','碼':'码','種':'种','稱':'称',
+        '積':'积','穩':'稳','筆':'笔','節':'节','範':'范','簡':'简','籤':'签','紀':'纪','紅':'红','純':'纯','紙':'纸','級':'级','細':'细',
+        '組':'组','結':'结','給':'给','統':'统','經':'经','維':'维','網':'网','線':'线','編':'编','縮':'缩','總':'总','繪':'绘','繼':'继',
+        '續':'续','義':'义','聯':'联','聽':'听','腸':'肠','與':'与','舊':'旧','萬':'万','著':'着','蓋':'盖','蔥':'葱','薦':'荐','藍':'蓝',
+        '處':'处','號':'号','蝦':'虾','螢':'萤','補':'补','裝':'装','裡':'里','製':'制','複':'复','見':'见','規':'规','視':'视','覺':'觉',
+        '覽':'览','觀':'观','觸':'触','訂':'订','計':'计','訊':'讯','記':'记','設':'设','許':'许','詞':'词','詢':'询','試':'试','話':'话',
+        '該':'该','詳':'详','認':'认','語':'语','誤':'误','說':'说','調':'调','請':'请','論':'论','證':'证','識':'识','譯':'译','護':'护',
+        '讀':'读','變':'变','讓':'让','豬':'猪','貨':'货','販':'贩','買':'买','費':'费','資':'资','賣':'卖','賦':'赋','賴':'赖','購':'购',
+        '蹤':'踪','車':'车','軌':'轨','軟':'软','較':'较','載':'载','輪':'轮','輯':'辑','輸':'输','轉':'转','辦':'办','這':'这','連':'连',
+        '進':'进','運':'运','過':'过','遞':'递','遠':'远','適':'适','選':'选','遺':'遗','還':'还','邊':'边','邏':'逻','醬':'酱','釣':'钓',
+        '鈕':'钮','鈴':'铃','銀':'银','銷':'销','錄':'录','錢':'钱','錯':'错','鍵':'键','鎖':'锁','鐘':'钟','長':'长','門':'门','閉':'闭',
+        '開':'开','間':'间','關':'关','陣':'阵','際':'际','隨':'随','險':'险','隱':'隐','隻':'只','雙':'双','雞':'鸡','離':'离','雲':'云',
+        '靜':'静','響':'响','頁':'页','頂':'顶','項':'项','順':'顺','須':'须','預':'预','頭':'头','顆':'颗','題':'题','額':'额','顏':'颜',
+        '類':'类','顧':'顾','顯':'显','風':'风','餃':'饺','餅':'饼','餘':'余','饋':'馈','馬':'马','驗':'验','驚':'惊','驟':'骤','體':'体',
+        '魚':'鱼','鴛':'鸳','鴦':'鸯','麵':'面','麼':'么','點':'点','齊':'齐',
+    };
+    function toSimplified(str) {
+        return String(str).replace(/[\u4e00-\u9fff]/g, ch => T2S_MAP[ch] || ch);
+    }
+    let chineseVariant = 'trad'; // 'trad' | 'simp' —— 只在 userLang==='zh' 時有意義
+    let simplifiedObserver = null;
+    function convertNodeToSimplified(node) {
+        if (node.nodeType === Node.TEXT_NODE) {
+            if (node.parentElement && node.parentElement.closest('.lang-select')) return;
+            const converted = toSimplified(node.textContent);
+            if (converted !== node.textContent) node.textContent = converted;
+            return;
+        }
+        if (node.nodeType !== Node.ELEMENT_NODE) return;
+        const walker = document.createTreeWalker(node, NodeFilter.SHOW_TEXT, {
+            acceptNode: n => (n.parentElement && n.parentElement.closest('.lang-select')) ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT
+        });
+        let n;
+        while (n = walker.nextNode()) {
+            const converted = toSimplified(n.textContent);
+            if (converted !== n.textContent) n.textContent = converted;
+        }
+    }
+    function enableSimplifiedObserver() {
+        if (simplifiedObserver) return;
+        simplifiedObserver = new MutationObserver(mutations => {
+            mutations.forEach(m => {
+                if (m.type === 'childList') m.addedNodes.forEach(convertNodeToSimplified);
+                else if (m.type === 'characterData') convertNodeToSimplified(m.target);
+            });
+        });
+        simplifiedObserver.observe(document.body, { childList: true, subtree: true, characterData: true });
+    }
+    function disableSimplifiedObserver() {
+        if (simplifiedObserver) { simplifiedObserver.disconnect(); simplifiedObserver = null; }
+    }
     let cart = [];
     let currentCategory = '面';
     let tempItem = null;       /* 目前正在自訂的品項（尚未加入購物車）*/
@@ -559,19 +981,79 @@
         }
     }
 
-    async function saveOrderData(data) {
-        localStorage.setItem('million_order_data', JSON.stringify(data));
+    /* ✅ ver5.7.1 修正「本機列印會同時多印出一張雲端／廚房單」的問題：
+       根源：orders.json（CLOUD_URL）這個節點本身就是「廚房出單機監聽、會自動列印」的佇列
+       （見上面 CLOUD_URL 的註解），過去 submitOrderDirectPrint() 印完本機收據後，
+       仍然呼叫了跟一般送單一樣的 saveOrderData()，把這張單也推進了 orders.json，
+       單純用 noPrint 標記寄望廚房那台裝置會自己跳過——但只要廚房端沒有確實檢查這個
+       標記（例如還沒更新到會判斷 noPrint 的版本），這張單一樣會被印出來，變成本機一張
+       ＋廚房一張，一次出兩張。
+       解法：本機列印屬於「這台裝置自己已經印過收據了」，根本不需要、也不應該再進
+       orders.json 這個廚房列印佇列——改成呼叫 saveOrderData 時多帶一個
+       { skipCloudSync: true }，讓本機列印的訂單只存在這台裝置的 localStorage（供
+       歷史記錄、流水號、TOP6人氣統計使用），完全不會推送到廚房出單機那邊，
+       不必再依賴對方是否有正確判斷 noPrint，就能保證同一張單不會被印兩次。*/
+    async function saveOrderData(data, options = {}) {
+        if (!options.skipLocalSave) localStorage.setItem('million_order_data', JSON.stringify(data));
+        if (options.skipCloudSync) return;
         if (data.history && data.history.length > 0) {
             const last = data.history[0];
+            /* ✅ 修正：跟顧客點餐頁面一樣的問題──摘要文字過去只有「品名[大小] 麵種 醬料 x數量」，
+               客人在櫃檯點的「★特別要求」「不要什麼」「加料」完全沒有送進雲端，
+               如果這張單同時也要給廚房那台裝置列印，廚房單上就會看不到這些內容。
+               現在補上，格式跟顧客點餐頁面一致：品項附加說明用 \n 分隔，品項與品項之間仍用 " | "。*/
+            /* ✅ 依照新版廚房單版面需求調整格式（跟顧客點餐頁面一致）：
+               第1行只放「品名[大小] x數量」，第2行改放「麵種/醬料」；
+               子行順序改成 特別要求 → 不要什麼 → 加料 */
+            /* ✅ 外觀細節對齊本機列印(A)的風格，但保留分行結構與子項順序：
+               數量改「(N份)」、[大小]移到第二行跟麵種醬料放一起、分隔符號改用「、」、
+               「不要什麼」改用全形冒號「：」*/
+            /* ✅ ver5.8.3：語言不再寫死為 'zh'——改用這張單實際選擇的列印語言（last.printLang），
+               沒有的話（例如舊資料）才退回中文，確保雲端／廚房單收據的文字語言
+               跟送單當下選的語言一致，而不是永遠只有中文。 */
+            const cloudPrintLang = last.printLang || 'zh';
+            const nameOf = k => (dictionary.items[k] && dictionary.items[k][cloudPrintLang]) ? dictionary.items[k][cloudPrintLang] : k;
             const summaryParts = (last.items || []).map(item => {
-                const name = (dictionary.items[item.mainKey] && dictionary.items[item.mainKey].zh) ? dictionary.items[item.mainKey].zh : item.mainKey;
-                const size = (dictionary.items[item.sizeKey] && dictionary.items[item.sizeKey].zh) ? dictionary.items[item.sizeKey].zh : item.sizeKey;
-                const noodle = item.noodleKey && item.noodleKey !== '湯品' ? ((dictionary.items[item.noodleKey] && dictionary.items[item.noodleKey].zh) ? dictionary.items[item.noodleKey].zh : item.noodleKey) : '';
-                const sauces = (item.sauceKeys || []).map(k => (dictionary.items[k] && dictionary.items[k].zh) ? dictionary.items[k].zh : k).join('/');
-                return `${name}[${size}]${noodle ? ' '+noodle : ''} ${sauces} x${item.qty}`;
+                const name = nameOf(item.mainKey);
+                const size = nameOf(item.sizeKey);
+                const noodle = item.noodleKey && item.noodleKey !== '湯品' ? nameOf(item.noodleKey) : '';
+                const sauces = (item.sauceKeys || []).map(nameOf);
+                const nameLine = `${name} (${item.qty}${cloudPrintLang === 'zh' ? '份' : 'qty'})`;
+                const noodleSauceLine = [`[${size}]`, noodle, ...sauces].filter(Boolean).join(' ');
+
+                const subLines = [];
+                if (item.specialKeys && item.specialKeys.length) {
+                    subLines.push(`★${item.specialKeys.map(nameOf).join('、')}`);
+                }
+                if (item.noExtraKeys && item.noExtraKeys.length) {
+                    subLines.push((cloudPrintLang === 'zh' ? '不要：' : 'No: ') + item.noExtraKeys.map(nameOf).join('、'));
+                }
+                const adds = Object.entries(item.additionKeys||{})
+                    .filter(([k,v]) => v > 0)
+                    .map(([k,v]) => `${nameOf(k)}(${v*getItemRatio(k)}${getItemUnit(k,cloudPrintLang)})`);
+                if (adds.length) subLines.push(`+${adds.join('、')}`);
+
+                return [nameLine, noodleSauceLine, ...subLines].join('\n');
             });
             const summaryText = summaryParts.join(' | ');
+            /* ✅ ver5.8.3：除了給廚房單舊版相容用的純文字 summary，另外多送一份「結構化」的
+               items 明細（跟本機直接列印 drawDirectReceiptCanvas 用的是同一套欄位），
+               讓廚房出單機可以照著跟本機列印一模一樣的排版（字級/順序/堂食外賣標籤）印出來，
+               而不是繼續印看起來不同的「廚房單」樣式。*/
+            const structuredLines = (last.items || []).map(item => {
+                const unit = item.category === '湯' ? (cloudPrintLang === 'zh' ? '碗' : 'bowl') : (cloudPrintLang === 'zh' ? '份' : 'qty');
+                const options = [`[${nameOf(item.sizeKey)}]`, item.noodleKey ? nameOf(item.noodleKey) : '', (item.sauceKeys || []).map(nameOf).join(' ')].filter(Boolean).join(' ');
+                const notes = [];
+                if (item.specialKeys && item.specialKeys.length) notes.push('★' + item.specialKeys.map(nameOf).join('、'));
+                const adds = Object.entries(item.additionKeys || {}).filter(([, v]) => v > 0)
+                    .map(([k, v]) => `${nameOf(k)}(${v * getItemRatio(k)}${getItemUnit(k, cloudPrintLang)})`).join('、');
+                if (adds) notes.push('+' + adds);
+                if (item.noExtraKeys && item.noExtraKeys.length) notes.push((cloudPrintLang === 'zh' ? '不要：' : 'No: ') + item.noExtraKeys.map(nameOf).join('、'));
+                return { name: nameOf(item.mainKey), qty: item.qty, unit, options, notes, isTakeaway: !!item.isTakeaway };
+            });
             const totalPrice = String(last.total || '0');
+            const originalPrice = String(last.original || last.total || '0');
+            const discountAmount = String(last.discount || '0');
             const _now = new Date();
             const _pad = n => String(n).padStart(2, '0');
             const dateKey = `${_now.getFullYear()}-${_pad(_now.getMonth()+1)}-${_pad(_now.getDate())}`;
@@ -600,12 +1082,23 @@
         claimKey:   last.key || null,   // ✅ 對應 orderClaims 底下那筆保證唯一的 Firebase key，方便回頭核對
         summary:    finalSummary,       // 👈 修改：加上打包標記
         totalPrice: totalPrice,
+        originalPrice: originalPrice,   // ✅ 活動優惠：折扣前的原價，供廚房單／後台顯示「原價→折扣→應付」
+        promoDiscount: discountAmount, // ✅ 活動優惠：實際折掉的金額，0 代表這張單沒有套用活動（欄位名稱要跟顧客點餐頁面/廚房單一致，之前這裡叫discountAmount，廚房單讀的是promoDiscount，兩邊對不起來導致折扣明細印不出來）
         dateKey:    dateKey,
         time:       `${_pad(_now.getDate())}/${_pad(_now.getMonth()+1)}/${_now.getFullYear()} ${_pad(_now.getHours())}:${_pad(_now.getMinutes())}:${_pad(_now.getSeconds())}`,
         
         // 👇 👈 新增下面這兩行關鍵欄位！
         isTakeaway:  isTakeaway,
-        diningOption: isTakeaway ? "打包" : "堂食"
+        diningOption: isTakeaway ? "打包" : "堂食",
+        /* ✅ ver5.8.3：把送單當下選的語言、以及跟本機列印同一套結構化明細一起送過去，
+           讓廚房出單機（Kitchen_Ver1_6_1 以上）可以印出語言正確、排版跟本機列印一致的收據。
+           舊版廚房出單機（不認得 lines/printLang 欄位）仍會退回用 summary 純文字列印，不影響運作。*/
+        printLang:  cloudPrintLang,
+        lines:      structuredLines,
+        /* ✅ ver5.5.0：印表機統一交給廚房出單機管理後，「不收據」按鈕不再只是跳過
+           收銀機自己的列印——這個 noPrint 標記會一路帶到雲端，讓廚房那台裝置看到
+           後也跳過自動列印/響鈴，維持「按了不收據＝完全不印這張單」的原本設計 */
+        noPrint:    !!last.noPrint
       };
             try {
                 await fetch(CLOUD_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
@@ -627,7 +1120,10 @@
                     <div style="font-size:0.8rem; color:#888;">${h.items.length} 份餐點</div>
                     <div style="font-size:0.7rem; color:#aaa;">ID: ${h.key || '--'}</div>
                 </div>
-                <button onclick="reprintHistory(${i})" style="background:var(--primary); color:white; border:none; padding:10px 15px; border-radius:10px; font-weight:bold;">重印</button>
+                <div style="display:flex; flex-direction:column; gap:6px;">
+                    <button onclick="actuallyReprintHistory(${i})" style="background:#e53935; color:white; border:none; padding:9px 15px; border-radius:10px; font-weight:bold;">🖨️ 重印</button>
+                    <button onclick="reprintHistory(${i})" style="background:var(--primary); color:white; border:none; padding:9px 15px; border-radius:10px; font-weight:bold;">🔍 預覽</button>
+                </div>
             </div>`).join('');
     }
 
@@ -635,7 +1131,7 @@
         const data = getOrderData();
         const target = data.history[idx];
         if (!target) return;
-        const choice = confirm(`重印訂單 No. ${target.num}?\n\n【確定/OK】= 中文\n【取消/Cancel】= English`);
+        const choice = confirm(`預覽訂單 No. ${target.num}?（這裡只會顯示預覽畫面，不會真的列印；如需印出紙本，請按「🖨️重印」）\n\n【確定/OK】= 中文\n【取消/Cancel】= English`);
         const printLang = choice ? 'zh' : 'en';
         let originalCart = [...cart];
         cart = target.items;
@@ -644,6 +1140,46 @@
         cart = originalCart;
         renderPanelCartSummary(); updateBottomBar();
         toggleHistory();
+    }
+
+    /* ✅ 真正的重印：跟上面的「🔍預覽」不一樣，這裡會真的印出紙本。
+       本機模式：直接透過藍牙印表機重印（沿用原本記錄的單號/ID，不會佔用新的流水號）；
+       雲端模式：重新送一次到 /orders.json，廚房出單機監聽到會自動再印一次。
+       兩種模式都不會覆蓋掉本地已存的當日訂單紀錄、也不會重複計入銷售統計。
+       ✅ ver5.9.6：拿掉原本「確定要重印嗎？」的二次確認彈窗——按下紅色的🖨️重印鈕本身
+       就已經是明確的操作意圖了，不需要再多問一次。同時拿掉印完之後的 alert() 彈窗
+       （狀態列文字已經有顯示結果），改成印完就自動關閉歷史面板、退回上一頁；
+       如果印失敗，還是會跳 alert() 顯示錯誤原因，而且不會自動關閉面板，方便直接重試。 */
+    async function actuallyReprintHistory(idx) {
+        const data = getOrderData();
+        const target = data.history[idx];
+        if (!target) return;
+
+        const printLang = target.printLang || 'zh';
+        const savedMethod = localStorage.getItem(PRINT_METHOD_KEY);
+        const originalCart = [...cart];
+        cart = target.items;
+        let success = false;
+
+        try {
+            if (savedMethod === 'direct') {
+                const printer = await getDirectPrinter();
+                drawDirectReceiptCanvas(target.num, printLang, target.key);
+                document.getElementById('status-text').innerText = '🖨️ 正在重印...';
+                await writeDirectReceipt(printer);
+                document.getElementById('status-text').innerText = '✅ 已重印';
+            } else {
+                await saveOrderData({ history: [target] }, { skipLocalSave: true });
+                document.getElementById('status-text').innerText = userLang === 'zh' ? '✅ 已重新送到廚房出單機列印' : '✅ Sent to the kitchen printer again';
+            }
+            success = true;
+        } catch (err) {
+            alert((userLang === 'zh' ? '重印失敗：' : 'Reprint failed: ') + err.message);
+        } finally {
+            cart = originalCart;
+            renderPanelCartSummary(); updateBottomBar();
+            if (success) toggleHistory(); // 印成功才自動關閉面板；失敗的話留在這裡，方便直接再按一次重試
+        }
     }
 
     /* ═══════════════ 當日銷售紀錄（新增：供「人氣」一鍵下單使用） ═══════════════ */
@@ -732,42 +1268,18 @@
 
         return combined.slice(0, n);
     }
-    /* ═══════════════ 藍牙連接與列印（沿用 ver3.10.0，邏輯未變動） ═══════════════ */
-    async function getPrinter() {
-        if (savedDevice && savedDevice.gatt.connected && savedCharacteristic) return savedCharacteristic;
-        document.getElementById('status-text').innerText = "🔍 搜尋印表機...";
-        try {
-            savedDevice = await navigator.bluetooth.requestDevice({
-                acceptAllDevices: true,
-                optionalServices: ['0000ffe0-0000-1000-8000-00805f9b34fb']
-            });
-            const server = await savedDevice.gatt.connect();
-            const services = await server.getPrimaryServices();
-            for (const s of services) {
-                const chars = await s.getCharacteristics();
-                savedCharacteristic = chars.find(c => c.properties.writeWithoutResponse) || chars.find(c => c.properties.write);
-                if (savedCharacteristic) { isFastMode = !!chars.find(c => c.properties.writeWithoutResponse); break; }
-            }
-            document.getElementById('status-text').innerText = "● 藍牙已連線";
-            document.getElementById('status-text').style.color = "#34a853";
-            return savedCharacteristic;
-        } catch (e) {
-            document.getElementById('status-text').innerText = "❌ 未連線";
-            throw e;
-        }
-    }
-
-    /* --- 不用收據：跳號存檔，不觸發列印，同樣計入銷售紀錄 --- */
+    /* ═══════════════ 送出訂單／不收據（印表機統一交給廚房出單機管理，詳見下方 handleFinalizeAndPrint 的說明）═══════════════ */
     async function handleNoReceipt() {
         if (cart.length === 0) return;
         const confirmMsg = userLang === 'zh'
-            ? '確認不列印收據？\n系統仍會記錄此訂單並更新流水號。'
-            : 'Confirm no receipt?\nOrder will still be saved and sequence number updated.';
+            ? '確認不列印收據？\n系統仍會記錄此訂單並更新流水號，廚房出單機也不會印出這張單。'
+            : 'Confirm no receipt?\nOrder will still be saved and sequence number updated; the kitchen printer will skip it too.';
         if (!confirm(confirmMsg)) return;
 
         const { no: currentNo, key: currentKey } = await getNextOrderNo();   // ✅ 改用雲端共用流水號，同時取得 Firebase key
         const orderData = getOrderData();
-        orderData.history.unshift({ num: currentNo, key: currentKey, total: document.getElementById('cart-total-sum').innerText, items: JSON.parse(JSON.stringify(cart)) });
+        const noReceiptTotals = getCartTotals(cart);
+        orderData.history.unshift({ num: currentNo, key: currentKey, total: noReceiptTotals.final.toFixed(2), original: noReceiptTotals.original.toFixed(2), discount: noReceiptTotals.discount.toFixed(2), items: JSON.parse(JSON.stringify(cart)), noPrint: true });
         recordSale(cart);
         await saveOrderData(orderData);
 
@@ -779,24 +1291,318 @@
         clearWholeOrder(true);
     }
 
-    /* ✅ 修改：原本用瀏覽器內建 confirm()（只能兩個按鈕：OK=中文／Cancel=English），
-       現在改成自訂彈窗，多加一個「取消返回」按鈕——按下去只關閉彈窗，
-       不會列印、也不會清空或變動購物車，已選擇的內容原封不動保留，可以繼續編輯 */
-    function askPrintLanguage() {
+    /* ✅ ver5.5.0：印表機現在統一由廚房出單機管理（因為藍牙印表機一次只能跟一台裝置連線，
+       這台收銀機不再自己連印表機，避免兩邊搶著連同一部印表機、導致其中一邊列印失敗）。
+       ✅ ver5.7.1：「選擇列印方式」只需要在這台裝置第一次送單時詢問一次，
+       選好之後存進 localStorage，之後每一次「確認送出」都直接沿用同一個選擇，
+       不再重複彈出詢問視窗（想改變選擇可按頂部的🖨️⚙️圖示）。
+       ✅ ver5.8.3 修正「語言選擇彈窗不見了」的問題：
+       v5.5.0 的註解說「廚房那邊一律用中文摘要列印，語言選擇不會影響任何實際印出來的東西」，
+       所以把語言彈窗直接拿掉了——但這其實是另一個沒修好的問題（雲端／廚房單收據永遠只有
+       中文），不是「語言選擇本來就沒用」。現在反過來：每次按「確認送出」都會先跳出
+       中文／English／取消 三選一的語言彈窗，選好的語言會一路帶到本機列印（drawDirectReceiptCanvas）
+       跟雲端／廚房單列印（saveOrderData → payload.printLang，廚房出單機依此顯示對應語言），
+       兩邊收據語言才會真的跟著這裡的選擇走。按「取消」則什麼都不做，購物車維持原狀。*/
+    const PRINT_METHOD_KEY = 'million_print_method'; // 存的值：'direct'（本機列印）或 'cloud'（Firebase／廚房出單機）
+    /* ✅ ver5.9.6 新增：PRINT_LANG_KEY 這個常數之前一直沒有真的宣告出來，但下面
+       quickSuggestOrder()／quickOrderCombo()（快選卡片、人氣一鍵下單）兩處
+       已經在用 localStorage.getItem(PRINT_LANG_KEY) 讀取列印語言了——沒宣告會直接
+       噴 ReferenceError，等於這兩個「一鍵下單」功能本來就是壞的。這裡補上宣告，
+       順便讓「確認送出」的主流程也改用同一個設定（見下面 printLangSetting）。 */
+    const PRINT_LANG_KEY = 'million_print_lang'; // 存的值：'zh'（中文列印）或 'en'（英文列印），跟畫面顯示語言(userLang)分開設定
+    let printLangSetting = localStorage.getItem(PRINT_LANG_KEY) || 'zh'; // 預設中文
+    function setPrintLang(l) {
+        printLangSetting = l;
+        localStorage.setItem(PRINT_LANG_KEY, l);
+        const btn = document.getElementById('print-lang-switch');
+        btn.classList.toggle('active', l === 'en');
+        btn.querySelector('.print-lang-switch-text').innerText = l === 'zh' ? '🖨️中' : '🖨️EN';
+    }
+    /* ✅ ver5.9.7：滑動開關是同一顆按鈕點下去切換左右狀態，不是兩顆各自獨立的按鈕，
+       所以用一個 toggle 函式反轉目前狀態，取代原本各自呼叫 setPrintLang('zh')/setPrintLang('en') */
+    function togglePrintLang() { setPrintLang(printLangSetting === 'zh' ? 'en' : 'zh'); }
+    let pendingPrintLang = 'zh'; // 這次送單暫存的語言選擇，選完方式後就會用它印出收據
+
+    /* ✅ ver5.9.6：新增一個獨立的「收據列印語言」開關（跟畫面顯示語言 userLang 分開處理），
+       預設中文。之前(ver5.7.6)收據語言是直接沿用畫面顯示語言，導致切成英文介面操作時，
+       收據也會跟著印英文，沒辦法「介面英文、收據中文」這樣分開設定——現在改成收據語言
+       固定看這個開關(printLangSetting)，跟 userLang 完全獨立，切換介面語言不會再影響
+       收據要印哪種語言，也不用每次送單都重新問一次。 */
+    function confirmSubmitPrompt() {
         if (cart.length === 0) { alert(userLang==='zh' ? '購物車是空的' : 'Cart is empty'); return; }
-        document.getElementById('plm-title').innerText = userLang==='zh' ? '選擇列印語言' : 'Select Print Language';
-        document.getElementById('plm-cancel-btn').innerText = userLang==='zh' ? '取消返回' : 'Cancel & Back';
+        pendingPrintLang = printLangSetting;
+        const savedMethod = localStorage.getItem(PRINT_METHOD_KEY);
+        if (savedMethod === 'direct') { submitOrderDirectPrint(pendingPrintLang); return; }
+        if (savedMethod === 'cloud') { submitOrderViaFirebase(pendingPrintLang); return; }
+        // 尚未選過列印方式（這台裝置第一次送單）：詢問一次列印方式，語言用上面設定好的印表機語言
+        configurePrintMethodDialog();
         document.getElementById('print-lang-modal').style.display = 'flex';
     }
 
-    function confirmPrintLanguage(lang) {
+    /* 使用者在彈窗上點了其中一個列印方式：記住選擇，之後不再詢問，並立刻用剛剛選好的語言執行這次送單 */
+    function choosePrintMethod(method) {
+        localStorage.setItem(PRINT_METHOD_KEY, method);
         document.getElementById('print-lang-modal').style.display = 'none';
-        handleFinalizeAndPrint(lang);
+        if (method === 'direct') submitOrderDirectPrint(pendingPrintLang);
+        else submitOrderViaFirebase(pendingPrintLang);
     }
 
-    /* 取消返回：只關閉彈窗，購物車與所有已選擇的內容維持原狀，不做任何清除或列印動作 */
-    function cancelPrintLanguage() {
+    /* 頂部🖨️⚙️圖示：清除已記住的選擇，重新跳出選擇視窗（不會立刻送單，只是重新詢問一次） */
+    function changePrintMethod() {
+        localStorage.removeItem(PRINT_METHOD_KEY);
+        configurePrintMethodDialog();
+        document.getElementById('print-lang-modal').style.display = 'flex';
+    }
+
+    function submitOrderViaFirebase(printLang = 'zh') {
         document.getElementById('print-lang-modal').style.display = 'none';
+        handleFinalizeAndPrint(printLang);
+    }
+
+    function configurePrintMethodDialog() {
+        const card = document.querySelector('#print-lang-modal .plm-card');
+        card.innerHTML = `
+            <div class="plm-title">選擇列印方式</div>
+            <div style="font-size:0.85rem; color:#888; font-weight:normal; margin:-10px 0 16px;">本機列印會搜尋這部裝置附近的藍牙印表機；雲端列印則交由廚房出單機處理。這個選擇只會問這一次，之後會自動沿用（如需更改，請按頂部的🖨️⚙️圖示）。</div>
+            <button class="plm-btn plm-btn-zh" onclick="choosePrintMethod('direct')">🖨️ 本機搜尋印表機並直接列印</button>
+            <button class="plm-btn plm-btn-en" onclick="choosePrintMethod('cloud')">☁️ 使用 Firebase 命令（廚房出單機）</button>
+            <button class="plm-btn plm-btn-cancel" onclick="cancelSubmitPrompt()">取消返回</button>
+        `;
+    }
+
+    async function getDirectPrinter() {
+        if (!navigator.bluetooth) throw new Error('此瀏覽器不支援藍牙列印。請使用 Android Chrome。');
+        if (savedDevice && savedDevice.gatt.connected && savedCharacteristic) return savedCharacteristic;
+        document.getElementById('status-text').innerText = '🔍 搜尋印表機...';
+        savedDevice = await navigator.bluetooth.requestDevice({
+            acceptAllDevices: true,
+            optionalServices: ['0000ffe0-0000-1000-8000-00805f9b34fb']
+        });
+        const server = await savedDevice.gatt.connect();
+        const services = await server.getPrimaryServices();
+        for (const service of services) {
+            const chars = await service.getCharacteristics();
+            const characteristic = chars.find(c => c.properties.writeWithoutResponse) || chars.find(c => c.properties.write);
+            if (characteristic) {
+                savedCharacteristic = characteristic;
+                isFastMode = !!characteristic.properties.writeWithoutResponse;
+                break;
+            }
+        }
+        if (!savedCharacteristic) throw new Error('找不到可寫入的印表機服務。');
+        document.getElementById('status-text').innerText = '● 藍牙印表機已連線';
+        document.getElementById('status-text').style.color = '#34a853';
+        return savedCharacteristic;
+    }
+
+    async function writeDirectReceipt(characteristic) {
+        const canvas = document.getElementById('printCanvas');
+        const pixels = canvas.getContext('2d').getImageData(0, 0, 576, canvas.height).data;
+        const widthBytes = 72;
+        await characteristic.writeValue(new Uint8Array([0x1B, 0x40]));
+        for (let y = 0; y < canvas.height; y++) {
+            const row = new Uint8Array(8 + widthBytes);
+            row.set([0x1D, 0x76, 0x30, 0, widthBytes, 0, 1, 0]);
+            for (let x = 0; x < widthBytes; x++) {
+                let byte = 0;
+                for (let bit = 0; bit < 8; bit++) {
+                    const index = ((y * 576) + (x * 8 + bit)) * 4;
+                    if (pixels[index] * 0.3 + pixels[index + 1] * 0.59 + pixels[index + 2] * 0.11 < 135) byte |= (1 << (7 - bit));
+                }
+                row[8 + x] = byte;
+            }
+            if (isFastMode) await characteristic.writeValueWithoutResponse(row);
+            else await characteristic.writeValue(row);
+            if (y % 20 === 0) await new Promise(resolve => setTimeout(resolve, 40));
+        }
+        await characteristic.writeValue(new Uint8Array([0x1B, 0x64, 0x03, 0x1D, 0x56, 0x00]));
+    }
+
+    async function submitOrderDirectPrint(printLang = 'zh') {
+        document.getElementById('print-lang-modal').style.display = 'none';
+        const button = document.getElementById('printBtn');
+        try {
+            button.disabled = true;
+            const printer = await getDirectPrinter();
+            const orderInfo = await getNextOrderNo();
+            drawDirectReceiptCanvas(orderInfo.no, printLang, orderInfo.key);
+            document.getElementById('status-text').innerText = '🖨️ 正在本機列印...';
+            await writeDirectReceipt(printer);
+
+            // ✅ 修正資料漏失問題：本機已經印出收據，但訂單紀錄仍然要正常同步到雲端
+            // （帶著 noPrint:true 標記），這樣廚房出單機看到這筆單會自動跳過響鈴/重印
+            // （沿用「不收據」按鈕原本就有的 noPrint 機制），但銷售紀錄、訂單清單都不會遺失。
+            // 之前這裡用 { skipCloudSync: true } 整個跳過雲端同步，導致這筆單完全沒有存進
+            // Firebase，後台/收銀機的「待確認付款」「銷售報表」等任何依賴雲端資料的地方
+            // 都看不到這筆單，這才是你說的「資料漏失」的根本原因。
+            const orderData = getOrderData();
+            const directTotals2 = getCartTotals(cart);
+            orderData.history.unshift({
+                num: orderInfo.no, key: orderInfo.key,
+                total: directTotals2.final.toFixed(2), original: directTotals2.original.toFixed(2), discount: directTotals2.discount.toFixed(2),
+                items: JSON.parse(JSON.stringify(cart)), noPrint: true, printLang
+            });
+            recordSale(cart);
+            await saveOrderData(orderData);
+            clearWholeOrder(true);
+            document.getElementById('status-text').innerText = '✅ 已本機列印並送出訂單';
+            /* ✅ ver5.9.4：拿掉這裡原本的 alert()彈窗——本機列印成功後，狀態列已經會顯示
+               「✅ 已本機列印並送出訂單」，不需要再跳一個要手動按OK的訊息視窗擋住畫面，
+               讓忙碌時連續點餐、連續列印可以更順暢，不用每印一張就多按一次OK。*/
+        } catch (error) {
+            document.getElementById('status-text').innerText = '❌ 本機列印失敗';
+            alert('本機列印失敗：' + error.message);
+        } finally {
+            button.disabled = false;
+        }
+    }
+
+    // Direct-print layout: retained from ver_5_3_6 to match receipt A in the reference photo.
+    /* ✅ ver5.7.2 修正「本機列印少了堂食/外賣標籤」：
+       根源：雲端／廚房單（buildReceiptLayout + kitchen 端 buildKitchenReceiptLayout）本來就會在
+       單子最後印一個全單最大字體的「🍽 堂食」或「🥡 外賣/打包」標籤，但本機直接列印
+       （drawDirectReceiptCanvas，供藍牙印表機使用）當初漏了這一段，只有每個外賣品項旁邊印一行
+       小小的「(Takeaway fee...)」，沒有整單堂食/外賣的大標籤——所以本機印出來的單看起來
+       「少了」這個標記，雲端那邊（廚房單）才有。這裡補上跟雲端一致的邏輯：只要購物車裡
+       每一份餐點都勾了外賣，整單才算外帶，印大大的「外賣/打包」；否則印「堂食」。*/
+    function drawDirectReceiptCanvas(orderNo, printLang, orderKey = null) {
+        const canvas = document.getElementById('printCanvas');
+        const ctx = canvas.getContext('2d');
+        const centerX = 288, maxW = 450;
+        const cfg = printConfig;
+        /* ✅ 修正核心bug：舊版「預先估算高度」跟「實際畫」用了兩套不同的行距數字
+           （估算用45/40/36，實際畫用65/60/56），只要品項一多、或多印了活動折扣兩行，
+           算出來的canvas高度就會比實際畫的內容還矮，底下的堂食/外賣標籤就會被切在畫布外面
+           （不是沒印，是印到看不到的地方去了）。改成跟廚房單一樣的做法：只算一次，
+           把每一行「要畫什麼、畫在哪個y座標」都記進 cmds 陣列，最後量出來的高度
+           保證跟實際畫出來的內容一致，不會再有兩邊對不起來的問題。
+           ✅ 同時把「A：品項內行距」「B/C：分隔線後留白、堂食標籤前留白、標籤字級」
+           都改成讀取主理員後台「列印設定」裡本來就有的 gapWithinItem／gapBetweenItems／
+           gapBeforeTag／tagSize 這幾個欄位，之後要調整，去後台改數字存檔就好，不用再找我改程式。 */
+        const titlePx = Math.max(16, Math.round((cfg.titleSize || 18) * CANVAS_SCALE)); // B
+        const timePx  = Math.max(14, Math.round((cfg.timeSize  || cfg.noteSize || 11) * CANVAS_SCALE)); // C
+        const bodyPx  = Math.max(16, Math.round((cfg.bodySize  || 13) * CANVAS_SCALE)); // E
+        const optionsPx = Math.max(14, Math.round((cfg.optionsSize || cfg.bodySize || 13) * CANVAS_SCALE)); // F
+        const notePx  = Math.max(14, Math.round((cfg.noteSize  || 11) * CANVAS_SCALE)); // G
+        const feePx     = Math.max(12, Math.round((cfg.takeawayFeeSize || 18))); // H
+        const promoOrigPx = Math.max(14, Math.round((cfg.promoOriginalSize || cfg.noteSize || 11) * CANVAS_SCALE)); // I
+        const promoDiscPx = Math.max(14, Math.round((cfg.promoDiscountSize || cfg.noteSize || 11) * CANVAS_SCALE)); // J
+        const totalPx   = Math.max(24, Math.round((cfg.totalSize || 42))); // K
+        const tagPx   = Math.max(20, Math.round((cfg.tagSize   || 29) * CANVAS_SCALE)); // L
+        const orderNoPx = Math.max(24, Math.round((cfg.orderNoSize || 44))); // D
+        const dividerPx = Math.max(12, Math.round((cfg.dividerSize || 20)));
+        const gapWithin    = cfg.gapWithinItem   ?? 8;   // C
+        const gapBetween   = cfg.gapBetweenItems ?? 8;   // A
+        const gapBeforeTag = cfg.gapBeforeTag    ?? 20;  // B
+        const gapAfterTitle = cfg.gapAfterTitle ?? 15;   // D
+        const gapAfterTime  = cfg.gapAfterTime  ?? 12;   // E
+        const gapAfterOrderNo = cfg.gapAfterOrderNo ?? 20; // G
+        const gapAfterTopDivider = cfg.gapAfterTopDivider ?? 17; // I
+        const gapAfterTag = cfg.gapAfterTag ?? 20;       // K
+        const bottomMargin = cfg.bottomMargin ?? 40;     // L
+        const topMargin = cfg.topMargin ?? 20;
+        const gapAfterItemContent = cfg.gapAfterItemContent ?? 8;
+        const gapAfterId = cfg.gapAfterId ?? 20;
+        const dividerText  = cfg.itemDivider || '--------------------------------------------------------------';
+
+        const getName = key => (dictionary.items[key] && dictionary.items[key][printLang]) ? dictionary.items[key][printLang] : (key || '');
+        const isAllTakeaway = cart.length > 0 && cart.every(item => item.isTakeaway === true);
+
+        const cmds = [];
+        let y = topMargin;
+
+        cmds.push({ text: cfg.shopName || 'Million FishBall Noodle', font: `bold ${titlePx}px sans-serif`, y });
+        y += titlePx + gapAfterTitle;
+        cmds.push({ text: new Date().toLocaleString(), font: `${timePx}px sans-serif`, y });
+        y += timePx + gapAfterTime;
+        cmds.push({ text: `No. ${orderNo}`, font: `bold ${orderNoPx}px sans-serif`, y });
+        y += orderNoPx + gapAfterOrderNo;
+        if (cfg.showTicketId) {
+            cmds.push({ text: `ID: ${orderKey || '--'}`, font: `${notePx}px sans-serif`, color: '#555', y });
+            y += notePx + gapAfterId;
+        }
+        cmds.push({ text: dividerText, font: `bold ${dividerPx}px sans-serif`, y });
+        y += dividerPx + gapAfterTopDivider;
+
+        cart.forEach(item => {
+            const unit = item.category === '湯' ? (printLang === 'zh' ? '碗' : 'bowl') : (printLang === 'zh' ? '份' : 'qty');
+            const options = [`[${getName(item.sizeKey)}]`, item.noodleKey ? getName(item.noodleKey) : '', (item.sauceKeys || []).map(getName).join(' ')].filter(Boolean).join(' ');
+            const notes = [];
+            if (item.specialKeys && item.specialKeys.length) notes.push('★' + item.specialKeys.map(getName).join('、'));
+            const adds = Object.entries(item.additionKeys || {}).filter(([, value]) => value > 0)
+                .map(([key, value]) => `${getName(key)}(${value * getItemRatio(key)}${getItemUnit(key, printLang)})`).join('、');
+            if (adds) notes.push('+' + adds);
+            if (item.noExtraKeys && item.noExtraKeys.length) notes.push((printLang === 'zh' ? '不要：' : 'No: ') + item.noExtraKeys.map(getName).join('、'));
+
+            const mainPx = printLang === 'en' ? Math.round(bodyPx * 1.1) : Math.round(bodyPx * 1.3);
+            cmds.push({ text: `${getName(item.mainKey)} (${item.qty}${unit})`, font: `bold ${mainPx}px sans-serif`, y });
+            /* ✅ ver5.9.4：本機列印（藍牙）之前只在小小的 [大] 字裡標示大份，太不明顯，
+               忙碌時容易漏看，要靠人手拿螢光筆另外圈起來。現在補上跟雲端／廚房單
+               （buildReceiptLayout）同一套「大」黑底白字圓形徽章，畫在品項名稱這一行
+               的最右邊，讓大份訂單一眼就能看到，不用再手動標記。*/
+            if (item.sizeKey === '大的') {
+                cmds.push({ type: 'circleBadge', cx: 545, cy: y + Math.round(mainPx / 2), r: Math.max(24, Math.round(mainPx / 2) + 8), label: '大' });
+            }
+            y += mainPx + gapWithin;
+
+            if (options) {
+                cmds.push({ text: options, font: `bold ${optionsPx}px sans-serif`, y });
+                y += optionsPx + gapWithin;
+            }
+            notes.forEach(note => {
+                cmds.push({ text: note, font: `bold ${notePx}px sans-serif`, y });
+                y += notePx + gapWithin;
+            });
+            if (item.isTakeaway) {
+                cmds.push({ text: (printLang === 'zh' ? '(外賣附加: +$' : '(Takeaway fee: +$') + (0.30 * item.qty).toFixed(2) + ')', font: `${feePx}px sans-serif`, color: '#555', y });
+                y += feePx + gapWithin;
+            }
+            y += gapAfterItemContent;
+            cmds.push({ text: dividerText, font: `bold ${dividerPx}px sans-serif`, color: 'black', y });
+            y += dividerPx + gapBetween;
+        });
+
+        const directTotals = getCartTotals(cart);
+        if (directTotals.discount > 0) {
+            cmds.push({ text: (printLang === 'zh' ? '原價: $' : 'Subtotal: $') + directTotals.original.toFixed(2), font: `${promoOrigPx}px sans-serif`, color: '#777', y });
+            y += promoOrigPx + 8;
+            cmds.push({ text: (printLang === 'zh' ? '🎉活動折扣: -$' : '🎉Promo Discount: -$') + directTotals.discount.toFixed(2), font: `bold ${promoDiscPx}px sans-serif`, color: '#c62828', y });
+            y += promoDiscPx + 12;
+        }
+        cmds.push({ text: 'TOTAL: $' + directTotals.final.toFixed(2), font: `bold ${totalPx}px sans-serif`, y });
+        y += totalPx + gapBeforeTag;
+
+        const tagText = isAllTakeaway
+            ? (printLang === 'zh' ? '🥡 外賣 / 打包' : '🥡 TAKEAWAY')
+            : (printLang === 'zh' ? '🍽 堂食' : '🍽 DINE-IN');
+        cmds.push({ text: tagText, font: `bold ${tagPx}px sans-serif`, color: isAllTakeaway ? '#3949ab' : '#1b5e20', y });
+        y += tagPx + gapAfterTag;
+
+        canvas.height = y + bottomMargin;
+        ctx.fillStyle = 'white'; ctx.fillRect(0, 0, 576, canvas.height);
+        ctx.textBaseline = 'top'; ctx.textAlign = 'center';
+        cmds.forEach(c => {
+            if (c.type === 'circleBadge') {
+                ctx.save();
+                ctx.beginPath(); ctx.arc(c.cx, c.cy, c.r, 0, Math.PI * 2);
+                ctx.fillStyle = 'black'; ctx.fill();
+                ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                ctx.font = `bold ${Math.round(c.r * 1.2)}px sans-serif`; ctx.fillStyle = 'white';
+                ctx.fillText(c.label, c.cx, c.cy);
+                ctx.textBaseline = 'top'; ctx.textAlign = 'center'; ctx.restore();
+                return;
+            }
+            ctx.font = c.font;
+            ctx.fillStyle = c.color || 'black';
+            ctx.fillText(c.text, centerX, c.y, maxW);
+        });
+        ctx.fillStyle = 'black';
+    }
+
+    /* 取消返回：只關閉彈窗，購物車與所有已選擇的內容維持原狀，不做任何清除或送出動作 */
+    function cancelSubmitPrompt() {
+        document.getElementById('print-lang-modal').style.display = 'none';
+
     }
 
     /* --- 預覽列印：與正式列印共用同一套 drawPrintCanvas 繪圖邏輯，跳過藍牙傳輸 --- */
@@ -810,183 +1616,203 @@
     }
     function closePrintPreview() { document.getElementById('preview-modal').style.display = 'none'; }
 
-    /* forcedOrder（{no,key}物件）/ isReprint 用於「人氣一鍵下單」與「歷史重印」；successMsg 可自訂完成提示文字 */
+    /* forcedOrder（{no,key}物件）用於「人氣一鍵下單」與「歷史重印」；
+       isReprint+successMsg 用來分辨三種呼叫情境（詳見下方函式內的說明）*/
     async function handleFinalizeAndPrint(printLang, forcedOrder = null, isReprint = false, successMsg = null) {
         const btn = document.getElementById('printBtn');
         try {
             btn.disabled = true;
-            const targetChar = await getPrinter();
-            const orderInfo = forcedOrder || await getNextOrderNo();   // ✅ 改用雲端共用流水號，同時取得 Firebase key
-            const currentNo = orderInfo.no, currentKey = orderInfo.key;
-            document.getElementById('status-text').innerText = "📤 列印中...";
-            drawPrintCanvas(currentNo, printLang, currentKey);
-            const pixels = document.getElementById('printCanvas').getContext('2d').getImageData(0, 0, 576, document.getElementById('printCanvas').height).data;
-            await targetChar.writeValue(new Uint8Array([0x1B, 0x40]));
-            const widthBytes = 72;  // ✅ 80mm紙捲：576點 ÷ 8 = 72 bytes（原58mm紙捲為48 bytes/384點）
-            for (let y = 0; y < document.getElementById('printCanvas').height; y++) {
-                let row = new Uint8Array(8 + widthBytes);
-                row.set([0x1D, 0x76, 0x30, 0, widthBytes, 0, 1, 0]);
-                for (let x = 0; x < widthBytes; x++) {
-                    let b = 0;
-                    for (let bit = 0; bit < 8; bit++) {
-                        let idx = ((y * 576) + (x * 8 + bit)) * 4;
-                        if (pixels[idx] * 0.3 + pixels[idx+1] * 0.59 + pixels[idx+2] * 0.11 < 135) b |= (1 << (7 - bit));
-                    }
-                    row[8 + x] = b;
-                }
-                if (isFastMode) await targetChar.writeValueWithoutResponse(row); else await targetChar.writeValue(row);
-                if (y % 20 === 0) await new Promise(r => setTimeout(r, 40));
-            }
-            await targetChar.writeValue(new Uint8Array([0x1B, 0x64, 0x03, 0x1D, 0x56, 0x00]));
             if (!isReprint) {
+                /* ── 情境1：一般「確認送出」──印表機統一交給廚房出單機，
+                   這裡只需要把訂單存進雲端，廚房那邊的監聽會自動列印 ── */
+                const orderInfo = forcedOrder || await getNextOrderNo();
+                const currentNo = orderInfo.no, currentKey = orderInfo.key;
+                document.getElementById('status-text').innerText = "📤 送出中...";
                 const orderData = getOrderData();
-                orderData.history.unshift({ num: currentNo, key: currentKey, total: document.getElementById('cart-total-sum').innerText, items: JSON.parse(JSON.stringify(cart)) });
+                const finalizeTotals = getCartTotals(cart);
+                orderData.history.unshift({ num: currentNo, key: currentKey, total: finalizeTotals.final.toFixed(2), original: finalizeTotals.original.toFixed(2), discount: finalizeTotals.discount.toFixed(2), items: JSON.parse(JSON.stringify(cart)), printLang });
                 recordSale(cart);
                 await saveOrderData(orderData);
-                alert("列印成功！");
+                alert(successMsg || (userLang==='zh' ? '✅ 訂單已送出！廚房出單機將自動列印。' : '✅ Order submitted! The kitchen printer will print it automatically.'));
                 clearWholeOrder(true);
+            } else if (successMsg) {
+                /* ── 情境2：人氣一鍵下單──呼叫這裡之前，saveOrderData 已經執行過了
+                   （廚房那邊也已經會自動列印），這裡只需要顯示完成訊息 ── */
+                alert(successMsg);
             } else {
-                alert(successMsg || "重印成功！");
+                /* ── 情境3：真正的「重印歷史訂單」──印表機現在統一由廚房出單機管理，
+                   這台收銀機不再自己連印表機，所以改成只顯示預覽畫面，
+                   紙本重印請到廚房那台裝置上操作（因為印表機實際放在那邊）── */
+                await loadPrintConfig();
+                drawPrintCanvas(forcedOrder.no, printLang, forcedOrder.key);
+                const canvas = document.getElementById('printCanvas');
+                document.getElementById('preview-canvas-img').src = canvas.toDataURL('image/png');
+                document.getElementById('preview-modal').style.display = 'flex';
+                alert(userLang==='zh'
+                    ? '這是預覽畫面。印表機現在統一由廚房出單機管理，如需重印紙本，請到廚房那台裝置上操作重印。'
+                    : 'This is a preview only. The printer is now managed by the kitchen device — please reprint from there.');
             }
             document.getElementById('status-text').innerText = "● 已完成";
             btn.disabled = false;
         } catch (e) {
-            alert("列印失敗：" + e.message); btn.disabled = false;
+            alert("送出失敗：" + e.message); btn.disabled = false;
         }
     }
 
-    /* ✅ 修正「訂餐越多、底部空白越多」問題：
-       根源：舊版用「每項固定扣 260px」概估高度（280 + cart.length*260 + 50），
-       但很多品項實際遠用不到 260px——例如小食類（西刀魚餅、紫菜）完全沒有「大
-       小/麵種/醬料」那一行，沒有特別要求、沒有加料，實際只需要約 67-107px；就
-       算是麵/湯品項，只要沒勾選特別要求/加料/不要，實際也只需要約 107px。這個
-       落差（260px 估計 vs 實際 67-165px）會逐項累加，訂的品項越多，累積的空白
-       就越誇張，完全符合你在收據上用 A 標記出來的現象。
-       解法：改成「先模擬跑一次跟正式繪圖完全相同的判斷式與 y 座標累加邏輯」（不
-       實際畫圖，只精算數字），算出這張收據「真正需要」的高度，再拿這個精算值
-       去設定 canvas 高度——這樣無論品項多寡、內容多寡，底部都只會留一個固定、
-       很小的安全邊界，不會再隨品項數量倍增空白。*/
-    function computeDynamicHeight(cartData, isAllTakeaway) {
-        let y = 215;   // 與正式繪圖迴圈的起始位置 (startY + 215) 完全一致（含新增的 Firebase ID 那一行）
-        cartData.forEach(item => {
-            y += 45;                                                     // 主餐名稱那一行
-            if (item.isTakeaway && !isAllTakeaway) y += 42;               // 外賣標籤（單項外賣時才印）
-            if (item.category !== '小食') y += 40;                       // 大小/麵種/醬料（小食沒有這行）
-            if (item.specialKeys && item.specialKeys.length) y += 40;    // 特別要求
-            const hasAdds = Object.values(item.additionKeys || {}).some(v => v > 0);
-            if (hasAdds) y += 40;                                        // 加料
-            if (item.noExtraKeys && item.noExtraKeys.length) y += 40;    // 不要
-            if (item.isTakeaway) y += 28;                                // 外賣附加費說明
-            y += 22;                                                     // 分隔線後的固定間距
-        });
-        y += 12 + 55;                          // TOTAL 那一行實際佔用的高度
-        if (isAllTakeaway) y += 165;            // 整單外賣的大「(外賣)」Logo（90px字體）
-        return y + 100;                          // 底部安全邊界：固定值，不再隨品項數量疊加（已由實際列印測試確認，+30 不夠、+100 才正常）
-    }
+    /* ✅ 修正「訂餐越多、底部空白越多」問題（維持原本的精算高度邏輯）：
+       根源：舊版用「每項固定扣 260px」概估高度，但很多品項實際遠用不到 260px。
+       解法沿用原本做法：量高度跟實際畫圖用同一套邏輯——但現在進一步把兩者合併成
+       同一個函式 buildReceiptLayout()，回傳「要畫的每一筆內容(cmds)」與「總高度」，
+       量高度只是把 cmds 组出來、量出最後的 y；實際畫圖則是真的把 cmds 逐一畫出來。
+       這樣未來再調整版面時，只需要改一個地方，不會再有「量高度」跟「畫圖」兩邊
+       算法慢慢兜不起來的風險（過去就出現過這個問題）。
+       ✅ ver5.4.0：同時套用主理員後台的列印設定——店名、要不要印價錢/店名/單號/
+       時間/頁尾、字級大小，讓收銀機印出來的收據會真的跟著後台設定改變。*/
+    const CANVAS_SCALE = 2.2;   // 設定頁面的字級(px)是給網頁預覽用的尺度，印表機是576px點陣圖，需要放大才看得清楚
 
-    function drawPrintCanvas(orderNo, printLang, orderKey = null) {
-        const canvas = document.getElementById('printCanvas'), ctx = canvas.getContext('2d');
-        const isAllTakeaway = cart.length > 0 && cart.every(item => item.isTakeaway === true);
-        const dynamicHeight = computeDynamicHeight(cart, isAllTakeaway);
-        canvas.height = dynamicHeight;
-
-        ctx.fillStyle = "white"; ctx.fillRect(0, 0, 576, canvas.height);
-        ctx.textBaseline = "top"; ctx.fillStyle = "black"; ctx.textAlign = "center";
+    function buildReceiptLayout(cartData, orderNo, printLang, orderKey, isAllTakeaway) {
+        const cfg = printConfig;
+        const titlePx = Math.max(16, Math.round((cfg.titleSize || 18) * CANVAS_SCALE));
+        const bodyPx  = Math.max(16, Math.round((cfg.bodySize  || 13) * CANVAS_SCALE));
+        const notePx  = Math.max(14, Math.round((cfg.noteSize  || 11) * CANVAS_SCALE));
+        const mainItemPx = Math.round(bodyPx * 1.3);   // 品項主名稱比「主要餐點字級」再放大一些，維持標題感
         const centerX = 288, maxW = 450;  // ✅ 80mm紙捲：centerX=576的正中央；maxW依同比例放大，讓文字能利用更寬的紙面
-        let startY = 0;
 
-        ctx.font = "bold 26px sans-serif"; ctx.fillText("Million FishBall Noodle", centerX, startY + 20);
-        ctx.font = "18px sans-serif";      ctx.fillText(new Date().toLocaleString(), centerX, startY + 55);
-        ctx.font = "bold 44px sans-serif"; ctx.fillText(`No. ${orderNo}`, centerX, startY + 85);
-        /* ✅ 客號下方印出 Firebase「新增子節點」保證全域唯一的原始 key（orderClaims 裡的識別碼）。
-           萬一日後需要追查某一單「到底是哪一筆雲端記錄產生的號碼」，可直接拿收據上這組 ID
-           回頭到 Firebase 的 orderClaims 裡比對，不會找不到來源。離線備援（沒有雲端 key）時
-           顯示 "--"，版面高度仍固定，不受有無 key 影響。 */
-        ctx.font = "20px sans-serif"; ctx.fillStyle = "#555";
-        ctx.fillText(`ID: ${orderKey || '--'}`, centerX, startY + 140);
-        ctx.fillStyle = "black";
-        ctx.font = "bold 20px sans-serif"; ctx.fillText("--------------------------------------------------------------", centerX, startY + 175);  // ✅ 加長虛線以匹配80mm紙寬
-        let y = startY + 215;
+        const cmds = [];
+        let y = 20;
 
-        cart.forEach((item) => {
+        if (cfg.showShopName !== false) {
+            cmds.push({ type:'text', text: cfg.shopName || 'Million FishBall Noodle', font:`bold ${titlePx}px sans-serif`, x:centerX, y, align:'center' });
+            y += titlePx + 15;
+        }
+        if (cfg.showTime !== false) {
+            cmds.push({ type:'text', text: new Date().toLocaleString(), font:`${notePx}px sans-serif`, x:centerX, y, align:'center' });
+            y += notePx + 17;
+        }
+        if (cfg.showOrderNo !== false) {
+            cmds.push({ type:'text', text:`No. ${orderNo}`, font:'bold 44px sans-serif', x:centerX, y, align:'center' });
+            y += 24 + 21;
+        }
+        /* ✅ 修正問題2：ID這行改成跟後台「顯示廚房單ID」設定一致（預設不顯示），
+           不再「不受設定控制、一律顯示」 */
+        if (cfg.showTicketId) {
+            cmds.push({ type:'text', text:`ID: ${orderKey || '--'}`, font:`${notePx}px sans-serif`, color:'#555', x:centerX, y, align:'center' });
+            y += notePx + 20;
+        }
+        cmds.push({ type:'text', text:'--------------------------------------------------------------', font:'bold 20px sans-serif', x:centerX, y, align:'center' });
+        y += 20 + 20;
+
+        cartData.forEach(item => {
             const getName = (k) => (dictionary.items[k] && dictionary.items[k][printLang]) ? dictionary.items[k][printLang] : k;
-            /* 小食品項的單位跟隨自身定義（條/片/粒），數量 = 份數 x ratio，與加料清單的顯示邏輯一致；
-               湯品維持「碗」、麵食維持「份」，未變動 */
             const unit = item.category === '湯' ? (printLang==='zh'?'碗':'bowl')
                        : item.category === '小食' ? getItemUnit(item.mainKey, printLang)
                        : (printLang==='zh'?'份':'qty');
             const displayQty = item.category === '小食' ? (item.qty * getItemRatio(item.mainKey)) : item.qty;
 
-            ctx.textAlign = "center";
-            ctx.font = printLang === 'en' ? "bold 36px sans-serif" : "bold 42px sans-serif";
-            ctx.fillStyle = "black";
-            ctx.fillText(`${getName(item.mainKey)} (${displayQty}${unit})`, centerX, y, maxW);
+            const thisMainPx = printLang === 'en' ? Math.round(mainItemPx * 0.86) : mainItemPx;
+            cmds.push({ type:'text', text:`${getName(item.mainKey)} (${displayQty}${unit})`, font:`bold ${thisMainPx}px sans-serif`, x:centerX, y, align:'center', maxW });
 
             if (item.sizeKey === '大的') {
-                ctx.save();
-                const cx = 550, cy = y + 20, r = 26;  // ✅ 80mm紙捲：靠右對齊(576-26)，取代58mm紙的358(384-26)
-                ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2);
-                ctx.fillStyle = "black"; ctx.fill();
-                ctx.textAlign = "center"; ctx.textBaseline = "middle";
-                ctx.font = "bold 32px sans-serif"; ctx.fillStyle = "white";
-                ctx.fillText("大", cx, cy);
-                ctx.textBaseline = "top"; ctx.restore();
+                cmds.push({ type:'circleBadge', cx:550, cy:y+20, r:26, label:'大' });
             }
-            y += 45;
+            y += 60;
 
             if (item.isTakeaway && !isAllTakeaway) {
-                ctx.save();
-                ctx.textAlign = "right";
-                ctx.font = "bold 34px sans-serif";
-                ctx.fillStyle = "black";
-                ctx.fillText(printLang === 'zh' ? "🥡(外賣)" : "🥡(TAKEAWAY)", 568, y);  // ✅ 80mm紙捲：靠右對齊(576-8)，取代58mm紙的376(384-8)
-                ctx.restore();
-                y += 42;
+                cmds.push({ type:'text', text: printLang === 'zh' ? '🥡(外賣)' : '🥡(TAKEAWAY)', font:'bold 34px sans-serif', x:568, y, align:'right' });
+                y += 62;
             }
 
             if (item.category !== '小食') {
-                ctx.textAlign = "center"; ctx.font = "bold 30px sans-serif"; ctx.fillStyle = "black";
-                ctx.fillText(`[${getName(item.sizeKey).replace('的','')}] ${item.noodleKey==='湯品'?'':getName(item.noodleKey)} ${item.sauceKeys.map(k=>getName(k)).join(',')}`, centerX, y, maxW); y += 40;
+                cmds.push({ type:'text', text:`[${getName(item.sizeKey).replace('的','')}] ${item.noodleKey==='湯品'?'':getName(item.noodleKey)} ${item.sauceKeys.map(k=>getName(k)).join(',')}`, font:'bold 30px sans-serif', x:centerX, y, align:'center', maxW });
+                y += 60;
             }
 
-            if (item.specialKeys && item.specialKeys.length) {
-                ctx.fillText(`★ ${item.specialKeys.map(k=>getName(k)).join(',')}`, centerX, y, maxW); y += 40;
+            /* ✅ 「顯示客製化備註與特別要求」設定：關閉時，特別要求/加料/不要什麼這三行都不印 */
+            if (cfg.showNotes !== false) {
+                if (item.specialKeys && item.specialKeys.length) {
+                    cmds.push({ type:'text', text:`★ ${item.specialKeys.map(k=>getName(k)).join(',')}`, font:`bold ${notePx}px sans-serif`, x:centerX, y, align:'center', maxW });
+                    y += notePx + 14;
+                }
+                let addsStr = Object.entries(item.additionKeys || {}).filter(([k,v])=>v>0)
+                    .map(([k,v])=>`${getName(k)}(${v*getItemRatio(k)}${getItemUnit(k,printLang)})`).join(',');
+                if (addsStr) {
+                    cmds.push({ type:'text', text:`+${printLang==='zh'?'加':'Add'}: ${addsStr}`, font:`bold ${notePx}px sans-serif`, x:centerX, y, align:'center', maxW });
+                    y += notePx + 14;
+                }
+                if (item.noExtraKeys && item.noExtraKeys.length) {
+                    cmds.push({ type:'text', text:`[${printLang==='zh'?'不要':'No'}: ${item.noExtraKeys.map(k=>getName(k)).join(',')}]`, font:`bold ${Math.round(notePx*0.9)}px sans-serif`, x:centerX, y, align:'center', maxW });
+                    y += notePx + 14;
+                }
             }
 
-            let addsStr = Object.entries(item.additionKeys || {}).filter(([k,v])=>v>0)
-                .map(([k,v])=>`${getName(k)}(${v*getItemRatio(k)}${getItemUnit(k,printLang)})`).join(',');
-            if (addsStr) { ctx.fillText(`+${printLang==='zh'?'加':'Add'}: ${addsStr}`, centerX, y, maxW); y += 40; }
-
-            if (item.noExtraKeys && item.noExtraKeys.length) {
-                ctx.font = "bold 24px sans-serif";
-                ctx.fillText(`[${printLang==='zh'?'不要':'No'}: ${item.noExtraKeys.map(k=>getName(k)).join(',')}]`, centerX, y, maxW); y += 40;
+            if (cfg.showPrice !== false && item.isTakeaway) {
+                cmds.push({ type:'text', text:`(${printLang==='zh'?'外賣附加':'Takeaway fee'}: +$${(0.30 * item.qty).toFixed(2)})`, font:'18px sans-serif', color:'#555', x:centerX, y, align:'center', maxW });
+                y += 28;
             }
 
-            if (item.isTakeaway) {
-                ctx.font = "18px sans-serif"; ctx.fillStyle = "#555";
-                ctx.fillText(`(${printLang==='zh'?'外賣附加':'Takeaway fee'}: +$${(0.30 * item.qty).toFixed(2)})`, centerX, y, maxW);
-                ctx.fillStyle = "black"; y += 28;
-            }
-
-            ctx.save();
-            ctx.strokeStyle = "#000"; ctx.lineWidth = 1; ctx.setLineDash([4, 4]);
-            ctx.beginPath(); ctx.moveTo(0, y + 8); ctx.lineTo(576, y + 8); ctx.stroke();
-            ctx.setLineDash([]); ctx.restore();
+            cmds.push({ type:'dashedLine', y: y + 8 });
             y += 22;
         });
 
-        ctx.textAlign = "center"; ctx.font = "bold 42px sans-serif"; ctx.fillStyle = "black";
-        ctx.fillText("TOTAL: $" + document.getElementById('cart-total-sum').innerText, centerX, y + 12);
-
-        /* 外賣Logo：整單外賣時才顯示，位置在Total下方，字體為原本(45px)的2倍(90px) */
-        if (isAllTakeaway) {
-            ctx.save();
-            ctx.textAlign = "center";
-            ctx.font = "bold 90px sans-serif";
-            ctx.fillStyle = "black";
-            ctx.fillText(printLang === 'zh' ? "(外賣)" : "(TAKEAWAY)", centerX, y + 65, 550);  // ✅ 80mm紙捲：maxWidth依同比例放大
-            ctx.restore();
+        if (cfg.showPrice !== false) {
+            const receiptTotals = getCartTotals(cartData);
+            if (receiptTotals.discount > 0) {
+                cmds.push({ type:'text', text:(printLang==='zh'?'原價: $':'Subtotal: $') + receiptTotals.original.toFixed(2), font:'bold 26px sans-serif', x:centerX, y, align:'center' });
+                y += 26 + 10;
+                cmds.push({ type:'text', text:(printLang==='zh'?'🎉活動折扣: -$':'🎉Promo Discount: -$') + receiptTotals.discount.toFixed(2), font:'bold 26px sans-serif', color:'#c62828', x:centerX, y, align:'center' });
+                y += 26 + 14;
+            }
+            cmds.push({ type:'text', text:'TOTAL: $' + receiptTotals.final.toFixed(2), font:'bold 42px sans-serif', x:centerX, y: y + 32, align:'center' });
+            y += 32 + 55;
         }
+
+        /* 外賣Logo：整單外賣時才顯示，位置在Total下方，
+字體為原本(45px)的2倍(90px) */
+        if (isAllTakeaway) {
+            cmds.push({ type:'text', text: printLang === 'zh' ? '(外賣)' : '(TAKEAWAY)', font:'bold 90px sans-serif', x:centerX, y: y + 165, align:'center', maxW:550 });
+            y += 165;
+        }
+
+        if (cfg.showFooter && cfg.footerText) {
+            cmds.push({ type:'text', text: cfg.footerText, font:`${notePx}px sans-serif`, color:'#555', x:centerX, y: y + 20, align:'center', maxW });
+            y += notePx + 30;
+        }
+
+        return { cmds, height: y + 100 };   // 底部安全邊界：固定值，不再隨品項數量疊加
+    }
+
+    function drawPrintCanvas(orderNo, printLang, orderKey = null) {
+        const canvas = document.getElementById('printCanvas'), ctx = canvas.getContext('2d');
+        const isAllTakeaway = cart.length > 0 && cart.every(item => item.isTakeaway === true);
+        const { cmds, height } = buildReceiptLayout(cart, orderNo, printLang, orderKey, isAllTakeaway);
+        canvas.height = height;
+
+        ctx.fillStyle = "white"; ctx.fillRect(0, 0, 576, canvas.height);
+        ctx.textBaseline = "top";
+
+        cmds.forEach(c => {
+            if (c.type === 'text') {
+                ctx.textAlign = c.align || 'center';
+                ctx.font = c.font;
+                ctx.fillStyle = c.color || 'black';
+                if (c.maxW) ctx.fillText(c.text, c.x, c.y, c.maxW);
+                else ctx.fillText(c.text, c.x, c.y);
+            } else if (c.type === 'circleBadge') {
+                ctx.save();
+                ctx.beginPath(); ctx.arc(c.cx, c.cy, c.r, 0, Math.PI * 2);
+                ctx.fillStyle = "black"; ctx.fill();
+                ctx.textAlign = "center"; ctx.textBaseline = "middle";
+                ctx.font = "bold 32px sans-serif"; ctx.fillStyle = "white";
+                ctx.fillText(c.label, c.cx, c.cy);
+                ctx.textBaseline = "top"; ctx.restore();
+            } else if (c.type === 'dashedLine') {
+                ctx.save();
+                ctx.strokeStyle = "#000"; ctx.lineWidth = 1; ctx.setLineDash([4, 4]);
+                ctx.beginPath(); ctx.moveTo(0, c.y); ctx.lineTo(576, c.y); ctx.stroke();
+                ctx.setLineDash([]); ctx.restore();
+            }
+        });
+        ctx.fillStyle = "black";
     }
     const dictionary = {
         ui: {
@@ -1165,16 +1991,33 @@
 
         const originalCart = [...cart];
         cart = [item];
-        document.getElementById('cart-total-sum').innerText = item.price.toFixed(2);
+        const quickTotals = getCartTotals(cart);
+        document.getElementById('cart-total-sum').innerText = quickTotals.final.toFixed(2);
 
         const orderInfo = await getNextOrderNo();   // ✅ 改用雲端共用流水號，同時取得 Firebase key
-        const orderData = getOrderData();
-        orderData.history.unshift({ num: orderInfo.no, key: orderInfo.key, total: item.price.toFixed(2), items: [JSON.parse(JSON.stringify(item))] });
-        recordSale([item]);
-        await saveOrderData(orderData);
 
+        /* ✅ 修正問題3：這裡原本不管使用者選了「本機列印」還是「雲端」，都一律只送去 Firebase，
+           靠廚房出單機自動列印——如果使用者其實選的是本機列印，卡片下單就會完全不出紙本，
+           只會跳出「廚房出單機將自動列印」這句誤導的訊息。現在改成先檢查存好的列印方式，
+           本機模式就真的透過藍牙印出來（並且用 noPrint 標記避免廚房那邊重複印一次）。*/
+        const savedMethod = localStorage.getItem(PRINT_METHOD_KEY);
+        const savedLang = localStorage.getItem(PRINT_LANG_KEY) || 'zh';
         try {
-            await handleFinalizeAndPrint(userLang, orderInfo, true, userLang==='zh' ? '✅ 已下單並列印！' : '✅ Ordered & Printed!');
+            const orderData = getOrderData();
+            if (savedMethod === 'direct') {
+                const printer = await getDirectPrinter();
+                drawDirectReceiptCanvas(orderInfo.no, savedLang, orderInfo.key);
+                await writeDirectReceipt(printer);
+                orderData.history.unshift({ num: orderInfo.no, key: orderInfo.key, total: quickTotals.final.toFixed(2), original: quickTotals.original.toFixed(2), discount: quickTotals.discount.toFixed(2), items: [JSON.parse(JSON.stringify(item))], noPrint: true, printLang: savedLang });
+                recordSale([item]);
+                await saveOrderData(orderData);
+                alert(userLang==='zh' ? '✅ 已本機列印！' : '✅ Printed locally!');
+            } else {
+                orderData.history.unshift({ num: orderInfo.no, key: orderInfo.key, total: quickTotals.final.toFixed(2), original: quickTotals.original.toFixed(2), discount: quickTotals.discount.toFixed(2), items: [JSON.parse(JSON.stringify(item))], printLang: savedLang });
+                recordSale([item]);
+                await saveOrderData(orderData);
+                alert(userLang==='zh' ? '✅ 已下單！廚房出單機將自動列印。' : '✅ Order placed! The kitchen printer will print it automatically.');
+            }
         } catch (e) {
             alert("下單失敗: " + e.message);
         } finally {
@@ -1185,10 +2028,20 @@
     }
 
     function updateBottomBar() {
-        let total = 0;
-        cart.forEach(item => { total += item.price * item.qty + (item.isTakeaway ? 0.30 * item.qty : 0); });
-        document.getElementById('cart-total-sum').innerText = total.toFixed(2);
+        const totals = getCartTotals(cart);
+        document.getElementById('cart-total-sum').innerText = totals.final.toFixed(2);
         document.getElementById('cart-count').innerText = cart.length;
+        const promoTag = document.getElementById('cart-promo-tag');
+        if (promoTag) {
+            if (totals.discount > 0) {
+                promoTag.style.display = 'block';
+                promoTag.innerText = userLang === 'zh'
+                    ? `🎉活動價 原$${totals.original.toFixed(2)} 折$${totals.discount.toFixed(2)}`
+                    : `🎉Promo was $${totals.original.toFixed(2)} -$${totals.discount.toFixed(2)}`;
+            } else {
+                promoTag.style.display = 'none';
+            }
+        }
     }
 
     /* ═══════════════ 分類切換（步驟1：選品項的入口） ═══════════════ */
@@ -1244,7 +2097,7 @@
             tempItem = { mainKey: key, sizeKey: '', noodleKey: '', sauceKeys: [], specialKeys: [], noExtraKeys: [], additionKeys: {}, qty: 1, category: '小食', isTakeaway: false };
         } else {
             /* 麵食類：預設「面薄、辣椒、小份、堂食」— 收銀員可直接按確認出收據，也可以再點一下修改 */
-            tempItem = { mainKey: key, sizeKey: '小的', noodleKey: '面薄', sauceKeys: ['辣椒'], specialKeys: [], noExtraKeys: [], additionKeys: {}, qty: 1, category: '面', isTakeaway: false };
+            tempItem = { mainKey: key, sizeKey: '小的', noodleKey: Object.keys(config.noodleTypeImgs)[0] || '面薄', sauceKeys: ['辣椒'], specialKeys: [], noExtraKeys: [], additionKeys: {}, qty: 1, category: '面', isTakeaway: false };
         }
         renderSideList();
         renderCustomizePanel();
@@ -1414,17 +2267,27 @@
     }
     /* 醬料互斥狀態機：
        (A) 「湯」與任何其他醬料互斥 —— 按下湯，其他全部清空；按下任何其他醬料，湯自動取消
-       (B) 「辣椒／少辣／多辣」三個是單選(Radio) —— 選其中一個，另外兩個自動回復未選 */
-    const SPICE_LEVELS = ['辣椒', '少辣', '多辣'];
+       (B) 「辣椒／少辣／多辣／茄汁／黑醬油／白醬青」是單選(Radio) —— 選其中一個，
+           同組其他已選的（包含預設的辣椒）自動回復未選。
+           日後想再加新的互斥醬料，直接把 key 加進下面這個陣列就好，跟顧客點餐頁面用同一份邏輯。 */
+    /* ✅ 醬料選擇邏輯（跟顧客點餐頁面用同一套設計）：
+       1. 「湯」「分湯」完全互斥——選了其中一個，其他醬料全部清空。
+       2. 除了湯/分湯以外的醬料都是自由多選，可以同時選好幾個（例如「辣椒+茄汁」）。
+       3. 唯一例外：一開始「還沒被動過的預設辣椒」，點選別的醬料會直接取代掉它；
+          只要動過一次，之後全部都是自由多選。
+       日後想新增互斥醬料，把 key 加進 EXCLUSIVE_SAUCES 就好。 */
+    const EXCLUSIVE_SAUCES = ['湯', '分湯'];
     function toggleTempSauce(k) {
         const wasSelected = tempItem.sauceKeys.includes(k);
-        if (k === '湯') {
-            tempItem.sauceKeys = wasSelected ? [] : ['湯'];
+        if (EXCLUSIVE_SAUCES.includes(k)) {
+            tempItem.sauceKeys = wasSelected ? [] : [k];
         } else {
-            tempItem.sauceKeys = tempItem.sauceKeys.filter(x => x !== '湯');  /* 選其他醬料，湯自動取消 */
-            if (SPICE_LEVELS.includes(k)) {
-                tempItem.sauceKeys = tempItem.sauceKeys.filter(x => !SPICE_LEVELS.includes(x));  /* 辣度單選，先清空另外兩個 */
-                if (!wasSelected) tempItem.sauceKeys.push(k);
+            const wasExclusiveActive = tempItem.sauceKeys.some(x => EXCLUSIVE_SAUCES.includes(x));
+            if (wasExclusiveActive) tempItem.sauceKeys = [];
+
+            const isUntouchedDefault = !wasExclusiveActive && tempItem.sauceKeys.length === 1 && tempItem.sauceKeys[0] === '辣椒' && k !== '辣椒';
+            if (isUntouchedDefault) {
+                tempItem.sauceKeys = [k];
             } else {
                 const idx = tempItem.sauceKeys.indexOf(k);
                 if (idx >= 0) tempItem.sauceKeys.splice(idx, 1); else tempItem.sauceKeys.push(k);
@@ -1475,7 +2338,7 @@
         renderSideList();
         updateBottomBar();
         const modal = document.getElementById('cart-view-modal');
-        if (modal.style.display === 'flex') document.getElementById('cart-modal-body').innerHTML = buildCartRowsHtml();
+        if (modal.style.display === 'flex') { document.getElementById('cart-modal-body').innerHTML = buildCartRowsHtml(); updateCartDiningToggleBtn(); }
 
         if (wasEditing) {
             /* 修改既有購物車項目：完成後回到購物車總覽，方便核對整體內容 */
@@ -1539,8 +2402,37 @@
     }
 
     /* ── 查看購物車彈窗：不管目前面板是不是正在自訂某個品項，都能隨時彈出看目前購物車內容 ── */
+    /* ✅ 購物車彈窗頭部的「全單堂食/外賣」切換鈕：按下去會把購物車內「每一項」的外賣狀態
+       全部改成同一個值（不管原本是堂食、外賣、還是混合），並立刻重新計算含外賣附加費、
+       活動折扣在內的總金額——跟點餐當下選堂食/外賣是同一個 isTakeaway 欄位，效果一致 */
+    function updateCartDiningToggleBtn() {
+        const btn = document.getElementById('cart-dining-toggle-btn');
+        if (!btn) return;
+        if (cart.length === 0) { btn.style.display = 'none'; return; }
+        btn.style.display = 'inline-block';
+        const isAllTakeaway = cart.every(item => item.isTakeaway === true);
+        if (isAllTakeaway) {
+            btn.innerText = userLang==='zh' ? '🥡 外賣' : '🥡 Takeaway';
+            btn.style.background = '#3949ab';
+        } else {
+            btn.innerText = userLang==='zh' ? '🍽 堂食' : '🍽 Dine-in';
+            btn.style.background = '#1b5e20';
+        }
+    }
+    function toggleCartDiningOption() {
+        if (cart.length === 0) return;
+        const isAllTakeaway = cart.every(item => item.isTakeaway === true);
+        const newValue = !isAllTakeaway;  // 目前全部堂食(或混合狀態) → 切成全部外賣；目前已經全部外賣 → 切回全部堂食
+        cart.forEach(item => { item.isTakeaway = newValue; });
+        updateCartDiningToggleBtn();
+        document.getElementById('cart-modal-body').innerHTML = buildCartRowsHtml();
+        updateBottomBar();
+        renderPanelCartSummary();
+    }
+
     function showCartModal() {
         document.getElementById('cart-modal-body').innerHTML = buildCartRowsHtml();
+        updateCartDiningToggleBtn();
         document.getElementById('cart-view-modal').style.display = 'flex';
     }
     function closeCartModal() { document.getElementById('cart-view-modal').style.display = 'none'; }
@@ -1550,7 +2442,7 @@
         updateBottomBar();
         if (!tempItem) renderPanelCartSummary();
         const modal = document.getElementById('cart-view-modal');
-        if (modal.style.display === 'flex') document.getElementById('cart-modal-body').innerHTML = buildCartRowsHtml();
+        if (modal.style.display === 'flex') { document.getElementById('cart-modal-body').innerHTML = buildCartRowsHtml(); updateCartDiningToggleBtn(); }
     }
 
     function changeCartQty(idx, d) {
@@ -1649,17 +2541,30 @@
         };
         const originalCart = [...cart];
         cart = [item];
-        const totalWithFee = item.price + (item.isTakeaway ? 0.30 : 0);
-        document.getElementById('cart-total-sum').innerText = totalWithFee.toFixed(2);
+        const comboTotals = getCartTotals(cart);
+        document.getElementById('cart-total-sum').innerText = comboTotals.final.toFixed(2);
 
         const orderInfo = await getNextOrderNo();   // ✅ 改用雲端共用流水號，同時取得 Firebase key
-        const orderData = getOrderData();
-        orderData.history.unshift({ num: orderInfo.no, key: orderInfo.key, total: totalWithFee.toFixed(2), items: [JSON.parse(JSON.stringify(item))] });
-        recordSale([item]);
-        await saveOrderData(orderData);
 
+        /* ✅ 修正問題3：同 quickSuggestOrder，改成依照已存的列印方式決定行為 */
+        const savedMethod = localStorage.getItem(PRINT_METHOD_KEY);
+        const savedLang = localStorage.getItem(PRINT_LANG_KEY) || 'zh';
         try {
-            await handleFinalizeAndPrint(userLang, orderInfo, true, userLang==='zh' ? '✅ 已下單並列印！' : '✅ Ordered & Printed!');
+            const orderData = getOrderData();
+            if (savedMethod === 'direct') {
+                const printer = await getDirectPrinter();
+                drawDirectReceiptCanvas(orderInfo.no, savedLang, orderInfo.key);
+                await writeDirectReceipt(printer);
+                orderData.history.unshift({ num: orderInfo.no, key: orderInfo.key, total: comboTotals.final.toFixed(2), original: comboTotals.original.toFixed(2), discount: comboTotals.discount.toFixed(2), items: [JSON.parse(JSON.stringify(item))], noPrint: true, printLang: savedLang });
+                recordSale([item]);
+                await saveOrderData(orderData);
+                alert(userLang==='zh' ? '✅ 已本機列印！' : '✅ Printed locally!');
+            } else {
+                orderData.history.unshift({ num: orderInfo.no, key: orderInfo.key, total: comboTotals.final.toFixed(2), original: comboTotals.original.toFixed(2), discount: comboTotals.discount.toFixed(2), items: [JSON.parse(JSON.stringify(item))], printLang: savedLang });
+                recordSale([item]);
+                await saveOrderData(orderData);
+                alert(userLang==='zh' ? '✅ 已下單！廚房出單機將自動列印。' : '✅ Order placed! The kitchen printer will print it automatically.');
+            }
         } catch (e) {
             alert("一鍵下單失敗: " + e.message);
         } finally {
@@ -1671,9 +2576,15 @@
     }
 
     /* ═══════════════ 語言切換 ═══════════════ */
-    function setLang(l) {
+    function setLang(fullLang) {
+        /* ✅ ver5.9.5：下拉選單現在有三個選項 zh(繁)/cn(簡)/en(英)。userLang 內部繼續只當
+           「繁體分支 vs 英文分支」的二元判斷用（跟原本所有 userLang==='zh'?A:B 的寫法完全
+           相容，包括列印語言 printLang 的判斷——這裡完全不用逐一去改），簡體只是多一層
+           「渲染完之後把畫面上的繁體字轉成簡體字形」的後製效果，靠 chineseVariant 控制。 */
+        const l = fullLang === 'en' ? 'en' : 'zh';
         userLang = l;
-        document.querySelectorAll('#lang-toggle button').forEach(b => b.classList.toggle('active', b.dataset.lang === l));
+        chineseVariant = fullLang === 'cn' ? 'simp' : 'trad';
+        document.querySelectorAll('.lang-select').forEach(sel => { sel.value = fullLang; });
         document.querySelectorAll('.cat-tab').forEach(t => {
             const cat = t.dataset.cat;
             t.innerText = cat==='湯' ? (l==='zh'?'🍜 湯品類':'🍜 Soup') : cat==='面' ? (l==='zh'?'🍝 麵食類':'🍝 Noodle') : cat==='小食' ? (l==='zh'?'🍡 小食':'🍡 Snacks') : (l==='zh'?'🔥 人氣':'🔥 Popular');
@@ -1683,11 +2594,33 @@
         else if (currentCategory === '人氣') renderPopularityPanel();
         else renderPanelCartSummary();
         updateBottomBar();
+        /* ✅ ver5.9.5：切到簡體時打開自動轉換觀察器，並立刻把剛剛重新渲染出來的畫面轉一次
+           （觀察器只抓「之後」的變動）；切回繁體/英文時關掉觀察器，之後的畫面本來就會是
+           繁體（字典本來就是繁體），不需要「復原」。 */
+        if (chineseVariant === 'simp') {
+            enableSimplifiedObserver();
+            convertNodeToSimplified(document.body);
+        } else {
+            disableSimplifiedObserver();
+        }
     }
 
     /* ═══════════════ 初始化 ═══════════════ */
     window.addEventListener('DOMContentLoaded', async () => {
         await loadCloudMenu();   /* ✅ 開機時先讀取主理員設定的最新菜單，再渲染畫面 */
+        loadPrintConfig();                        // 開機先讀一次列印設定
+        /* ✅ ver5.9.8：60秒改成10分鐘一次——列印設定本來就不會每分鐘變，拉長間隔省下大部分背景流量 */
+        setInterval(loadPrintConfig, 600000);      // 之後每10分鐘背景重新讀取一次，讓後台的設定變更能自動生效
+        /* ✅ ver5.9.8：活動優惠一年才辦一次，平常沒活動的時候完全不需要一直輪詢背景流量。
+           改成 loadPromotion() 每次讀完自己判斷「現在是不是真的有活動在跑（或排定要開始）」，
+           只有真的相關才會排定下一輪詢；沒活動的話讀這一次之後就完全安靜，不會再自動重抓。
+           （見 loadPromotion() 結尾呼叫的 schedulePromotionPolling()） */
+        loadPromotion();                           // 開機先讀一次活動優惠設定，讀完自己決定要不要接著輪詢
+        startListeningPendingPayments();           // 開機即時監聽待確認付款訂單
+        /* ✅ ver5.9.7：把印表機語言滑動開關的畫面狀態，對到剛剛從 localStorage 讀出來的
+           printLangSetting（例如上次關掉前選的是英文，這次一開機開關要顯示對應的滑動狀態），
+           直接呼叫 setPrintLang() 重新套一次，滑塊位置/文字/顏色都會一起對好，不用另外重複邏輯 */
+        setPrintLang(printLangSetting);
         selectCategory('人氣');   /* 首次開啟直接顯示人氣推薦，不再是空白畫面 */
         updateBottomBar();
     });
